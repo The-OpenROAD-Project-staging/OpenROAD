@@ -31,18 +31,18 @@
 ## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ## POSSIBILITY OF SUCH DAMAGE.
 #############################################################################
-
 sta::define_cmd_args "generate_ram_netlist" {-bytes_per_word bits
                                              -word_count words
                                              [-storage_cell name]
                                              [-tristate_cell name]
                                              [-inv_cell name]
-                                             [-read_ports count]}
-  
+                                             [-read_ports count]
+                                             [-mask flag]}
+
 proc generate_ram_netlist { args } {
   sta::parse_key_args "generate_ram_netlist" args \
       keys {-bytes_per_word -word_count -storage_cell -tristate_cell -inv_cell
-      -read_ports } flags {}
+      -read_ports -mask } flags {}
 
   if { [info exists keys(-bytes_per_word)] } {
     set bytes_per_word $keys(-bytes_per_word)
@@ -75,9 +75,13 @@ proc generate_ram_netlist { args } {
   if { [info exists keys(-read_ports)] } {
     set read_ports $keys(-read_ports)
   }
-  
-  ram::generate_ram_netlist_cmd $bytes_per_word $word_count $storage_cell \
-      $tristate_cell $inv_cell $read_ports
-}
 
+  set mask 0
+  if { [info exists keys(-mask)] } {
+    set mask $keys(-mask)
+  }
+
+  ram::generate_ram_netlist_cmd $bytes_per_word $word_count $storage_cell \
+      $tristate_cell $inv_cell $read_ports $mask
+}
 

@@ -32,7 +32,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "ram/ram.h"
-
 #include "db_sta/dbNetwork.hh"
 #include "layout.h"
 #include "sta/FuncExpr.hh"
@@ -47,20 +46,13 @@ using odb::dbBTerm;
 using odb::dbInst;
 using odb::dbMaster;
 using odb::dbNet;
-
 using utl::RAM;
-
 using std::vector;
 using std::array;
 
-////////////////////////////////////////////////////////////////
+RamGen::RamGen() : db_(nullptr), logger_(nullptr) {}
 
-RamGen::RamGen() : db_(nullptr), logger_(nullptr)
-{
-}
-
-void RamGen::init(odb::dbDatabase* db, sta::dbNetwork* network, Logger* logger)
-{
+void RamGen::init(odb::dbDatabase* db, sta::dbNetwork* network, Logger* logger) {
   db_ = db;
   network_ = network;
   logger_ = logger;
@@ -71,15 +63,13 @@ dbInst* RamGen::makeInst(
     const std::string& prefix,
     const std::string& name,
     dbMaster* master,
-    const vector<std::pair<std::string, dbNet*>>& connections)
-{
+    const vector<std::pair<std::string, dbNet*>>& connections) {
   const auto inst_name = fmt::format("{}.{}", prefix, name);
   auto inst = dbInst::create(block_, master, inst_name.c_str());
   for (auto& [mterm_name, net] : connections) {
     auto mterm = master->findMTerm(mterm_name.c_str());
     if (!mterm) {
-      logger_->error(
-          RAM, 9, "term {} of cell {} not found.", name, master->getName());
+      logger_->error(RAM, 9, "term {} of cell {} not found.", name, master->getName());
     }
     auto iterm = inst->getITerm(mterm);
     iterm->connect(net);
@@ -89,14 +79,12 @@ dbInst* RamGen::makeInst(
   return inst;
 }
 
-dbNet* RamGen::makeNet(const std::string& prefix, const std::string& name)
-{
+dbNet* RamGen::makeNet(const std::string& prefix, const std::string& name) {
   const auto net_name = fmt::format("{}.{}", prefix, name);
   return dbNet::create(block_, net_name.c_str());
 }
 
-dbNet* RamGen::makeBTerm(const std::string& name)
-{
+dbNet* RamGen::makeBTerm(const std::string& name) {
   auto net = dbNet::create(block_, name.c_str());
   dbBTerm::create(net, name.c_str());
   return net;
@@ -107,10 +95,8 @@ std::unique_ptr<Element> RamGen::make_bit(const std::string& prefix,
                                           dbNet* clock,
                                           vector<odb::dbNet*>& select,
                                           dbNet* data_input,
-                                          vector<odb::dbNet*>& data_output)
-{
+                                          vector<odb::dbNet*>& data_output) {
   auto layout = std::make_unique<Layout>(odb::horizontal);
-
   auto storage_net = makeNet(prefix, "storage");
 
   // Make Storage latch
@@ -120,15 +106,13 @@ std::unique_ptr<Element> RamGen::make_bit(const std::string& prefix,
            storage_cell_,
            {{"GATE", clock}, {"D", data_input}, {"Q", storage_net}});
 
-  // Make ouput tristate driver(s) for read port(s)
+  // Make output tristate driver(s) for read port(s)
   for (int read_port = 0; read_port < read_ports; ++read_port) {
     makeInst(layout.get(),
              prefix,
              fmt::format("obuf{}", read_port),
              tristate_cell_,
-             {{"A", storage_net},
-              {"TE_B", select[read_port]},
-              {"Z", data_output[read_port]}});
+             {{"A", storage_net}, {"TE_B", select[read_port]}, {"Z", data_output[read_port]}});
   }
 
   return std::make_unique<Element>(std::move(layout));
@@ -139,10 +123,10 @@ std::unique_ptr<Element> RamGen::make_byte(
     const int read_ports,
     dbNet* clock,
     dbNet* write_enable,
-    const vector<dbNet*>& selects,
-    const array<dbNet*,8>& data_input,
-    const vector<array<dbNet*, 8>>& data_output)
-{
+    const std::vector<dbNet*>& selects,
+    const std::array<dbNet*, 8>& data_input,
+    const std::vector<std::array<dbNet*, 8>>& data_output,
+    bool mask) {
   auto layout = std::make_unique<Layout>(odb::horizontal);
 
   vector<dbNet*> select_b_nets(selects.size());
@@ -150,164 +134,78 @@ std::unique_ptr<Element> RamGen::make_byte(
     select_b_nets[i] = makeNet(prefix, fmt::format("select{}_b", i));
   }
 
-  auto clock_b_net = makeNet(prefix, "clock_b");
-  auto gclock_net = makeNet(prefix, "gclock");
-  auto we0_net = makeNet(prefix, "we0");
+  if (mask) {  // Bit-level clock gating
+    for (int bit = 0; bit < 8; ++bit) {
+      auto name = fmt::format("{}.bit{}", prefix, bit);
+      vector<dbNet*> outs;
+      for (int read_port = 0; read_port < read_ports; ++read_port) {
+        outs.push_back(data_output[read_port][bit]);
+      }
+      auto gclock_net = makeNet(prefix, fmt::format("gclock{}", bit));
+      auto we_bit_net = makeNet(prefix, fmt::format("we_bit{}", bit));
 
-  for (int bit = 0; bit < 8; ++bit) {
-    auto name = fmt::format("{}.bit{}", prefix, bit);
-    vector<dbNet*> outs;
-    for (int read_port = 0; read_port < read_ports; ++read_port) {
-      outs.push_back(data_output[read_port][bit]);
+      // Make clock gate for each bit
+      makeInst(layout.get(),
+               prefix,
+               fmt::format("icg{}", bit),
+               clock_gate_cell_,
+               {{"CLK", clock}, {"GATE", we_bit_net}, {"GCLK", gclock_net}});
+
+      // Make clock and for each bit
+      makeInst(layout.get(),
+               prefix,
+               fmt::format("we_and{}", bit),
+               and2_cell_,
+               {{"A", selects[0]}, {"B", write_enable}, {"X", we_bit_net}});
+
+      layout->addElement(make_bit(name, read_ports, gclock_net, select_b_nets, data_input[bit], outs));
     }
-    layout->addElement(make_bit(
-        name, read_ports, gclock_net, select_b_nets, data_input[bit], outs));
-  }
+  } else {  // Byte-level clock gating
+    auto clock_b_net = makeNet(prefix, "clock_b");
+    auto gclock_net = makeNet(prefix, "gclock");
+    auto we0_net = makeNet(prefix, "we0");
 
-  // Make clock gate
-  makeInst(layout.get(),
-           prefix,
-           "cg",
-           clock_gate_cell_,
-           {{"CLK", clock_b_net}, {"GATE", we0_net}, {"GCLK", gclock_net}});
+    for (int bit = 0; bit < 8; ++bit) {
+      auto name = fmt::format("{}.bit{}", prefix, bit);
+      vector<dbNet*> outs;
+      for (int read_port = 0; read_port < read_ports; ++read_port) {
+        outs.push_back(data_output[read_port][bit]);
+      }
+      layout->addElement(make_bit(name, read_ports, gclock_net, select_b_nets, data_input[bit], outs));
+    }
 
-  // Make clock and
-  makeInst(layout.get(),
-           prefix,
-           "gcand",
-           and2_cell_,
-           {{"A", selects[0]}, {"B", write_enable}, {"X", we0_net}});
-
-  // Make select inverters
-  for (int i = 0; i < selects.size(); ++i) {
+    // Make clock gate
     makeInst(layout.get(),
              prefix,
-             fmt::format("select_inv_{}", i),
-             inv_cell_,
-             {{"A", selects[i]}, {"Y", select_b_nets[i]}});
-  }
+             "icg",
+             clock_gate_cell_,
+             {{"CLK", clock_b_net}, {"GATE", we0_net}, {"GCLK", gclock_net}});
 
-  // Make clock inverter
-  makeInst(layout.get(),
-           prefix,
-           "clock_inv",
-           inv_cell_,
-           {{"A", clock}, {"Y", clock_b_net}});
+    // Make clock and
+    makeInst(layout.get(),
+             prefix,
+             "we_and",
+             and2_cell_,
+             {{"A", selects[0]}, {"B", write_enable}, {"X", we0_net}});
+
+    // Make select inverters
+    for (int i = 0; i < selects.size(); ++i) {
+      makeInst(layout.get(),
+               prefix,
+               fmt::format("select_inv_{}", i),
+               inv_cell_,
+               {{"A", selects[i]}, {"Y", select_b_nets[i]}});
+    }
+
+    // Make clock inverter
+    makeInst(layout.get(),
+             prefix,
+             "clock_inv",
+             inv_cell_,
+             {{"A", clock}, {"Y", clock_b_net}});
+  }
 
   return std::make_unique<Element>(std::move(layout));
-}
-
-dbMaster* RamGen::findMaster(
-    const std::function<bool(sta::LibertyPort*)>& match,
-    const char* name)
-{
-  dbMaster* best = nullptr;
-  float best_area = std::numeric_limits<float>::max();
-
-  for (auto lib : db_->getLibs()) {
-    for (auto master : lib->getMasters()) {
-      auto cell = network_->dbToSta(master);
-      if (!cell) {
-        continue;
-      }
-      auto liberty = network_->libertyCell(cell);
-      if (!liberty) {
-        continue;
-      }
-
-      auto port_iter = liberty->portIterator();
-
-      sta::ConcretePort* out = nullptr;
-      while (port_iter->hasNext()) {
-        auto lib_port = port_iter->next();
-        auto dir = lib_port->direction();
-        if (dir->isAnyOutput()) {
-          if (!out) {
-            out = lib_port;
-          } else {
-            out = nullptr;  // no multi-output gates
-            break;
-          }
-        }
-      }
-
-      delete port_iter;
-      if (!out || !match(out->libertyPort())) {
-        continue;
-      }
-
-      if (liberty->area() < best_area) {
-        best_area = liberty->area();
-        best = master;
-      }
-    }
-  }
-
-  if (!best) {
-    logger_->error(RAM, 10, "Can't find {} cell", name);
-  }
-  logger_->info(RAM, 16, "Selected {} cell {}", name, best->getName());
-  return best;
-}
-
-void RamGen::findMasters()
-{
-  if (!inv_cell_) {
-    inv_cell_ = findMaster(
-        [this](sta::LibertyPort* port) {
-          return port->libertyCell()->isInverter();
-        },
-        "inverter");
-  }
-
-  if (!tristate_cell_) {
-    tristate_cell_ = findMaster(
-        [this](sta::LibertyPort* port) {
-          if (!port->direction()->isTristate()) {
-            return false;
-          }
-          auto function = port->function();
-          return function->op() != sta::FuncExpr::op_not;
-        },
-        "tristate");
-  }
-
-  if (!and2_cell_) {
-    and2_cell_ = findMaster(
-        [this](sta::LibertyPort* port) {
-          if (!port->direction()->isOutput()) {
-            return false;
-          }
-          auto function = port->function();
-          return function && function->op() == sta::FuncExpr::op_and
-                 && function->left()->op() == sta::FuncExpr::op_port
-                 && function->right()->op() == sta::FuncExpr::op_port;
-        },
-        "and2");
-  }
-
-  if (!storage_cell_) {
-    // FIXME
-    storage_cell_ = findMaster(
-        [this](sta::LibertyPort* port) {
-          if (!port->direction()->isOutput()) {
-            return false;
-          }
-          auto function = port->function();
-          return function && function->op() == sta::FuncExpr::op_and
-                 && function->left()->op() == sta::FuncExpr::op_port
-                 && function->right()->op() == sta::FuncExpr::op_port;
-        },
-        "storage");
-  }
-
-  if (!clock_gate_cell_) {
-    clock_gate_cell_ = findMaster(
-        [this](sta::LibertyPort* port) {
-          return port->libertyCell()->isClockGate();
-        },
-        "clock gate");
-  }
 }
 
 void RamGen::generate(const int bytes_per_word,
@@ -315,8 +213,8 @@ void RamGen::generate(const int bytes_per_word,
                       const int read_ports,
                       dbMaster* storage_cell,
                       dbMaster* tristate_cell,
-                      dbMaster* inv_cell)
-{
+                      dbMaster* inv_cell,
+                      bool mask) {  // Updated function definition
   const int bits_per_word = bytes_per_word * 8;
   const std::string ram_name
       = fmt::format("RAM{}x{}", word_count, bits_per_word);
@@ -380,11 +278,123 @@ void RamGen::generate(const int bytes_per_word,
                                    write_enable[col],
                                    select,
                                    Di0,
-                                   Do));
+                                   Do,
+                                   mask));  // Pass mask parameter
     }
     layout.addElement(std::make_unique<Element>(std::move(column)));
   }
   layout.position(odb::Point(0, 0));
 }
 
+void RamGen::findMasters() {
+  if (!inv_cell_) {
+    inv_cell_ = findMaster(
+        [this](sta::LibertyPort* port) {
+          return port->libertyCell()->isInverter();
+        },
+        "inverter");
+  }
+
+  if (!tristate_cell_) {
+    tristate_cell_ = findMaster(
+        [this](sta::LibertyPort* port) {
+          if (!port->direction()->isTristate()) {
+            return false;
+          }
+          auto function = port->function();
+          return function->op() != sta::FuncExpr::op_not;
+        },
+        "tristate");
+  }
+
+  if (!and2_cell_) {
+    and2_cell_ = findMaster(
+        [this](sta::LibertyPort* port) {
+          if (!port->direction()->isOutput()) {
+            return false;
+          }
+          auto function = port->function();
+          return function && function->op() == sta::FuncExpr::op_and
+                 && function->left()->op() == sta::FuncExpr::op_port
+                 && function->right()->op() == sta::FuncExpr::op_port;
+        },
+        "and2");
+  }
+
+  if (!storage_cell_) {
+    storage_cell_ = findMaster(
+        [this](sta::LibertyPort* port) {
+          if (!port->direction()->isOutput()) {
+            return false;
+          }
+          auto function = port->function();
+          return function && function->op() == sta::FuncExpr::op_and
+                 && function->left()->op() == sta::FuncExpr::op_port
+                 && function->right()->op() == sta::FuncExpr::op_port;
+        },
+        "storage");
+  }
+
+  if (!clock_gate_cell_) {
+    clock_gate_cell_ = findMaster(
+        [this](sta::LibertyPort* port) {
+          return port->libertyCell()->isClockGate();
+        },
+        "clock gate");
+  }
+}
+
+odb::dbMaster* RamGen::findMaster(
+    const std::function<bool(sta::LibertyPort*)>& match,
+    const char* name) {
+  dbMaster* best = nullptr;
+  float best_area = std::numeric_limits<float>::max();
+
+  for (auto lib : db_->getLibs()) {
+    for (auto master : lib->getMasters()) {
+      auto cell = network_->dbToSta(master);
+      if (!cell) {
+        continue;
+      }
+      auto liberty = network_->libertyCell(cell);
+      if (!liberty) {
+        continue;
+      }
+
+      auto port_iter = liberty->portIterator();
+
+      sta::ConcretePort* out = nullptr;
+      while (port_iter->hasNext()) {
+        auto lib_port = port_iter->next();
+        auto dir = lib_port->direction();
+        if (dir->isAnyOutput()) {
+          if (!out) {
+            out = lib_port;
+          } else {
+            out = nullptr;  // no multi-output gates
+            break;
+          }
+        }
+      }
+
+      delete port_iter;
+      if (!out || !match(out->libertyPort())) {
+        continue;
+      }
+
+      if (liberty->area() < best_area) {
+        best_area = liberty->area();
+        best = master;
+      }
+    }
+  }
+
+  if (!best) {
+    logger_->error(RAM, 10, "Can't find {} cell", name);
+  }
+  logger_->info(RAM, 16, "Selected {} cell {}", name, best->getName());
+  return best;
+}
+
 }  // namespace ram
+

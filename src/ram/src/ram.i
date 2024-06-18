@@ -1,4 +1,4 @@
- /////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //
 // BSD 3-Clause License
 //
@@ -9,15 +9,15 @@
 // modification, are permitted provided that the following conditions are met:
 //
 // * Redistributions of source code must retain the above copyright notice, this
-//   list of conditions and the following disclaimer.
+// list of conditions and the following disclaimer.
 //
 // * Redistributions in binary form must reproduce the above copyright notice,
-//   this list of conditions and the following disclaimer in the documentation
-//   and/or other materials provided with the distribution.
+// this list of conditions and the following disclaimer in the documentation
+// and/or other materials provided with the distribution.
 //
 // * Neither the name of the copyright holder nor the names of its
-//   contributors may be used to endorse or promote products derived from
-//   this software without specific prior written permission.
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 // AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -31,12 +31,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 ///////////////////////////////////////////////////////////////////////////////
-
 %{
 #include "ord/OpenRoad.hh"
 #include "ram/ram.h"
 #include "utl/Logger.h"
-
+#include "sta/FuncExpr.hh"
+#include "sta/Liberty.hh"
+#include "sta/PortDirection.hh" // Include this header for sta::PortDirection
 %}
 
 %include "../../Exception.i"
@@ -49,7 +50,8 @@ generate_ram_netlist_cmd(int bytes_per_word,
                          const char* storage_cell_name,
                          const char* tristate_cell_name,
                          const char* inv_cell_name,
-                         const int read_ports)
+                         const int read_ports,
+                         bool mask)
 {
   auto* app = ord::OpenRoad::openRoad();
   auto* ram_gen = app->getRamGen();
@@ -87,8 +89,29 @@ generate_ram_netlist_cmd(int bytes_per_word,
                               inv_cell_name);
     }
   }
+
+  ram_gen->findMasters();
+
+  odb::dbMaster* and2_cell = ram_gen->findMaster(
+      [](sta::LibertyPort* port) {
+        if (!port->direction()->isOutput()) {
+          return false;
+        }
+        auto function = port->function();
+        return function && function->op() == sta::FuncExpr::op_and
+               && function->left()->op() == sta::FuncExpr::op_port
+               && function->right()->op() == sta::FuncExpr::op_port;
+      },
+      "and2");
+
+  odb::dbMaster* clock_gate_cell = ram_gen->findMaster(
+      [](sta::LibertyPort* port) {
+        return port->libertyCell()->isClockGate();
+      },
+      "clock gate");
+
   ram_gen->generate(bytes_per_word, word_count, read_ports,
-                    storage_cell, tristate_cell, inv_cell);
+                    storage_cell, tristate_cell, inv_cell, mask);
 }
 
 %} // inline
