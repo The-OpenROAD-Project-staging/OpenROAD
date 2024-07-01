@@ -88,4 +88,3 @@ class RamGen
 };
 
 }  // namespace ram
-

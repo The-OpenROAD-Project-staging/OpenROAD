@@ -84,4 +84,3 @@ proc generate_ram_netlist { args } {
   ram::generate_ram_netlist_cmd $bytes_per_word $word_count $storage_cell \
       $tristate_cell $inv_cell $read_ports $mask
 }
-

@@ -10,9 +10,9 @@ generate_ram_netlist \
     -word_count 8 \
     -read_ports 2 \
     -storage_cell sky130_fd_sc_hd__dlxtp_1 \
-    -mask 1 \
-#    -tristate_cell sky130_fd_sc_hd__ebufn_2 
-#    -inv_cell sky130_fd_sc_hd__inv_1
+    -tristate_cell sky130_fd_sc_hd__ebufn_2 \
+    -inv_cell sky130_fd_sc_hd__inv_1 \
+    -mask 1
 
 ord::design_created
 
