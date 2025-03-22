@@ -1,5 +1,5 @@
 # Copyright 2021 Google LLC
-#
+# -*- Python -*-
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,31 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# load("", "py_extension")
-# load("", "py_library")
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
-
-load("@rules_hdl//dependency_support/org_gnu_bison:bison.bzl", "genyacc")
-load("@rules_hdl//dependency_support/com_github_westes_flex:flex.bzl", "genlex")
-
 load(
     "//:build_helper.bzl",
-    "OPENROAD_DEFINES",
     "OPENROAD_BINARY_DEPS",
     "OPENROAD_BINARY_SRCS",
     "OPENROAD_BINARY_SRCS_WITHOUT_MAIN",
     "OPENROAD_COPTS",
+    "OPENROAD_DEFINES",
     "OPENROAD_LIBRARY_DEPS",
     "OPENROAD_LIBRARY_HDRS_INCLUDE",
     "OPENROAD_LIBRARY_INCLUDES",
     "OPENROAD_LIBRARY_SRCS_EXCLUDE",
     "OPENROAD_LIBRARY_SRCS_INCLUDE",
 )
-load("@rules_hdl//dependency_support/org_theopenroadproject:tcl_encode.bzl", "tcl_encode")
-
-load("@//:tcl_wrap_cc.bzl", "tcl_wrap_cc")
+load("//bazel:bison.bzl", "genyacc")
+load("//bazel:flex.bzl", "genlex")
+load("//bazel:tcl_encode.bzl", "tcl_encode")
+load("//bazel:tcl_wrap_cc.bzl", "tcl_wrap_cc")
 
 package(
+    default_visibility = ["//:__subpackages__"],
     features = [
         "-parse_headers",
         "-layering_check",
@@ -90,8 +86,8 @@ cc_library(
             "src/gui/src/stub.cpp",
             "src/gui/src/stub_heatMap.cpp",
         ],
-        exclude = OPENROAD_LIBRARY_SRCS_EXCLUDE,
         allow_empty = True,
+        exclude = OPENROAD_LIBRARY_SRCS_EXCLUDE,
     ) + [
         "src/stt/src/flt/etc/POST9.cpp",
         "src/stt/src/flt/etc/POWV9.cpp",
@@ -123,8 +119,8 @@ cc_library(
             "src/gui/src/stub.cpp",
             "src/gui/src/stub_heatMap.cpp",
         ],
-        exclude = OPENROAD_LIBRARY_SRCS_EXCLUDE,
         allow_empty = True,
+        exclude = OPENROAD_LIBRARY_SRCS_EXCLUDE,
     ) + [
         "src/Main_bindings.cc",
         "src/OpenRoad.cc",
@@ -174,48 +170,6 @@ genrule(
 )
 
 cc_library(
-    name = "logger",
-    srcs = [
-        "src/utl/src/CommandLineProgress.h",
-        "src/utl/src/Logger.cpp",
-        "src/utl/src/Metrics.cpp",
-        "src/utl/src/ScopedTemporaryFile.cpp",
-        "src/utl/src/prometheus/metrics_server.cpp",
-    ],
-    hdrs = [
-        "src/utl/include/utl/Progress.h",
-        "src/utl/include/utl/Logger.h",
-        "src/utl/include/utl/Metrics.h",
-        "src/utl/include/utl/ScopedTemporaryFile.h",
-    ] + glob([
-        "src/utl/include/utl/prometheus/*.h",
-    ]),
-    copts = [
-        "-fexceptions",
-        "-Wno-error",
-        "-Wall",
-        "-Wextra",
-        "-pedantic",
-        "-Wno-cast-qual",  # typically from TCL swigging
-        "-Wno-missing-braces",  # typically from TCL swigging
-        "-Wredundant-decls",
-        "-Wformat-security",
-        "-Wno-unused-parameter",
-        "-Wno-sign-compare",
-    ],
-    features = ["-use_header_modules"],
-    includes = [
-        "src/utl/include",
-        "src/utl/include/utl",
-        "src/utl/src",
-    ],
-    visibility = ["@org_theopenroadproject//:__subpackages__"],
-    deps = [
-        "@com_github_gabime_spdlog//:spdlog",
-    ],
-)
-
-cc_library(
     name = "munkres",
     srcs = glob([
         "src/ppl/src/munkres/src/*.cpp",
@@ -226,7 +180,6 @@ cc_library(
     includes = [
         "src/ppl/src/munkres/src",
     ],
-    visibility = ["@org_theopenroadproject//:__subpackages__"],
 )
 
 cc_library(
@@ -447,14 +400,6 @@ tcl_encode(
 )
 
 tcl_encode(
-    name = "utl_tcl",
-    srcs = [
-        "src/utl/src/Utl.tcl",
-    ],
-    char_array_name = "utl_tcl_inits",
-)
-
-tcl_encode(
     name = "upf_tcl",
     srcs = [
         "src/upf/src/upf.tcl",
@@ -565,21 +510,6 @@ tcl_wrap_cc(
     root_swig_src = "src/dpl/src/Opendp.i",
     swig_includes = [
         "src/dpl/src",
-    ],
-)
-
-tcl_wrap_cc(
-    name = "logger_swig",
-    srcs = [
-        "src/utl/src/Logger.i",
-        "src/utl/src/LoggerCommon.h",
-        ":error_swig",
-    ],
-    module = "utl",
-    namespace_prefix = "utl",
-    root_swig_src = "src/utl/src/Logger.i",
-    swig_includes = [
-        "src/utl/src",
     ],
 )
 
@@ -897,7 +827,6 @@ filegroup(
         "src/odb/src/swig/common/swig_common.cpp",
         "src/odb/src/swig/common/swig_common.h",
     ],
-    visibility = ["@org_theopenroadproject//:__subpackages__"],
 )
 
 tcl_wrap_cc(
@@ -969,13 +898,27 @@ cc_library(
         "src/utl/include/utl/*.h",
         "src/odb/src/db/*.h",
     ]) + [
-        "src/odb/src/def/def/defiAlias.hpp",
-        "src/odb/src/def/def/defrReader.hpp",
-        "src/odb/src/def/def/defwWriter.hpp",
+         # these should not be here, they should come as a dependency
+	 # with //src/lef/src/lef once we have that
+        "src/odb/src/lef/lef/lefiArray.hpp",
+        "src/odb/src/lef/lef/lefiCrossTalk.hpp",
         "src/odb/src/lef/lef/lefiDebug.hpp",
+        "src/odb/src/lef/lef/lefiDefs.hpp",
+        "src/odb/src/lef/lef/lefiKRDefs.hpp",
+        "src/odb/src/lef/lef/lefiLayer.hpp",
+        "src/odb/src/lef/lef/lefiMacro.hpp",
+        "src/odb/src/lef/lef/lefiMisc.hpp",
+        "src/odb/src/lef/lef/lefiNonDefault.hpp",
+        "src/odb/src/lef/lef/lefiProp.hpp",
+        "src/odb/src/lef/lef/lefiPropType.hpp",
+        "src/odb/src/lef/lef/lefiUnits.hpp",
+        "src/odb/src/lef/lef/lefiUser.hpp",
         "src/odb/src/lef/lef/lefiUtil.hpp",
+        "src/odb/src/lef/lef/lefiVia.hpp",
+        "src/odb/src/lef/lef/lefiViaRule.hpp",
         "src/odb/src/lef/lef/lefrReader.hpp",
         "src/odb/src/lef/lef/lefwWriter.hpp",
+        "src/odb/src/lef/lefzlib/lefzlib.hpp",
     ],
     copts = [
         "-fexceptions",
@@ -987,32 +930,29 @@ cc_library(
     includes = [
         "src/odb/include",
         "src/odb/include/odb",
-        "src/odb/src/def/def",
-        "src/odb/src/def/defzlib",
         "src/odb/src/def/lefzlib",
         "src/odb/src/lef/lef",
         "src/odb/src/lef/lefin",
         "src/odb/src/lef/lefzlib",
     ],
-    visibility = ["@org_theopenroadproject//:__subpackages__"],
     deps = [
-        ":logger",
-        ":opendb_def",
-        ":opendb_lef",
-        "@boost//:algorithm",
-        "@boost//:bind",
-        "@boost//:config",
-        "@boost//:fusion",
-        "@boost//:geometry",
-        "@boost//:lambda",
-        "@boost//:optional",
-        "@boost//:phoenix",
-        "@boost//:polygon",
-        "@boost//:property_tree",
-        "@boost//:spirit",
-        "@com_github_gabime_spdlog//:spdlog_with_exceptions",
+        "//src/odb/src/def",
+        "//src/odb/src/def:defzlib",
+        "//src/utl",
+        "@boost.algorithm",
+        "@boost.bind",
+        "@boost.config",
+        "@boost.fusion",
+        "@boost.geometry",
+        "@boost.lambda",
+        "@boost.optional",
+        "@boost.phoenix",
+        "@boost.polygon",
+        "@boost.property_tree",
+        "@boost.spirit",
+        "@spdlog",
         "@tk_tcl//:tcl",
-        "@net_zlib//:zlib",
+        "@zlib",
     ],
 )
 
@@ -1053,67 +993,10 @@ cc_library(
         "src/odb/src/lef/lef",
         "src/odb/src/lef/lefzlib",
     ],
-    visibility = [
-    	"//visibility:private",
-    ],
     deps = [
-        "@net_zlib//:zlib",
+        "//src/utl",
+        "@zlib",
     ],
-)
-
-cc_library(
-    name = "opendb_def",
-    srcs = glob(
-        include = [
-            "src/odb/src/def/def/*.cpp",
-            "src/odb/src/def/def/*.h",
-            "src/odb/src/def/def/*.hpp",
-            "src/odb/src/def/defzlib/*.hpp",
-            "src/odb/src/def/defzlib/*.cpp",
-        ],
-        exclude = [
-            "src/odb/src/def/def/defiComponent.hpp",
-            "src/odb/src/def/def/defiUtil.hpp",
-        ],
-    ) + [
-        "src/odb/src/def/def/def_parser.cpp",
-        "src/odb/src/def/def/def_parser.hpp",
-    ],
-    hdrs = glob([
-        "src/odb/include/odb/*.h",
-        "src/odb/include/odb/*.hpp",
-    ]) + [
-        "src/odb/src/def/def/defiAlias.hpp",
-        "src/odb/src/def/def/defiComponent.hpp",
-        "src/odb/src/def/def/defiUtil.hpp",
-        "src/odb/src/def/def/defrReader.hpp",
-        "src/odb/src/def/def/defwWriter.hpp",
-        "src/odb/src/def/defzlib/defzlib.hpp",
-    ],
-    copts = [
-        "-fexceptions",
-        "-Wno-error",
-    ],
-    features = ["-use_header_modules"],
-    includes = [
-        "src/odb/include/odb",
-        "src/odb/src/def/def",
-        "src/odb/src/def/defzlib",
-    ],
-    visibility = [
-    	"//visibility:private",
-    ],
-    deps = [
-        "@net_zlib//:zlib",
-    ],
-)
-
-genyacc(
-    name = "def_bison",
-    src = "src/odb/src/def/def/def.y",
-    header_out = "src/odb/src/def/def/def_parser.hpp",
-    prefix = "defyy",
-    source_out = "src/odb/src/def/def/def_parser.cpp",
 )
 
 genyacc(
@@ -1273,9 +1156,6 @@ exported_tcl = [
 filegroup(
     name = "tcl_scripts",
     srcs = exported_tcl,
-    visibility = [
-    	"@org_theopenroadproject//:__subpackages__",
-    ],
 )
 
 tcl_encode(
@@ -1292,7 +1172,7 @@ genrule(
     #define STA_VERSION "2.2.1"
     #define STA_GIT_SHA1 "53d4d57cb8550d2ceed18adad75b73bba7858f4f"
     #define CUDD 0
-    #define SSTA 0 
+    #define SSTA 0
     #define ZLIB_FOUND' > \"$@\"
     """,
 )
@@ -1317,7 +1197,6 @@ filegroup(
         "src/sta/util/Util.i",
         "src/sta/verilog/Verilog.i",
     ],
-    visibility = ["@org_theopenroadproject//:__subpackages__"],
 )
 
 tcl_wrap_cc(
@@ -1445,14 +1324,12 @@ cc_library(
     ) + [
         "src/sta/util/Machine.cc",
         ":StaConfig",
-    ]
-    #+ select({
-#        "@bazel_tools//src/conditions:windows": ["src/sta/util/MachineWin32.cc"],
-#        "@bazel_tools//src/conditions:darwin": ["src/sta/util/MachineApple.cc"],
-#        "@bazel_tools//src/conditions:linux": ["src/sta/util/MachineLinux.cc"],
-#        "//conditions:default": ["src/sta/util/MachineUnknown.cc"],
-#    })
-,
+    ] + select({
+        "@platforms//os:windows": ["src/sta/util/MachineWin32.cc"],
+        "@platforms//os:osx": ["src/sta/util/MachineApple.cc"],
+        "@platforms//os:linux": ["src/sta/util/MachineLinux.cc"],
+        "//conditions:default": ["src/sta/util/MachineUnknown.cc"],
+    }),
     hdrs = glob(
         include = ["src/sta/include/sta/*.hh"],
     ),
@@ -1484,12 +1361,12 @@ cc_library(
         "src/sta/util",
         "src/sta/verilog",
     ],
-    textual_hdrs = ["src/sta/util/MachineLinux.cc",],
-    visibility = ["@org_theopenroadproject//:__subpackages__"],
+    textual_hdrs = ["src/sta/util/MachineLinux.cc"],
     deps = [
+        "//bazel:flex",
+        "@eigen",
         "@tk_tcl//:tcl",
-        "@net_zlib//:zlib",
-        "@eigen//:eigen3",
+        "@zlib",
     ],
 )
 
@@ -1498,8 +1375,6 @@ filegroup(
     srcs = [
         "src/sta/tcl/Util.tcl",
     ],
-    visibility = ["//visibility:private"],
 )
 
 ## OpenSTA
-

@@ -1,9 +1,30 @@
-common --noenable_bzlmod
+common --enable_bzlmod
 
-build --cxxopt "-std=c++17"
-build --cxxopt "-ffp-contract=off"
-build --host_cxxopt "-std=c++17"
-build --host_cxxopt "-ffp-contract=off"
-build --crosstool_top=@llvm_toolchain//:toolchain
+# By default, Bazel compiles *.cc files for tests with -fPIC and for binaries
+# without it resulting in a large number of duplicate compilations.
+# The linker can deal with both, so we can always compile with -fPIC
+# and use the object files in dynamic (=tests) and static (=binaries) contexts.
+# (There might be a minimal overhead even in statically linked binaries. To
+# be benchmarked)
+common --force_pic
+
+build --cxxopt "-std=c++17"        --host_cxxopt "-std=c++17"
+build --cxxopt "-ffp-contract=off" --host_cxxopt "-ffp-contract=off"
+
+# Turn warnings on...
+build --copt "-Wall"               --host_copt "-Wall"
+build --copt "-Wextra"             --host_copt "-Wextra"
+
+# ... and disable the warnings we're not interested in.
+build --copt "-Wno-sign-compare"      --host_copt "-Wno-sign-compare"
+build --copt "-Wno-unused-parameter"  --host_copt "-Wno-unused-parameter"
+
+# this should really be fixed in the code, but for now reduce noise
+build --copt "-Wno-ignored-qualifiers"  --host_copt "-Wno-ignored-qualifiers"
+
+# For 3rd party code: Disable warnings entirely.
+# They are not actionable and just create noise.
+build --per_file_copt=external/.*@-w
+build --host_per_file_copt=external/.*@-w
 
 try-import %workspace$/user.bazelrc

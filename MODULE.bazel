@@ -1,6 +1,49 @@
-###############################################################################
-# Bazel now uses Bzlmod by default to manage external dependencies.
-# Please consider migrating your external dependencies from WORKSPACE to MODULE.bazel.
-#
-# For more details, please check https://github.com/bazelbuild/bazel/issues/18958
-###############################################################################
+module(
+    name = "openroad",
+)
+
+bazel_dep(name = "platforms", version = "0.0.11")
+bazel_dep(name = "rules_bison", version = "0.3.1")
+bazel_dep(name = "rules_flex", version = "0.3.1")
+bazel_dep(name = "rules_m4", version = "0.2.3")
+
+# Not all boost libs are available at the latest version yet, so
+# use a slightly older one that has most of them.
+BOOST_VERSION = "1.83.0"
+
+bazel_dep(name = "boost.algorithm", version = BOOST_VERSION)
+bazel_dep(name = "boost.asio", version = BOOST_VERSION)
+bazel_dep(name = "boost.beast", version = BOOST_VERSION)
+bazel_dep(name = "boost.bind", version = BOOST_VERSION)
+bazel_dep(name = "boost.config", version = BOOST_VERSION)
+bazel_dep(name = "boost.core", version = BOOST_VERSION)
+bazel_dep(name = "boost.fusion", version = BOOST_VERSION)
+bazel_dep(name = "boost.geometry", version = BOOST_VERSION)
+bazel_dep(name = "boost.graph", version = BOOST_VERSION)
+bazel_dep(name = "boost.heap", version = BOOST_VERSION)
+bazel_dep(name = "boost.json", version = BOOST_VERSION)
+bazel_dep(name = "boost.lambda", version = BOOST_VERSION)
+bazel_dep(name = "boost.multi_array", version = BOOST_VERSION)
+bazel_dep(name = "boost.optional", version = BOOST_VERSION)
+bazel_dep(name = "boost.phoenix", version = BOOST_VERSION)
+bazel_dep(name = "boost.polygon", version = BOOST_VERSION)
+bazel_dep(name = "boost.property_tree", version = BOOST_VERSION)
+bazel_dep(name = "boost.spirit", version = BOOST_VERSION)
+bazel_dep(name = "boost.thread", version = BOOST_VERSION)
+
+# these boost libs are missing upstream
+#bazel_dep(name = "boost.icl", version = BOOST_VERSION)
+#bazel_dep(name = "boost.stacktrace", version = BOOST_VERSION)
+
+bazel_dep(name = "eigen", version = "3.4.0.bcr.2")
+bazel_dep(name = "or-tools", version = "9.12")
+bazel_dep(name = "spdlog", version = "1.15.1")
+bazel_dep(name = "zlib", version = "1.3.1.bcr.5")
+
+# ideally we could use this, need to figure out tcl situation so that it
+# works like before with org_swig.
+bazel_dep(name = "swig", version = "4.3.0")
+
+# Missing
+# lemon
+# cudd.h

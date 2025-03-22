@@ -1,12 +1,15 @@
 """Source Tracking for OpenROAD"""
 
+# NOTE: all this should go once properly converted to a bazel project, and
+# the local dependencies listed where needed.
+
 OPENROAD_BINARY_SRCS_WITHOUT_MAIN = [
     #Root OpenRoad
     ":openroad_swig",
     ":openroad_tcl",
     #Utility
-    ":logger_swig",
-    ":utl_tcl",
+    "//src/utl:logger_swig",
+    "//src/utl:utl_tcl",
     #InitFp
     ":init_floorplan_swig",
     ":init_floorplan_tcl",
@@ -114,7 +117,7 @@ OPENROAD_DEFINES = [
 ]
 
 OPENROAD_BINARY_DEPS = [
-    ":logger",
+     "//src/utl",
     ":opendb_lib",
     ":openroad_version",
     ":opensta_lib",
@@ -290,34 +293,30 @@ OPENROAD_LIBRARY_INCLUDES = [
 ]
 
 OPENROAD_LIBRARY_DEPS = [
-    ":logger",
+     "//src/utl",
     ":munkres",
-    ":opendb_lib",
     ":openroad_version",
     ":opensta_lib",
-    "@com_google_ortools//ortools/base:base",
-    "@com_google_ortools//ortools/linear_solver:linear_solver",
-    "@com_google_ortools//ortools/linear_solver:linear_solver_cc_proto",
-    "@com_google_ortools//ortools/sat:cp_model",
-    "@edu_berkeley_abc//:abc-lib",
-    "@com_google_absl//absl/flags:flag",
-    "@com_google_absl//absl/strings",
-    "@com_google_absl//absl/types:span",
-    "@boost//:asio",
-    "@boost//:geometry",
-    "@boost//:graph",
-    "@boost//:heap",
-    "@boost//:icl",
-    "@boost//:json",
-    "@boost//:multi_array",
-    "@boost//:polygon",
-    "@boost//:property_tree",
-    "@boost//:stacktrace",
-    "@boost//:thread",
-    "@eigen//:eigen3",
-    "@com_github_quantamhd_lemon//:lemon",
-    "@org_llvm_openmp//:openmp",
-    "@com_github_gabime_spdlog//:spdlog",
+    "@or-tools//ortools/base:base",
+    "@or-tools//ortools/linear_solver:linear_solver",
+    "@or-tools//ortools/linear_solver:linear_solver_cc_proto",
+    "@or-tools//ortools/sat:cp_model",
+#M    "@edu_berkeley_abc//:abc-lib",
+    "@boost.asio",
+    "@boost.geometry",
+    "@boost.graph",
+    "@boost.heap",
+#M    "@boost.icl",
+    "@boost.json",
+    "@boost.multi_array",
+    "@boost.polygon",
+    "@boost.property_tree",
+#M    "@boost.stacktrace",
+    "@boost.thread",
+    "@eigen",
+#M    "@com_github_quantamhd_lemon//:lemon",
+#M   "@org_llvm_openmp//:openmp",
+    "@spdlog",
     "@tk_tcl//:tcl",
 ]
 
