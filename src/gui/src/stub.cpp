@@ -32,14 +32,13 @@ class PlacementDensityDataSource
 {
 };
 
+class PowerDensityDataSource
+{
+};
+
 ////
 
-Gui::Gui()
-    : continue_after_close_(false),
-      logger_(nullptr),
-      db_(nullptr),
-      pin_density_heat_map_(nullptr),
-      placement_density_heat_map_(nullptr)
+Gui::Gui() : continue_after_close_(false), logger_(nullptr), db_(nullptr)
 {
 }
 
