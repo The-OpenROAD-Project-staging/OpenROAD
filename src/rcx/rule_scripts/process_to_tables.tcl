@@ -80,14 +80,17 @@ proc makeEffWidth {dir filename rows name1 cols name2 val name3} {
 
             #puts "i= $i  j= $j  w= $w  s= $s   dwc= $DWC"
 
-            set cW [expr $w - 2*$DWC]
+            set cW [expr {$w - 2 * $DWC}]
             lappend row $cW
         }
         puts $fp $row
     }
     close $fp
 }
-proc makeEffThickness {dir filename rows name1 cols name2 val name3 th th_name} {
+proc makeEffThickness {
+    dir filename rows name1 cols
+    name2 val name3 th th_name
+} {
     set datafile [file join $dir $filename]
     set fp [open $datafile "w"]
 
@@ -110,7 +113,7 @@ proc makeEffThickness {dir filename rows name1 cols name2 val name3 th th_name} 
 
             #puts "i= $i  j= $j  w= $w  s= $s   dwc= $DWC"
 
-            set cW [expr $th - $DWC]
+            set cW [expr {$th - $DWC}]
             lappend row $cW
         }
         puts $fp $row
@@ -143,7 +146,7 @@ proc makeEffWidth_low {dir filename rows name1 cols name2 val1d val name3 th} {
             #puts "i= $i  j= $j  w= $w  s= $s   dwc= $DWC"
 
             #davidgu 1/3/06		set cW [ expr $w -2 * $a * ($th - $DWC) ]
-            set cW [expr 2 * $a * ($th - $DWC)]
+            set cW [expr {2 * $a * ($th - $DWC)}]
             lappend row $cW
         }
         puts $fp $row
@@ -244,13 +247,19 @@ foreach DIR { "M1" "M2" } {
     get2Darray $DIR "x" x "X" we "we" th "thickness"
 
     makeEffP $DIR "p.out" p_W "Width" p "P"
-    makeEffWidth $DIR "hi_cw.out" dwc_W "Width" dwc_S "Spacing" dwc "hi_cWidth_eff"
-    makeEffWidth $DIR "hi_rw.out" dwr_W "Width" dwr_S "Spacing" dwr "hi_rWidth_eff"
+    makeEffWidth $DIR "hi_cw.out" dwc_W "Width" dwc_S "Spacing" \
+        dwc "hi_cWidth_eff"
+    makeEffWidth $DIR "hi_rw.out" dwr_W "Width" dwr_S "Spacing" \
+        dwr "hi_rWidth_eff"
 
-    makeEffThickness $DIR "cth.out" dtc_W "Width" dtc_D "Deff" dtc "c_thickness_eff" $th(0,0) "thickness"
-    makeEffThickness $DIR "rth.out" dtr_W "Width" dtr_D "Deff" dtr "r_thickness_eff" $th(0,0) "thickness"
+    makeEffThickness $DIR "cth.out" dtc_W "Width" dtc_D "Deff" \
+        dtc "c_thickness_eff" $th(0,0) "thickness"
+    makeEffThickness $DIR "rth.out" dtr_W "Width" dtr_D "Deff" \
+        dtr "r_thickness_eff" $th(0,0) "thickness"
 
     # width arrays for both alpha and dtc are assumed to match
-    makeEffWidth_low $DIR "lo_cw.out" dtc_W "Width" dtc_D "Deff" a dtc "lo_cWidth_delta" $th(0,0)
-    makeEffWidth_low $DIR "lo_rw.out" dtr_W "Width" dtr_D "Deff" a dtr "lo_rWidth_delta" $th(0,0)
+    makeEffWidth_low $DIR "lo_cw.out" dtc_W "Width" dtc_D "Deff" a \
+        dtc "lo_cWidth_delta" $th(0,0)
+    makeEffWidth_low $DIR "lo_rw.out" dtr_W "Width" dtr_D "Deff" a \
+        dtr "lo_rWidth_delta" $th(0,0)
 }
