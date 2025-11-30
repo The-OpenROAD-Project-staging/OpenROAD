@@ -258,7 +258,7 @@ Point dbWire::getCoord(int jid)
 bool dbWire::getProperty(int jid, int& prpty)
 {
   _dbWire* wire = (_dbWire*) this;
-  int wlen = (int) wire->length();
+  [[maybe_unused]] const int wlen = (int) wire->length();
   assert(0 <= jid && jid < wlen);
   unsigned char op = wire->_opcodes[jid] & WOP_OPCODE_MASK;
   if (op == WOP_COLINEAR || op == WOP_RECT) {
@@ -282,13 +282,13 @@ bool dbWire::getProperty(int jid, int& prpty)
 bool dbWire::setProperty(int jid, int prpty)
 {
   _dbWire* wire = (_dbWire*) this;
-  int wlen = (int) wire->length();
+  [[maybe_unused]] const int wlen = (int) wire->length();
   assert(0 <= jid && jid < wlen);
   if ((wire->_opcodes[jid] & WOP_OPCODE_MASK) == WOP_COLINEAR) {
     return true;
   }
   assert((wire->_opcodes[jid] & WOP_OPCODE_MASK) == WOP_X
-         || (wire->_opcodes[jid] & WOP_OPCODE_MASK) == WOP_Y);
+          || (wire->_opcodes[jid] & WOP_OPCODE_MASK) == WOP_Y);
   assert(jid + 1 < wlen);
   if ((wire->_opcodes[jid + 1] & WOP_OPCODE_MASK) == WOP_PROPERTY) {
     wire->_data[jid + 1] = prpty;
