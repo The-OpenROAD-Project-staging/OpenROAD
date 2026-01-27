@@ -18,6 +18,7 @@
 #include "BufferMove.hh"
 #include "CloneMove.hh"
 #include "Rebuffer.hh"
+#include "ResAwareMove.hh"
 #include "SizeDownMove.hh"
 #include "db_sta/dbSta.hh"
 #include "sta/Delay.hh"
@@ -160,6 +161,12 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
         case MoveType::SIZEUP_MATCH:
           move_sequence_.push_back(resizer_->size_up_match_move_.get());
           break;
+        case MoveType::RES_AWARE:
+          if (resizer_->global_router_
+              && resizer_->global_router_->haveRoutes()) {
+            move_sequence_.push_back(resizer_->res_aware_move_.get());
+          }
+          break;
       }
     }
 
@@ -167,6 +174,9 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
     move_sequence_.clear();
     if (!skip_buffer_removal) {
       move_sequence_.push_back(resizer_->unbuffer_move_.get());
+    }
+    if (resizer_->global_router_ && resizer_->global_router_->haveRoutes()) {
+      move_sequence_.push_back(resizer_->res_aware_move_.get());
     }
     if (!skip_vt_swap && resizer_->lib_data_->sorted_vt_categories.size() > 1) {
       move_sequence_.push_back(resizer_->vt_swap_speed_move_.get());

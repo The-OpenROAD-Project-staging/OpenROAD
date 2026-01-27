@@ -34,6 +34,7 @@
 #include "RepairDesign.hh"
 #include "RepairHold.hh"
 #include "RepairSetup.hh"
+#include "ResAwareMove.hh"
 #include "ResizerObserver.hh"
 #include "SizeDownMove.hh"
 #include "SizeUpMove.hh"
@@ -189,6 +190,7 @@ Resizer::Resizer(utl::Logger* logger,
   vt_swap_speed_move_ = std::make_unique<VTSwapSpeedMove>(this);
   unbuffer_move_ = std::make_unique<UnbufferMove>(this);
   split_load_move_ = std::make_unique<SplitLoadMove>(this);
+  res_aware_move_ = std::make_unique<ResAwareMove>(this);
 
   recover_power_ = std::make_unique<RecoverPower>(this);
   repair_design_ = std::make_unique<RepairDesign>(this);

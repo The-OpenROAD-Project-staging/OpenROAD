@@ -153,6 +153,8 @@ class GlobalRouter
   void setGridOrigin(int x, int y);
   void setAllowCongestion(bool allow_congestion);
   void setResistanceAware(bool resistance_aware);
+  void setNetIsResAware(odb::dbNet* db_net, bool res_aware);
+  bool isNetResAware(odb::dbNet* db_net);
   void setMacroExtension(int macro_extension);
   void setUseCUGR(bool use_cugr) { use_cugr_ = use_cugr; };
   void setSkipLargeFanoutNets(int skip_large_fanout)

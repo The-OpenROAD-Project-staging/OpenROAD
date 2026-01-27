@@ -810,6 +810,29 @@ void GlobalRouter::setPerturbationAmount(int perturbation)
   perturbation_amount_ = perturbation;
 };
 
+void GlobalRouter::setNetIsResAware(odb::dbNet* db_net, bool res_aware)
+{
+  Net* net = db_net_map_[db_net];
+  if (net) {
+    net->setIsResAware(res_aware);
+    logger_->report("Setting net {} as res-aware", net->getConstName());
+  } else {
+    logger_->warn(
+        GRT, 103, "Net {} is not in the db_net_map_", db_net->getConstName());
+  }
+}
+
+bool GlobalRouter::isNetResAware(odb::dbNet* db_net)
+{
+  Net* net = db_net_map_[db_net];
+  if (net) {
+    return net->isResAware();
+  }
+  logger_->warn(
+      GRT, 100, "Net {} is not in the db_net_map_", db_net->getConstName());
+  return false;
+}
+
 void GlobalRouter::updateDirtyNets(std::vector<Net*>& dirty_nets)
 {
   int min_layer, max_layer;
@@ -821,12 +844,15 @@ void GlobalRouter::updateDirtyNets(std::vector<Net*>& dirty_nets)
     destroyNetWire(net);
     std::string pins_not_covered;
     // compare new positions with last positions & add on vector
-    if (pinPositionsChanged(net)
-        && (!net->isMergedNet() || !netIsCovered(db_net, pins_not_covered))) {
+    if (net->isResAware()
+        || (pinPositionsChanged(net)
+            && (!net->isMergedNet()
+                || !netIsCovered(db_net, pins_not_covered)))) {
       dirty_nets.push_back(db_net_map_[db_net]);
       routes_[db_net].clear();
       db_net->clearGuides();
       fastroute_->clearNetRoute(db_net);
+      // logger_->report("Net {} is dirty", net->getConstName());
     } else if (net->isMergedNet()) {
       if (!isConnected(db_net)) {
         logger_->error(

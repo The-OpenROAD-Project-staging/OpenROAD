@@ -21,6 +21,7 @@ add_library(rsz_lib
     RepairHold.cc
     RepairSetup.cc
     Rebuffer.cc
+    ResAwareMove.cc
     SizeDownMove.cc
     SizeUpMove.cc
     SplitLoadMove.cc
