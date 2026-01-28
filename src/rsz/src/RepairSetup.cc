@@ -199,6 +199,9 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
     if (!skip_buffering) {
       move_sequence_.push_back(resizer_->split_load_move_.get());
     }
+    // if (resizer_->global_router_ && resizer_->global_router_->haveRoutes()) {
+    //   move_sequence_.push_back(resizer_->res_aware_move_.get());
+    // }
   }
 
   string repair_moves = "Repair move sequence: ";
@@ -795,13 +798,14 @@ void RepairSetup::printProgress(const int iteration,
 
   if (start && !end) {
     logger_->report(
-        "   Iter   | Removed | Resized | Inserted | Cloned |  Pin  |"
+        "   Iter   | Removed | Resized | Inserted | Cloned |  Pin  | ResAware |"
         "   Area   |    WNS   |   TNS      |  Viol  | Worst");
     logger_->report(
-        "          | Buffers |  Gates  | Buffers  |  Gates | Swaps |"
+        "          | Buffers |  Gates  | Buffers  |  Gates | Swaps |   Nets   |"
         "          |          |            | Endpts | Endpt");
     logger_->report(
         "-----------------------------------------------------------"
+        "-----------"
         "---------------------------------------------------");
   }
 
@@ -827,7 +831,7 @@ void RepairSetup::printProgress(const int iteration,
     // This actually prints both committed and pending moves, so the moves could
     // could go down if a pass is rejected and restored by the ECO.
     logger_->report(
-        "{: >9s} | {: >7d} | {: >7d} | {: >8d} | {: >6d} | {: >5d} "
+        "{: >9s} | {: >7d} | {: >7d} | {: >8d} | {: >6d} | {: >5d} | {: >8d} "
         "| {: >+7.1f}% | {: >8s} | {: >10s} | {: >6d} | {}",
         itr_field,
         resizer_->unbuffer_move_->numMoves(),
@@ -839,6 +843,7 @@ void RepairSetup::printProgress(const int iteration,
             + resizer_->split_load_move_->numMoves(),
         resizer_->clone_move_->numMoves(),
         resizer_->swap_pins_move_->numMoves(),
+        resizer_->res_aware_move_->numMoves(),
         area_growth_percent,
         delayAsString(wns, sta_, 3),
         delayAsString(tns, sta_, 1),

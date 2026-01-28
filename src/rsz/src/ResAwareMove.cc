@@ -60,6 +60,8 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
   resizer_->global_router_->addDirtyNet(db_net);
   resizer_->global_router_->setNetIsResAware(db_net, true);
 
+  // est::IncrementalParasiticsGuard guard(estimate_parasitics_);
+
   grt::IncrementalGRoute incr_groute(resizer_->global_router_,
                                      resizer_->getDbBlock());
   incr_groute.updateRoutes();
@@ -92,7 +94,7 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
   // they might be affected. I'll leave it as is for now, as per instructions.
 
   addMove(drvr);
-  return true;
+  return false;
 }
 
 }  // namespace rsz
