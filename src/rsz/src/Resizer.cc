@@ -5472,6 +5472,9 @@ MoveType Resizer::parseMove(const std::string& s)
   if (lower == "vt_swap") {
     return rsz::MoveType::VTSWAP_SPEED;
   }
+  if (lower == "res_aware") {
+    return rsz::MoveType::RES_AWARE;
+  }
   throw std::invalid_argument("Invalid move type: " + s);
 }
 

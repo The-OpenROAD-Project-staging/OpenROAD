@@ -33,10 +33,10 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
     return false;
   }
 
-  if (hasMoves(drvr)) {
-    // logger_->report("has moves");
-    return false;
-  }
+  // if (hasMoves(drvr)) {
+  //   // logger_->report("has moves");
+  //   return false;
+  // }
 
   sta::Net* net = network_->net(drvr_pin);
   if (!net) {
@@ -59,12 +59,12 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
   resizer_->global_router_->setResistanceAware(true);
   resizer_->global_router_->addDirtyNet(db_net);
   resizer_->global_router_->setNetIsResAware(db_net, true);
+  estimate_parasitics_->parasiticsInvalid(db_net);
 
-  // est::IncrementalParasiticsGuard guard(estimate_parasitics_);
+  // grt::IncrementalGRoute incr_groute(resizer_->global_router_,
+  //                                    resizer_->getDbBlock());
 
-  grt::IncrementalGRoute incr_groute(resizer_->global_router_,
-                                     resizer_->getDbBlock());
-  incr_groute.updateRoutes();
+  // incr_groute.updateRoutes();
 
   // We don't really know if it improved things here without re-timing,
   // but BaseMove/RepairSetup logic usually checks for improvement after the
@@ -94,7 +94,7 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
   // they might be affected. I'll leave it as is for now, as per instructions.
 
   addMove(drvr);
-  return false;
+  return true;
 }
 
 }  // namespace rsz
