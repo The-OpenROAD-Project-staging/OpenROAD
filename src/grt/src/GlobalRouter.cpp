@@ -827,7 +827,7 @@ void GlobalRouter::setNetIsResAware(odb::dbNet* db_net, bool res_aware)
   Net* net = db_net_map_[db_net];
   if (net) {
     net->setIsResAware(res_aware);
-    logger_->report("Setting net {} as res-aware", net->getConstName());
+    // logger_->report("Setting net {} as res-aware", net->getConstName());
   } else {
     logger_->warn(
         GRT, 103, "Net {} is not in the db_net_map_", db_net->getConstName());
@@ -864,7 +864,9 @@ void GlobalRouter::updateDirtyNets(std::vector<Net*>& dirty_nets)
       routes_[db_net].clear();
       db_net->clearGuides();
       fastroute_->clearNetRoute(db_net);
-      // logger_->report("Net {} is dirty", net->getConstName());
+      // if (net->isResAware()) {
+      //   logger_->report("Net {} is dirty", net->getConstName());
+      // }
     } else if (net->isMergedNet()) {
       if (!isConnected(db_net)) {
         logger_->error(
@@ -2144,6 +2146,7 @@ void GlobalRouter::setAllowCongestion(bool allow_congestion)
 void GlobalRouter::setResistanceAware(bool resistance_aware)
 {
   resistance_aware_ = resistance_aware;
+  fastroute_->setResistanceAware(resistance_aware);
 }
 
 void GlobalRouter::setMacroExtension(int macro_extension)
