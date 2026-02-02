@@ -4576,6 +4576,7 @@ void Resizer::journalBegin()
   vt_swap_speed_move_->undoMoves();
   unbuffer_move_->undoMoves();
   split_load_move_->undoMoves();
+  res_aware_move_->undoMoves();
 }
 
 void Resizer::journalEnd()
@@ -4596,13 +4597,14 @@ void Resizer::journalEnd()
   move_count_ += swap_pins_move_->numPendingMoves();
   move_count_ += vt_swap_speed_move_->numPendingMoves();
   move_count_ += unbuffer_move_->numPendingMoves();
+  move_count_ += res_aware_move_->numPendingMoves();
 
   debugPrint(logger_,
              RSZ,
              "opt_moves",
              2,
              "COMMIT {} moves: up {} up_match {} down {} buffer {} clone {} "
-             "swap {} vt_swap {} unbuf {}",
+             "swap {} vt_swap {} unbuf {} resaware {}",
              move_count_,
              size_up_move_->numPendingMoves(),
              size_up_match_move_->numPendingMoves(),
@@ -4611,7 +4613,8 @@ void Resizer::journalEnd()
              clone_move_->numPendingMoves(),
              swap_pins_move_->numPendingMoves(),
              vt_swap_speed_move_->numPendingMoves(),
-             unbuffer_move_->numPendingMoves());
+             unbuffer_move_->numPendingMoves(),
+             res_aware_move_->numPendingMoves());
 
   accepted_move_count_ += move_count_;
 
@@ -4624,13 +4627,14 @@ void Resizer::journalEnd()
   vt_swap_speed_move_->commitMoves();
   unbuffer_move_->commitMoves();
   split_load_move_->commitMoves();
+  res_aware_move_->commitMoves();
 
   debugPrint(logger_,
              RSZ,
              "opt_moves",
              1,
              "TOTAL {} moves (acc {} rej {}): up {} up_match {} down {} buffer "
-             "{} clone {} swap {} vt_swap {} unbuf {}",
+             "{} clone {} swap {} vt_swap {} unbuf {} resaware {}",
              accepted_move_count_ + rejected_move_count_,
              accepted_move_count_,
              rejected_move_count_,
@@ -4641,7 +4645,8 @@ void Resizer::journalEnd()
              clone_move_->numCommittedMoves(),
              swap_pins_move_->numCommittedMoves(),
              vt_swap_speed_move_->numCommittedMoves(),
-             unbuffer_move_->numCommittedMoves());
+             unbuffer_move_->numCommittedMoves(),
+             res_aware_move_->numCommittedMoves());
 }
 
 void Resizer::journalMakeBuffer(sta::Instance* buffer)
@@ -4685,7 +4690,7 @@ void Resizer::journalRestore()
              "journal",
              1,
              "Undid {} up {} up_match {} down {} buffer {} clone {} swap {} "
-             "vt_swap {} unbuf",
+             "vt_swap {} unbuf {} resaware",
              size_up_move_->numPendingMoves(),
              size_up_match_move_->numPendingMoves(),
              size_down_move_->numPendingMoves(),
@@ -4693,7 +4698,8 @@ void Resizer::journalRestore()
              clone_move_->numPendingMoves(),
              swap_pins_move_->numPendingMoves(),
              vt_swap_speed_move_->numPendingMoves(),
-             unbuffer_move_->numPendingMoves());
+             unbuffer_move_->numPendingMoves(),
+             res_aware_move_->numPendingMoves());
 
   int move_count_ = 0;
   move_count_ += size_up_move_->numPendingMoves();
@@ -4711,7 +4717,7 @@ void Resizer::journalRestore()
              "opt_moves",
              2,
              "UNDO {} moves: up {} up_match {} down {} buffer {} clone {} swap "
-             "{} vt_swap {} unbuf {}",
+             "{} vt_swap {} unbuf {} resaware {}",
              move_count_,
              size_up_move_->numPendingMoves(),
              size_up_match_move_->numPendingMoves(),
@@ -4720,7 +4726,8 @@ void Resizer::journalRestore()
              clone_move_->numPendingMoves(),
              swap_pins_move_->numPendingMoves(),
              vt_swap_speed_move_->numPendingMoves(),
-             unbuffer_move_->numPendingMoves());
+             unbuffer_move_->numPendingMoves(),
+             res_aware_move_->numPendingMoves());
 
   rejected_move_count_ += move_count_;
 
@@ -4740,7 +4747,7 @@ void Resizer::journalRestore()
              "opt_moves",
              1,
              "TOTAL {} moves (acc {} rej {}): up {} up_match {} down {} buffer "
-             "{} clone {} swap {} vt_swap {} unbuf {}",
+             "{} clone {} swap {} vt_swap {} unbuf {} resaware {}",
              accepted_move_count_ + rejected_move_count_,
              accepted_move_count_,
              rejected_move_count_,
@@ -4751,7 +4758,8 @@ void Resizer::journalRestore()
              clone_move_->numCommittedMoves(),
              swap_pins_move_->numCommittedMoves(),
              vt_swap_speed_move_->numCommittedMoves(),
-             unbuffer_move_->numCommittedMoves());
+             unbuffer_move_->numCommittedMoves(),
+             res_aware_move_->numCommittedMoves());
 
   debugPrint(logger_, RSZ, "journal", 1, "journal restore ends <<<");
 }

@@ -33,10 +33,10 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
     return false;
   }
 
-  // if (hasMoves(drvr)) {
-  //   // logger_->report("has moves");
-  //   return false;
-  // }
+  if (hasMoves(drvr)) {
+    // logger_->report("has moves");
+    return false;
+  }
 
   sta::Net* net = network_->net(drvr_pin);
   if (!net) {
