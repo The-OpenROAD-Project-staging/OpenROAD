@@ -4704,6 +4704,7 @@ void Resizer::journalRestore()
   move_count_ += swap_pins_move_->numPendingMoves();
   move_count_ += vt_swap_speed_move_->numPendingMoves();
   move_count_ += unbuffer_move_->numPendingMoves();
+  move_count_ += res_aware_move_->numPendingMoves();
 
   debugPrint(logger_,
              RSZ,
@@ -4731,6 +4732,7 @@ void Resizer::journalRestore()
   swap_pins_move_->undoMoves();
   vt_swap_speed_move_->undoMoves();
   unbuffer_move_->undoMoves();
+  res_aware_move_->undoMoves();
   split_load_move_->undoMoves();
 
   debugPrint(logger_,

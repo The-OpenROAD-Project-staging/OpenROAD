@@ -51,10 +51,10 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
   }
 
   // Check if we should even try to reroute
-  if (resizer_->global_router_->isNetResAware(db_net)) {
-    // logger_->report("net {} is already res-aware", db_net->getConstName());
-    return false;
-  }
+  // if (resizer_->global_router_->isNetResAware(db_net)) {
+  //   // logger_->report("net {} is already res-aware",
+  //   db_net->getConstName()); return false;
+  // }
 
   resizer_->global_router_->setResistanceAware(true);
   resizer_->global_router_->addDirtyNet(db_net);
