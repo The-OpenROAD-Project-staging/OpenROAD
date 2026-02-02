@@ -178,6 +178,9 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
     if (!skip_buffer_removal) {
       move_sequence_.push_back(resizer_->unbuffer_move_.get());
     }
+    // if (resizer_->global_router_ && resizer_->global_router_->haveRoutes()) {
+    //   move_sequence_.push_back(resizer_->res_aware_move_.get());
+    // }
     if (!skip_vt_swap && resizer_->lib_data_->sorted_vt_categories.size() > 1) {
       move_sequence_.push_back(resizer_->vt_swap_speed_move_.get());
     }
