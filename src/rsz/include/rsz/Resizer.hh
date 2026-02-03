@@ -254,6 +254,9 @@ class Resizer : public sta::dbStaState, public sta::dbNetworkObserver
                                       const odb::dbNameUniquifyType& uniquify
                                       = odb::dbNameUniquifyType::ALWAYS);
 
+  void setResistanceAware(bool aware) { resistance_aware_ = aware; }
+  bool resistanceAware() const { return resistance_aware_; }
+
   ///
   /// Wrapper for odb::dbNet::insertBufferBeforeLoads().
   /// - This accepts STA objects instead of db objects.
@@ -900,6 +903,8 @@ class Resizer : public sta::dbStaState, public sta::dbNetworkObserver
   bool sizing_keep_site_ = false;
   bool sizing_keep_vt_ = false;
   bool disable_buffer_pruning_ = false;
+
+  bool resistance_aware_ = false;
 
   // Sizing
   const double default_sizing_cap_ratio_ = 4.0;

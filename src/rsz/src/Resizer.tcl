@@ -256,6 +256,7 @@ sta::define_cmd_args "repair_timing" {[-setup] [-hold]\
                                         [-max_utilization util] \
                                         [-match_cell_footprint] \
                                         [-max_repairs_per_pass max_repairs_per_pass]\
+                                        [-resistance_aware]\
                                         [-verbose]}
 
 proc repair_timing { args } {
@@ -265,7 +266,8 @@ proc repair_timing { args } {
             -recover_power -repair_tns -max_passes -max_iterations -max_repairs_per_pass} \
     flags {-setup -hold -allow_setup_violations -skip_pin_swap -skip_gate_cloning \
              -skip_size_down -skip_buffering -skip_buffer_removal -skip_last_gasp \
-             -skip_vt_swap -skip_crit_vt_swap -match_cell_footprint -verbose}
+             -skip_vt_swap -skip_crit_vt_swap -match_cell_footprint -verbose \
+             -resistance_aware}
 
   set setup [info exists flags(-setup)]
   set hold [info exists flags(-hold)]
@@ -305,6 +307,8 @@ proc repair_timing { args } {
   set skip_vt_swap [info exists flags(-skip_vt_swap)]
   set skip_crit_vt_swap [info exists flags(-skip_crit_vt_swap)]
   rsz::set_max_utilization [rsz::parse_max_util keys]
+  set resistance_aware [info exists flags(-resistance_aware)]
+  rsz::set_resistance_aware $resistance_aware
 
   set max_buffer_percent 20
   if { [info exists keys(-max_buffer_percent)] } {

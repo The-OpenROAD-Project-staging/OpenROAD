@@ -1590,7 +1590,8 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
         structural_change = true;
       }
       reroute_iter++;
-    } while (structural_change && reroute_iter < kMaxRerouteIter);
+    } while (resistance_aware_ && structural_change
+             && reroute_iter < kMaxRerouteIter);
   }
 }
 
