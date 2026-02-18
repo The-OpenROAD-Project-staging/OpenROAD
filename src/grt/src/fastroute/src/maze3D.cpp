@@ -714,8 +714,7 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
     }
   }
 
-  const int kMaxRerouteIter = 5;
-
+  const int max_reroute_iter = is_incremental_grt_ ? 5 : 3;
   const int kLowDetourPenalty = 5;
   const int kHighDetourPenalty = 15;
 
@@ -1590,8 +1589,7 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
         structural_change = true;
       }
       reroute_iter++;
-    } while (resistance_aware_ && structural_change
-             && reroute_iter < kMaxRerouteIter);
+    } while (structural_change && reroute_iter <= max_reroute_iter);
   }
 }
 
