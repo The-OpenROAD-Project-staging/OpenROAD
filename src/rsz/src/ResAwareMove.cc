@@ -27,13 +27,13 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
     return false;
   }
 
-  sta::Instance* drvr = network_->instance(drvr_pin);
-  if (resizer_->dontTouch(drvr)) {
+  sta::Instance* drvr_inst = network_->instance(drvr_pin);
+  if (resizer_->dontTouch(drvr_inst)) {
     logger_->report("dont touch");
     return false;
   }
 
-  if (hasMoves(drvr)) {
+  if (hasMoves(drvr_inst)) {
     // logger_->report("has moves");
     return false;
   }
@@ -93,7 +93,7 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
   // If subsequent operations use the global router without setting it back,
   // they might be affected. I'll leave it as is for now, as per instructions.
 
-  addMove(drvr);
+  addMove(drvr_inst);
   return true;
 }
 
