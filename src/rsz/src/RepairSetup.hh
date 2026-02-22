@@ -108,6 +108,9 @@ class RepairSetup : public sta::dbStaState
                   float setup_slack_margin,
                   bool is_res_aware,
                   const std::vector<BaseMove*>& moves);
+  bool repairPathResAware(sta::PathExpanded* expanded,
+                          sta::Slack path_slack,
+                          float setup_slack_margin);
   int fanout(sta::Vertex* vertex);
   bool hasTopLevelOutputPort(sta::Net* net);
 

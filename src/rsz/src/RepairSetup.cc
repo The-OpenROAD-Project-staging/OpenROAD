@@ -161,20 +161,20 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
         case MoveType::SIZEUP_MATCH:
           move_sequence_.push_back(resizer_->size_up_match_move_.get());
           break;
-        case MoveType::RES_AWARE:
-          if (resizer_->global_router_
-              && resizer_->global_router_->haveRoutes()) {
-            move_sequence_.push_back(resizer_->res_aware_move_.get());
-          }
+        case MoveType::RES_AWARE:  // Ignore
+          // if (resizer_->global_router_
+          //     && resizer_->global_router_->haveRoutes()) {
+          //   move_sequence_.push_back(resizer_->res_aware_move_.get());
+          // }
           break;
       }
     }
 
   } else {
     move_sequence_.clear();
-    if (resizer_->global_router_ && resizer_->global_router_->haveRoutes()) {
-      move_sequence_.push_back(resizer_->res_aware_move_.get());
-    }
+    // if (resizer_->global_router_ && resizer_->global_router_->haveRoutes()) {
+    //   move_sequence_.push_back(resizer_->res_aware_move_.get());
+    // }
     if (!skip_buffer_removal) {
       move_sequence_.push_back(resizer_->unbuffer_move_.get());
     }
@@ -684,13 +684,211 @@ bool RepairSetup::repairPath(sta::Path* path,
     //     changed++;
     //   }
     // }
-
-    if (repairPath(
-            &expanded, path_slack, setup_slack_margin, false, move_sequence_)) {
+    if (resizer_->resistanceAware() && resizer_->global_router_
+        && resizer_->global_router_->haveRoutes()) {
+      if (repairPathResAware(&expanded, path_slack, setup_slack_margin)) {
+        changed++;
+      }
+    } else if (repairPath(&expanded,
+                          path_slack,
+                          setup_slack_margin,
+                          false,
+                          move_sequence_)) {
       changed++;
     }
   }
   return changed > 0;
+}
+
+bool RepairSetup::repairPathResAware(PathExpanded* expanded,
+                                     const sta::Slack path_slack,
+                                     const float setup_slack_margin)
+{
+  const int path_length = expanded->size();
+  vector<pair<int, sta::Delay>> wire_delays;
+  vector<pair<int, sta::Delay>> gate_delays;
+  const int start_index = expanded->startIndex();
+  const sta::DcalcAnalysisPt* dcalc_ap
+      = expanded->path(expanded->startIndex())->dcalcAnalysisPt(sta_);
+  const int lib_ap = dcalc_ap->libertyIndex();
+
+  // Build separate wire and gate delay lists from the expanded path.
+  for (int i = start_index; i < path_length; i++) {
+    const sta::Path* path = expanded->path(i);
+    sta::Vertex* path_vertex = path->vertex(sta_);
+    const sta::Pin* path_pin = path->pin(sta_);
+    if (i > 0 && path_vertex->isDriver(network_)
+        && !network_->isTopLevelPort(path_pin)) {
+      const sta::TimingArc* prev_arc = path->prevArc(sta_);
+      const sta::TimingArc* corner_arc = prev_arc->cornerArc(lib_ap);
+      Edge* prev_edge = path->prevEdge(sta_);
+
+      // Wire delay: look ahead to the next node in the path (the sink pin)
+      // to get the wire edge delay.
+      sta::Delay wire_delay = 0.0;
+      if (i + 1 < path_length) {
+        const sta::Path* next_path_node = expanded->path(i + 1);
+        Edge* net_edge = next_path_node->prevEdge(sta_);
+        const sta::TimingArc* net_arc = next_path_node->prevArc(sta_);
+        if (net_edge && net_edge->isWire()) {
+          wire_delay = graph_->arcDelay(net_edge, net_arc, dcalc_ap->index());
+        }
+      }
+
+      // Gate delay: load-dependent part (total arc delay minus intrinsic)
+      sta::Delay gate_delay
+          = graph_->arcDelay(prev_edge, prev_arc, dcalc_ap->index())
+            - corner_arc->intrinsicDelay();
+
+      if (wire_delay > 0.0) {
+        wire_delays.emplace_back(i, wire_delay);
+      }
+      if (gate_delay > 0.0) {
+        gate_delays.emplace_back(i, gate_delay);
+      }
+
+      debugPrint(logger_,
+                 RSZ,
+                 "repair_setup",
+                 3,
+                 "{} wire_delay = {} gate_delay = {} intrinsic_delay = {}",
+                 path_vertex->name(network_),
+                 delayAsString(wire_delay, sta_, 3),
+                 delayAsString(gate_delay, sta_, 3),
+                 delayAsString(corner_arc->intrinsicDelay(), sta_, 3));
+    }
+  }
+
+  // Sort both lists by descending delay (largest bottleneck first).
+  auto delay_cmp = [](const pair<int, sta::Delay>& a,
+                      const pair<int, sta::Delay>& b) {
+    return a.second > b.second || (a.second == b.second && a.first > b.first);
+  };
+  std::ranges::sort(wire_delays, delay_cmp);
+  std::ranges::sort(gate_delays, delay_cmp);
+
+  debugPrint(logger_,
+             RSZ,
+             "repair_setup",
+             3,
+             "ResAware pass: wire_delays: {} gate_delays: {}",
+             wire_delays.size(),
+             gate_delays.size());
+
+  debugPrint(logger_,
+             RSZ,
+             "repair_setup",
+             3,
+             "Path slack: {}, wire_delays: {}, gate_delays: {}",
+             delayAsString(path_slack, sta_, 3),
+             wire_delays.size(),
+             gate_delays.size());
+
+  // Wire-focused moves: ResAwareMove, BufferMove
+  const std::vector<BaseMove*> wire_moves = {resizer_->res_aware_move_.get(),
+                                             resizer_->buffer_move_.get(),
+                                             resizer_->clone_move_.get(),
+                                             resizer_->split_load_move_.get()};
+
+  // Gate-focused moves: SizeUpMove, VTSwapSpeedMove
+  const std::vector<BaseMove*> gate_moves
+      = {resizer_->unbuffer_move_.get(),
+         resizer_->vt_swap_speed_move_.get(),
+         resizer_->size_up_move_.get(),
+         resizer_->swap_pins_move_.get()};
+
+  // Interleave both lists by delay magnitude: always attack the largest
+  // bottleneck first, whether it is a wire or a gate.
+  // After any successful move we return immediately because topology-changing
+  // moves invalidate the PathExpanded; the caller's loop will re-invoke
+  // with a fresh path.
+  size_t wi = 0;
+  size_t gi = 0;
+  while (true) {
+    // Pick the list with the larger next delay.
+    enum class Pick
+    {
+      WIRE,
+      GATE,
+      NONE
+    };
+    Pick pick = Pick::NONE;
+    const bool wire_avail = wi < wire_delays.size();
+    const bool gate_avail = gi < gate_delays.size();
+
+    if (!wire_avail && !gate_avail) {
+      break;
+    }
+
+    if (wire_avail && gate_avail) {
+      pick = wire_delays[wi].second >= gate_delays[gi].second ? Pick::WIRE
+                                                              : Pick::GATE;
+    } else if (wire_avail) {
+      pick = Pick::WIRE;
+    } else {
+      pick = Pick::GATE;
+    }
+
+    const int drvr_index
+        = (pick == Pick::WIRE) ? wire_delays[wi].first : gate_delays[gi].first;
+    const std::vector<BaseMove*>& moves
+        = (pick == Pick::WIRE) ? wire_moves : gate_moves;
+
+    // Advance the chosen list index.
+    if (pick == Pick::WIRE) {
+      wi++;
+    } else {
+      gi++;
+    }
+
+    const sta::Path* drvr_path = expanded->path(drvr_index);
+    sta::Vertex* drvr_vertex = drvr_path->vertex(sta_);
+    const sta::Pin* drvr_pin = drvr_vertex->pin();
+    sta::LibertyPort* drvr_port = network_->libertyPort(drvr_pin);
+    sta::LibertyCell* drvr_cell
+        = drvr_port ? drvr_port->libertyCell() : nullptr;
+    const int fo = this->fanout(drvr_vertex);
+    debugPrint(logger_,
+               RSZ,
+               "repair_setup",
+               3,
+               "{} {} fanout = {} drvr_index = {} target = {}",
+               network_->pathName(drvr_pin),
+               drvr_cell ? drvr_cell->name() : "none",
+               fo,
+               drvr_index,
+               (pick == Pick::WIRE) ? "wire" : "gate");
+
+    for (BaseMove* move : moves) {
+      debugPrint(logger_,
+                 RSZ,
+                 "repair_setup",
+                 1,
+                 "Considering {} for {}",
+                 move->name(),
+                 network_->pathName(drvr_pin));
+
+      if (move->doMove(drvr_path,
+                       drvr_index,
+                       path_slack,
+                       expanded,
+                       setup_slack_margin)) {
+        // Return immediately after a successful move. Topology-changing
+        // moves invalidate the PathExpanded, making subsequent expanded->path()
+        // accesses unsafe. The caller's outer loop will re-invoke with a fresh
+        // path.
+        return true;
+      }
+      debugPrint(logger_,
+                 RSZ,
+                 "repair_setup",
+                 2,
+                 "Move {} failed for {}",
+                 move->name(),
+                 network_->pathName(drvr_pin));
+    }
+  }
+  return false;
 }
 
 bool RepairSetup::repairPath(PathExpanded* expanded,
