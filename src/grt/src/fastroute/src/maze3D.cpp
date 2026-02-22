@@ -714,7 +714,8 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
     }
   }
 
-  const int max_reroute_iter = is_incremental_grt_ ? 5 : 3;
+  const int max_reroute_iter
+      = (is_incremental_grt_ && enable_resistance_aware_) ? 5 : 0;
   const int kLowDetourPenalty = 5;
   const int kHighDetourPenalty = 15;
 
@@ -727,7 +728,9 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
   }
 
   // const int endIND = ceil(tree_order_pv_.size() * 0.9);
-  const int endIND = tree_order_pv_.size();
+  // const int endIND = tree_order_pv_.size();
+  const int endIND = is_incremental_grt_ ? tree_order_pv_.size()
+                                         : tree_order_pv_.size() * 0.9;
 
   for (int orderIndex = 0; orderIndex < endIND; orderIndex++) {
     const int netID = tree_order_pv_[orderIndex].treeIndex;
