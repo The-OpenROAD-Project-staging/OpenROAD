@@ -103,11 +103,14 @@ class RepairSetup : public sta::dbStaState
   bool repairPath(sta::Path* path,
                   sta::Slack path_slack,
                   float setup_slack_margin);
-  bool repairPath(sta::PathExpanded* expanded,
-                  sta::Slack path_slack,
-                  float setup_slack_margin,
-                  bool is_res_aware,
-                  const std::vector<BaseMove*>& moves);
+  bool repairPath2(sta::Path* path,
+                   sta::Slack path_slack,
+                   float setup_slack_margin);
+  bool repairPath2(sta::PathExpanded* expanded,
+                   sta::Slack path_slack,
+                   float setup_slack_margin,
+                   bool is_res_aware,
+                   const std::vector<BaseMove*>& moves);
   bool repairPathResAware(sta::PathExpanded* expanded,
                           sta::Slack path_slack,
                           float setup_slack_margin);

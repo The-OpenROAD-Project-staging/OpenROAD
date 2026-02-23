@@ -674,26 +674,40 @@ bool RepairSetup::repairPath(sta::Path* path,
   int changed = 0;
 
   if (expanded.size() > 1) {
-    // if (resizer_->resistanceAware()) {
-    //   std::vector<BaseMove*> res_aware_move =
-    //   {resizer_->res_aware_move_.get()}; if (repairPath(&expanded,
-    //                  path_slack,
-    //                  setup_slack_margin,
-    //                  true,
-    //                  res_aware_move)) {
-    //     changed++;
-    //   }
-    // }
     if (resizer_->resistanceAware() && resizer_->global_router_
         && resizer_->global_router_->haveRoutes()) {
       if (repairPathResAware(&expanded, path_slack, setup_slack_margin)) {
         changed++;
       }
-    } else if (repairPath(&expanded,
-                          path_slack,
-                          setup_slack_margin,
-                          false,
-                          move_sequence_)) {
+    } else if (repairPath2(&expanded,
+                           path_slack,
+                           setup_slack_margin,
+                           false,
+                           move_sequence_)) {
+      changed++;
+    }
+  }
+  return changed > 0;
+}
+
+bool RepairSetup::repairPath2(sta::Path* path,
+                              sta::Slack path_slack,
+                              const float setup_slack_margin)
+{
+  PathExpanded expanded(path, sta_);
+  int changed = 0;
+
+  if (expanded.size() > 1) {
+    if (resizer_->resistanceAware() && resizer_->global_router_
+        && resizer_->global_router_->haveRoutes()) {
+      if (repairPathResAware(&expanded, path_slack, setup_slack_margin)) {
+        changed++;
+      }
+    } else if (repairPath2(&expanded,
+                           path_slack,
+                           setup_slack_margin,
+                           false,
+                           move_sequence_)) {
       changed++;
     }
   }
@@ -821,8 +835,9 @@ bool RepairSetup::repairPathResAware(PathExpanded* expanded,
     }
 
     if (wire_avail && gate_avail) {
-      pick = wire_delays[wi].second >= gate_delays[gi].second ? Pick::WIRE
-                                                              : Pick::GATE;
+      pick = wire_delays[wi].second >= 1.5 * gate_delays[gi].second
+                 ? Pick::WIRE
+                 : Pick::GATE;
     } else if (wire_avail) {
       pick = Pick::WIRE;
     } else {
@@ -891,11 +906,11 @@ bool RepairSetup::repairPathResAware(PathExpanded* expanded,
   return false;
 }
 
-bool RepairSetup::repairPath(PathExpanded* expanded,
-                             const sta::Slack path_slack,
-                             const float setup_slack_margin,
-                             bool is_res_aware,
-                             const std::vector<BaseMove*>& moves)
+bool RepairSetup::repairPath2(PathExpanded* expanded,
+                              const sta::Slack path_slack,
+                              const float setup_slack_margin,
+                              bool is_res_aware,
+                              const std::vector<BaseMove*>& moves)
 {
   int changed = 0;
   const int path_length = expanded->size();
