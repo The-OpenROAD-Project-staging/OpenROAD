@@ -407,6 +407,7 @@ void Graphics::drawObjects(gui::Painter& painter)
   // Draw blockages and notches only during SA for SoftMacros
   if (!soft_macros_.empty()) {
     drawAllBlockages(painter);
+    drawNotches(painter);
   }
 
   painter.setPen(gui::Painter::kWhite, true);
@@ -545,10 +546,6 @@ void Graphics::drawObjects(gui::Painter& painter)
 
     drawGuides(painter);
     drawFences(painter);
-  }
-
-  if (!soft_macros_.empty()) {
-    drawNotches(painter);
   }
 }
 

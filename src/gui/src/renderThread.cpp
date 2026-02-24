@@ -1548,11 +1548,11 @@ void RenderThread::drawModuleView(QPainter* painter,
       continue;
     }
 
-    const auto& setting = viewer_->modules_.at(module);
-
-    if (!setting.visible) {
+    auto setting_it = viewer_->modules_.find(module);
+    if (setting_it == viewer_->modules_.end() || !setting_it->second.visible) {
       continue;
     }
+    const auto& setting = setting_it->second;
 
     odb::Rect inst_outline = inst->getBBox()->getBox();
 

@@ -168,6 +168,9 @@ MainWindow::MainWindow(bool load_settings, QWidget* parent)
           &MainWindow::chipLoaded,
           chiplet_viewer_,
           &Chiplet3DWidget::setChip);
+  connect(this, &MainWindow::selectionChanged, [this]() {
+    chiplet_viewer_->setSelection(selected_);
+  });
   connect(this, &MainWindow::redraw, viewers_, &LayoutTabs::fullRepaint);
   connect(
       this, &MainWindow::blockLoaded, controls_, &DisplayControls::blockLoaded);
@@ -256,8 +259,16 @@ MainWindow::MainWindow(bool load_settings, QWidget* parent)
           &MainWindow::updateSelectedStatus);
   connect(inspector_, &Inspector::selection, viewers_, &LayoutTabs::selection);
   connect(inspector_, &Inspector::focus, viewers_, &LayoutTabs::selectionFocus);
+  connect(inspector_,
+          &Inspector::focus,
+          chiplet_viewer_,
+          &Chiplet3DWidget::selectionFocus);
   connect(
       drc_viewer_, &DRCWidget::focus, viewers_, &LayoutTabs::selectionFocus);
+  connect(drc_viewer_,
+          &DRCWidget::focus,
+          chiplet_viewer_,
+          &Chiplet3DWidget::selectionFocus);
   connect(
       this, &MainWindow::highlightChanged, inspector_, &Inspector::loadActions);
   connect(viewers_,

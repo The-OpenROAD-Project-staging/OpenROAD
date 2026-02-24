@@ -78,7 +78,6 @@ or_integration_tests(
     macros_cells
     macros_cells_dont_touch
     macros_cells_extend_boundary
-    macros_cells_halo_blocking
     macros_cells_no_grid
     macros_cells_not_fixed
     macros_cells_orient

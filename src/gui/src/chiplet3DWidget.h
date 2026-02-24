@@ -11,9 +11,12 @@
 #include <cstdint>
 #include <vector>
 
+#include "gui/gui.h"
+
 namespace odb {
 class dbChip;
-}
+class dbObject;
+}  // namespace odb
 namespace utl {
 class Logger;
 }
@@ -30,6 +33,10 @@ class Chiplet3DWidget : public QWidget
   void setChip(odb::dbChip* chip);
   void setLogger(utl::Logger* logger);
 
+ public slots:
+  void setSelection(const SelectionSet& selection);
+  void selectionFocus(const Selected& focus);
+
  protected:
   void paintEvent(QPaintEvent* event) override;
   void mousePressEvent(QMouseEvent* event) override;
@@ -44,6 +51,13 @@ class Chiplet3DWidget : public QWidget
   void drawLine3D(QPainter& painter,
                   const QVector3D& p1_world,
                   const QVector3D& p2_world,
+                  const QColor& color,
+                  const QMatrix4x4& modelView,
+                  const QMatrix4x4& projection,
+                  const QRect& viewport);
+
+  void drawFace3D(QPainter& painter,
+                  const std::vector<QVector3D>& face_verts_world,
                   const QColor& color,
                   const QMatrix4x4& modelView,
                   const QMatrix4x4& projection,
@@ -70,7 +84,12 @@ class Chiplet3DWidget : public QWidget
   };
 
   std::vector<VertexData> vertices_;
-  std::vector<uint32_t> indices_lines_;
+  std::vector<uint32_t> indices_faces_;
+
+  SelectionSet selection_;
+  Selected focus_;
+  std::vector<const odb::dbObject*> chip_objects_;
+  std::vector<int> face_to_chip_index_;
 };
 
 }  // namespace gui
