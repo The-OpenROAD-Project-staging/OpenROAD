@@ -7,11 +7,15 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <cstdlib>
+#include <random>
 #include <utility>
 #include <vector>
 
+#include "aig/aig/aig.h"
 #include "aig/gia/gia.h"
 #include "aig/gia/giaAig.h"
 #include "base/abc/abc.h"
@@ -22,7 +26,11 @@
 #include "db_sta/dbNetwork.hh"
 #include "db_sta/dbSta.hh"
 #include "map/if/if.h"
+#include "map/mio/mio.h"
+#include "map/scl/sclLib.h"
 #include "map/scl/sclSize.h"
+#include "misc/extra/extra.h"
+#include "misc/nm/nm.h"
 #include "misc/vec/vecPtr.h"
 #include "odb/db.h"
 #include "proof/dch/dch.h"
@@ -104,7 +112,9 @@ void AnnealingStrategy::OptimizeDesign(sta::dbSta* sta,
   sta->ensureGraph();
   sta->ensureLevelized();
   sta->searchPreamble();
-  sta->ensureClkNetwork();
+  for (auto mode : sta->modes()) {
+    sta->ensureClkNetwork(mode);
+  }
   auto block = sta->db()->getChip()->getBlock();
 
   auto candidate_vertices = GetEndpoints(sta, resizer, slack_threshold_);
@@ -346,7 +356,10 @@ void AnnealingStrategy::OptimizeDesign(sta::dbSta* sta,
   odb::dbDatabase::undoEco(block);
 
   if (!temperature_) {
-    sta::Delay required = sta->vertexRequired(worst_vertex, sta::MinMax::max());
+    sta::Delay required = sta->required(worst_vertex,
+                                        sta::RiseFallBoth::riseFall(),
+                                        sta->scenes(),
+                                        sta::MinMax::max());
     temperature_ = required;
   }
 

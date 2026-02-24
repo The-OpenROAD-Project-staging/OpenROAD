@@ -25,6 +25,9 @@
 #include "db_sta/dbSta.hh"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "map/mio/mio.h"
+#include "map/scl/sclLib.h"
+#include "misc/vec/vecPtr.h"
 #include "odb/db.h"
 #include "odb/dbSet.h"
 #include "odb/lefin.h"
@@ -110,7 +113,8 @@ class AbcTest : public tst::Fixture
                     /*add_to_pins=*/false,
                     /*period=*/period,
                     waveform,
-                    /*comment=*/nullptr);
+                    /*comment=*/nullptr,
+                    /*mode=*/sta_->cmdMode());
 
     sta_->ensureGraph();
     sta_->ensureLevelized();
@@ -352,7 +356,7 @@ TEST_F(AbcTest, ExtractsAndGateCorrectly)
 
   sta::dbNetwork* network = sta_->getDbNetwork();
   sta::Vertex* flop_input_vertex = nullptr;
-  for (sta::Vertex* vertex : *sta_->endpoints()) {
+  for (sta::Vertex* vertex : sta_->endpoints()) {
     if (std::string(vertex->name(network)) == "output_flop/D") {
       flop_input_vertex = vertex;
     }
@@ -377,7 +381,7 @@ TEST_F(AbcTest, ExtractsEmptyCutSetCorrectly)
 
   sta::dbNetwork* network = sta_->getDbNetwork();
   sta::Vertex* flop_input_vertex = nullptr;
-  for (sta::Vertex* vertex : *sta_->endpoints()) {
+  for (sta::Vertex* vertex : sta_->endpoints()) {
     if (std::string(vertex->name(network)) == "output_flop/D") {
       flop_input_vertex = vertex;
     }
@@ -401,7 +405,7 @@ TEST_F(AbcTest, ExtractSideOutputsCorrectly)
 
   sta::dbNetwork* network = sta_->getDbNetwork();
   sta::Vertex* flop_input_vertex = nullptr;
-  for (sta::Vertex* vertex : *sta_->endpoints()) {
+  for (sta::Vertex* vertex : sta_->endpoints()) {
     if (std::string(vertex->name(network)) == "output_flop/D") {
       flop_input_vertex = vertex;
     }
@@ -432,7 +436,7 @@ TEST_F(AbcTest, BuildAbcMappedNetworkFromLogicCut)
 
   sta::dbNetwork* network = sta_->getDbNetwork();
   sta::Vertex* flop_input_vertex = nullptr;
-  for (sta::Vertex* vertex : *sta_->endpoints()) {
+  for (sta::Vertex* vertex : sta_->endpoints()) {
     if (std::string(vertex->name(network)) == "output_flop/D") {
       flop_input_vertex = vertex;
     }
@@ -478,7 +482,7 @@ TEST_F(AbcTest, BuildComplexLogicCone)
 
   sta::dbNetwork* network = sta_->getDbNetwork();
   sta::Vertex* flop_input_vertex = nullptr;
-  for (sta::Vertex* vertex : *sta_->endpoints()) {
+  for (sta::Vertex* vertex : sta_->endpoints()) {
     if (std::string(vertex->name(network)) == "_32989_/D") {
       flop_input_vertex = vertex;
     }
@@ -502,7 +506,7 @@ TEST_F(AbcTest, InsertingMappedLogicCutDoesNotThrow)
 
   sta::dbNetwork* network = sta_->getDbNetwork();
   sta::Vertex* flop_input_vertex = nullptr;
-  for (sta::Vertex* vertex : *sta_->endpoints()) {
+  for (sta::Vertex* vertex : sta_->endpoints()) {
     if (std::string(vertex->name(network)) == "_33122_/D") {
       flop_input_vertex = vertex;
     }
@@ -532,7 +536,7 @@ TEST_F(AbcTest,
 
   sta::dbNetwork* network = sta_->getDbNetwork();
   sta::Vertex* flop_input_vertex = nullptr;
-  for (sta::Vertex* vertex : *sta_->endpoints()) {
+  for (sta::Vertex* vertex : sta_->endpoints()) {
     if (std::string(vertex->name(network)) == "output_flop/D") {
       flop_input_vertex = vertex;
     }

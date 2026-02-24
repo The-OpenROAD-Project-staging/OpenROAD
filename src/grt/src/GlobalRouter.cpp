@@ -4,6 +4,7 @@
 #include "grt/GlobalRouter.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -27,9 +28,11 @@
 #include "AbstractGrouteRenderer.h"
 #include "AbstractRoutingCongestionDataSource.h"
 #include "CUGR.h"
+#include "DataType.h"
 #include "FastRoute.h"
 #include "Grid.h"
 #include "Net.h"
+#include "Pin.h"
 #include "RepairAntennas.h"
 #include "RoutingTracks.h"
 #include "boost/icl/interval.hpp"
@@ -51,7 +54,7 @@
 #include "sta/Delay.hh"
 #include "sta/Liberty.hh"
 #include "sta/MinMax.hh"
-#include "sta/Set.hh"
+#include "sta/Parasitics.hh"
 #include "stt/SteinerTreeBuilder.h"
 #include "utl/CallBackHandler.h"
 #include "utl/Logger.h"
@@ -339,6 +342,7 @@ void GlobalRouter::endIncremental(bool save_guides)
 
 void GlobalRouter::globalRoute(bool save_guides)
 {
+  auto start = std::chrono::steady_clock::now();
   bool has_routable_nets = false;
 
   for (auto net : db_->getChip()->getBlock()->getNets()) {
@@ -385,6 +389,16 @@ void GlobalRouter::globalRoute(bool save_guides)
   }
 
   finishGlobalRouting(save_guides);
+  auto end = std::chrono::steady_clock::now();
+  if (verbose_) {
+    auto runtime
+        = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+    int hour = runtime.count() / 3600;
+    int min = (runtime.count() % 3600) / 60;
+    int sec = runtime.count() % 60;
+    logger_->info(
+        GRT, 303, "Global routing runtime = {:02}:{:02}:{:02}", hour, min, sec);
+  }
 }
 
 void GlobalRouter::finishGlobalRouting(bool save_guides)
@@ -1305,7 +1319,7 @@ float GlobalRouter::getNetSlack(Net* net)
 {
   sta::dbNetwork* network = sta_->getDbNetwork();
   sta::Net* sta_net = network->dbToSta(net->getDbNet());
-  sta::Slack slack = sta_->netSlack(sta_net, sta::MinMax::max());
+  sta::Slack slack = sta_->slack(sta_net, sta::MinMax::max());
   return slack;
 }
 

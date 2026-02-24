@@ -96,23 +96,6 @@ class dbStaState : public sta::StaState
   dbSta* sta_ = nullptr;
 };
 
-enum BufferUse
-{
-  DATA,
-  CLOCK
-};
-
-class BufferUseAnalyser
-{
- public:
-  BufferUseAnalyser();
-
-  BufferUse getBufferUse(sta::LibertyCell* buffer);
-
- private:
-  std::unique_ptr<sta::PatternMatch> clkbuf_pattern_;
-};
-
 class dbSta : public Sta, public odb::dbDatabaseObserver
 {
  public:
@@ -172,7 +155,7 @@ class dbSta : public Sta, public odb::dbDatabaseObserver
   dbNetwork* getDbNetwork() { return db_network_; }
   dbStaReport* getDbReport() { return db_report_; }
 
-  Slack netSlack(const odb::dbNet* net, const MinMax* min_max);
+  Slack slack(const odb::dbNet* net, const MinMax* min_max);
 
   // From ord::OpenRoad::Observer
   void postReadLef(odb::dbTech* tech, odb::dbLib* library) override;
@@ -215,8 +198,6 @@ class dbSta : public Sta, public odb::dbDatabaseObserver
                                  bool exclude_buffers,
                                  bool exclude_inverters) const;
 
-  BufferUse getBufferUse(sta::LibertyCell* buffer);
-
   utl::Logger* getLogger() { return logger_; }
 
   // Sanity checkers
@@ -233,8 +214,8 @@ class dbSta : public Sta, public odb::dbDatabaseObserver
   void dumpModInstGraphConnections(const char* mod_inst_name,
                                    const char* filename);
 
-  using Sta::netSlack;
   using Sta::replaceCell;
+  using Sta::slack;
 
  private:
   void makeReport() override;
@@ -252,8 +233,6 @@ class dbSta : public Sta, public odb::dbDatabaseObserver
   dbStaReport* db_report_ = nullptr;
   std::unique_ptr<dbStaCbk> db_cbk_;
   std::set<dbStaState*> sta_states_;
-
-  std::unique_ptr<BufferUseAnalyser> buffer_use_analyser_;
 };
 
 // Utilities for TestCell

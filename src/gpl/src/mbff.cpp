@@ -3,9 +3,6 @@
 
 #include "mbff.h"
 
-#include <lemon/list_graph.h>
-#include <lemon/network_simplex.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -22,6 +19,8 @@
 #include "AbstractGraphics.h"
 #include "db_sta/dbNetwork.hh"
 #include "db_sta/dbSta.hh"
+#include "lemon/list_graph.h"
+#include "lemon/network_simplex.h"
 #include "odb/db.h"
 #include "odb/dbTransform.h"
 #include "odb/dbTypes.h"
@@ -31,16 +30,17 @@
 #include "ortools/sat/cp_model.h"
 #include "rsz/Resizer.hh"
 #include "sta/ClkNetwork.hh"
+#include "sta/ConcreteLibrary.hh"
 #include "sta/ExceptionPath.hh"
 #include "sta/FuncExpr.hh"
 #include "sta/Fuzzy.hh"
 #include "sta/Graph.hh"
 #include "sta/GraphDelayCalc.hh"
 #include "sta/InputDrive.hh"
+#include "sta/LeakagePower.hh"
 #include "sta/Liberty.hh"
 #include "sta/MinMax.hh"
 #include "sta/Path.hh"
-#include "sta/PathAnalysisPt.hh"
 #include "sta/PathEnd.hh"
 #include "sta/PathExpanded.hh"
 #include "sta/PortDirection.hh"
@@ -199,9 +199,9 @@ bool MBFF::ClockOn(dbInst* inst)
 {
   const sta::Cell* cell = network_->dbToSta(inst->getMaster());
   const sta::LibertyCell* lib_cell = getLibertyCell(cell);
-  for (sta::Sequential* seq : lib_cell->sequentials()) {
-    const sta::FuncExpr* left = seq->clock()->left();
-    const sta::FuncExpr* right = seq->clock()->right();
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
+    const sta::FuncExpr* left = seq.clock()->left();
+    const sta::FuncExpr* right = seq.clock()->right();
     // !CLK
     if (left && !right) {
       return false;
@@ -226,11 +226,11 @@ bool MBFF::IsDPin(dbITerm* iterm)
     return false;
   }
 
-  for (const sta::Sequential* seq : lib_cell->sequentials()) {
-    if (seq->clear() && seq->clear()->hasPort(lib_port)) {
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
+    if (seq.clear() && seq.clear()->hasPort(lib_port)) {
       return false;
     }
-    if (seq->preset() && seq->preset()->hasPort(lib_port)) {
+    if (seq.preset() && seq.preset()->hasPort(lib_port)) {
       return false;
     }
   }
@@ -247,24 +247,18 @@ int MBFF::GetNumD(dbInst* inst)
   const sta::Cell* cell = network_->dbToSta(inst->getMaster());
   const sta::LibertyCell* lib_cell = getLibertyCell(cell);
 
-  for (sta::Sequential* seq : lib_cell->sequentials()) {
-    const sta::FuncExpr* data = seq->data();
-    sta::FuncExprPortIterator port_itr(data);
-    while (port_itr.hasNext()) {
-      const sta::LibertyPort* port = port_itr.next();
-      if (port != nullptr) {
-        dbMTerm* mterm = network_->staToDb(port);
-        if (mterm == nullptr) {
-          continue;
-        }
-        dbITerm* iterm = inst->getITerm(mterm);
-        if (iterm == nullptr) {
-          continue;
-        }
-        cnt_d += !(IsScanIn(iterm) || IsScanEnable(iterm));
-      } else {
-        break;
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
+    const sta::FuncExpr* data = seq.data();
+    for (auto port : data->ports()) {
+      dbMTerm* mterm = network_->staToDb(port);
+      if (mterm == nullptr) {
+        continue;
       }
+      dbITerm* iterm = inst->getITerm(mterm);
+      if (iterm == nullptr) {
+        continue;
+      }
+      cnt_d += !(IsScanIn(iterm) || IsScanEnable(iterm));
     }
   }
 
@@ -285,8 +279,8 @@ bool MBFF::IsInvertingQPin(dbITerm* iterm)
   const sta::LibertyCell* lib_cell = getLibertyCell(cell);
 
   std::set<std::string> invert;
-  for (const sta::Sequential* seq : lib_cell->sequentials()) {
-    const sta::LibertyPort* output_inv = seq->outputInv();
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
+    const sta::LibertyPort* output_inv = seq.outputInv();
     invert.insert(output_inv->name());
   }
 
@@ -325,8 +319,8 @@ bool MBFF::HasClear(dbInst* inst)
 {
   const sta::Cell* cell = network_->dbToSta(inst->getMaster());
   const sta::LibertyCell* lib_cell = getLibertyCell(cell);
-  for (sta::Sequential* seq : lib_cell->sequentials()) {
-    if (seq->clear()) {
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
+    if (seq.clear()) {
       return true;
     }
   }
@@ -352,8 +346,8 @@ bool MBFF::IsClearPin(dbITerm* iterm)
   }
 
   // Check the lib cell if the port is a clear.
-  for (const sta::Sequential* seq : lib_cell->sequentials()) {
-    if (seq->clear() && seq->clear()->hasPort(lib_port)) {
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
+    if (seq.clear() && seq.clear()->hasPort(lib_port)) {
       return true;
     }
   }
@@ -374,8 +368,8 @@ bool MBFF::IsClearPin(dbITerm* iterm)
     return false;
   }
 
-  for (const sta::Sequential* seq : test_cell->sequentials()) {
-    if (seq->clear() && seq->clear()->hasPort(test_lib_port)) {
+  for (const sta::Sequential& seq : test_cell->sequentials()) {
+    if (seq.clear() && seq.clear()->hasPort(test_lib_port)) {
       return true;
     }
   }
@@ -387,8 +381,8 @@ bool MBFF::HasPreset(dbInst* inst)
 {
   const sta::Cell* cell = network_->dbToSta(inst->getMaster());
   const sta::LibertyCell* lib_cell = getLibertyCell(cell);
-  for (const sta::Sequential* seq : lib_cell->sequentials()) {
-    if (seq->preset()) {
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
+    if (seq.preset()) {
       return true;
     }
   }
@@ -414,8 +408,8 @@ bool MBFF::IsPresetPin(dbITerm* iterm)
   }
 
   // Check the lib cell if the port is a preset.
-  for (const sta::Sequential* seq : lib_cell->sequentials()) {
-    if (seq->preset() && seq->preset()->hasPort(lib_port)) {
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
+    if (seq.preset() && seq.preset()->hasPort(lib_port)) {
       return true;
     }
   }
@@ -436,8 +430,8 @@ bool MBFF::IsPresetPin(dbITerm* iterm)
     return false;
   }
 
-  for (const sta::Sequential* seq : test_cell->sequentials()) {
-    if (seq->preset() && seq->preset()->hasPort(test_lib_port)) {
+  for (const sta::Sequential& seq : test_cell->sequentials()) {
+    if (seq.preset() && seq.preset()->hasPort(test_lib_port)) {
       return true;
     }
   }
@@ -620,13 +614,13 @@ MBFF::PortName MBFF::PortType(const sta::LibertyPort* lib_port, dbInst* inst)
 
   const sta::Cell* cell = network_->dbToSta(inst->getMaster());
   const sta::LibertyCell* lib_cell = getLibertyCell(cell);
-  for (const sta::Sequential* seq : lib_cell->sequentials()) {
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
     // function
-    if (sta::LibertyPort::equiv(lib_port, seq->output())) {
+    if (sta::LibertyPort::equiv(lib_port, seq.output())) {
       return func;
     }
     // inverting function
-    if (sta::LibertyPort::equiv(lib_port, seq->outputInv())) {
+    if (sta::LibertyPort::equiv(lib_port, seq.outputInv())) {
       return ifunc;
     }
   }
@@ -645,10 +639,10 @@ bool MBFF::IsSame(const sta::FuncExpr* expr1,
     return true;
   }
   if (expr1 && expr2 && expr1->op() == expr2->op()) {
-    if (expr1->op() == sta::FuncExpr::op_port) {
+    if (expr1->op() == sta::FuncExpr::Op::port) {
       return PortType(expr1->port(), inst1) == PortType(expr2->port(), inst2);
     }
-    if (expr1->op() == sta::FuncExpr::op_not) {
+    if (expr1->op() == sta::FuncExpr::Op::not_) {
       return IsSame(expr1->left(), inst1, expr2->left(), inst2);
     }
     return IsSame(expr1->left(), inst1, expr2->left(), inst2)
@@ -695,7 +689,7 @@ MBFF::Mask MBFF::GetArrayMask(dbInst* inst, const bool isTray)
   const sta::LibertyCell* lib_cell = getLibertyCell(cell);
   const auto& seqs = lib_cell->sequentials();
   if (!seqs.empty()) {
-    ret.func_idx = GetMatchingFunc(seqs.front()->data(), inst, isTray);
+    ret.func_idx = GetMatchingFunc(seqs.front().data(), inst, isTray);
   }
 
   ret.is_scan_cell = IsScanCell(inst);
@@ -714,11 +708,9 @@ MBFF::DataToOutputsMap MBFF::GetPinMapping(dbInst* tray)
   std::vector<const sta::LibertyPort*> qn_pins;
 
   // adds the input (D) pins
-  for (const sta::Sequential* seq : lib_cell->sequentials()) {
-    const sta::FuncExpr* data = seq->data();
-    sta::FuncExprPortIterator next_state_itr(data);
-    while (next_state_itr.hasNext()) {
-      const sta::LibertyPort* port = next_state_itr.next();
+  for (const sta::Sequential& seq : lib_cell->sequentials()) {
+    const sta::FuncExpr* data = seq.data();
+    for (auto port : data->ports()) {
       if (!port->hasMembers()) {
         dbMTerm* mterm = network_->staToDb(port);
         if (mterm == nullptr) {
@@ -2111,6 +2103,41 @@ float MBFF::RunClustering(const std::vector<Flop>& flops,
   return ans;
 }
 
+float MBFF::getLeakage(odb::dbMaster* master)
+{
+  sta::Cell* cell = network_->dbToSta(master);
+  sta::LibertyCell* lib_cell = network_->libertyCell(cell);
+  sta::LibertyCell* corner_cell
+      = lib_cell->sceneCell(corner_, sta::MinMax::max());
+  float cell_leakage;
+  bool cell_leakage_exists;
+  corner_cell->leakagePower(cell_leakage, cell_leakage_exists);
+  if (cell_leakage_exists) {
+    return cell_leakage;
+  }
+
+  // Look for unconditional power
+  cell_leakage = 0;
+  for (const sta::LeakagePower& leak : corner_cell->leakagePowers()) {
+    if (leak.when()) {
+      continue;
+    }
+    cell_leakage += leak.power();
+  }
+
+  // There should be a third method here of looking at conditional
+  // power if unconditional isn't present.  However opensta doesn't
+  // keep the related_pg_pin for leakage making it impossible to do
+  // correctly.  If it did you would sum average power for each
+  // pg_pin.
+
+  if (cell_leakage == 0) {
+    log_->warn(GPL, 327, "No leakage found for {}", master->getName());
+  }
+
+  return cell_leakage;
+}
+
 void MBFF::SetVars(const std::vector<Flop>& flops)
 {
   // get min height and width
@@ -2123,9 +2150,8 @@ void MBFF::SetVars(const std::vector<Flop>& flops)
         = std::min(single_bit_height_, master->getHeight() / multiplier_);
     single_bit_width_
         = std::min(single_bit_width_, master->getWidth() / multiplier_);
-    sta::PowerResult ff_power
-        = sta_->power(network_->dbToSta(insts_[flop.idx]), corner_);
-    single_bit_power_ = std::min(single_bit_power_, ff_power.leakage());
+    const float leakage = getLeakage(insts_[flop.idx]->getMaster());
+    single_bit_power_ = std::min(single_bit_power_, leakage);
   }
 }
 
@@ -2331,8 +2357,7 @@ void MBFF::ReadLibs()
 
       const float cur_area = (master->getHeight() / multiplier_)
                              * (master->getWidth() / multiplier_);
-      const sta::PowerResult tray_power
-          = sta_->power(network_->dbToSta(tmp_tray), corner_);
+      const float leakage = getLeakage(tmp_tray->getMaster());
 
       debugPrint(log_,
                  GPL,
@@ -2342,11 +2367,11 @@ void MBFF::ReadLibs()
                  master->getName(),
                  array_mask.to_string(),
                  cur_area,
-                 tray_power.leakage());
+                 leakage);
 
       if (tray_area_[array_mask][idx] > cur_area) {
         tray_area_[array_mask][idx] = cur_area;
-        tray_power_[array_mask][idx] = tray_power.leakage();
+        tray_power_[array_mask][idx] = leakage;
         best_master_[array_mask][idx] = master;
         pin_mappings_[array_mask][idx] = GetPinMapping(tmp_tray);
         tray_width_[array_mask][idx] = master->getWidth() / multiplier_;
@@ -2449,11 +2474,12 @@ void MBFF::ReadPaths()
   sta_->searchPreamble();
   sta_->ensureLevelized();
   sta::Search* search = sta_->search();
+  sta::StdStringSeq empty_group_names;
   sta::PathEndSeq path_ends = search->findPathEnds(e_from,
                                                    e_thrus,
                                                    e_to,
                                                    false,
-                                                   sta_->cmdCorner(),
+                                                   sta_->scenes(),
                                                    sta::MinMaxAll::max(),
                                                    20,
                                                    num_paths_,
@@ -2462,7 +2488,7 @@ void MBFF::ReadPaths()
                                                    -sta::INF,
                                                    sta::INF,
                                                    true,
-                                                   nullptr,
+                                                   empty_group_names,
                                                    true,
                                                    false,
                                                    false,
@@ -2517,7 +2543,7 @@ MBFF::MBFF(odb::dbDatabase* db,
       block_(db_->getChip()->getBlock()),
       sta_(sta),
       network_(sta_->getDbNetwork()),
-      corner_(sta_->cmdCorner()),
+      corner_(sta_->cmdScene()),
       graphics_(std::move(graphics)),
       log_(log),
       resizer_(resizer),

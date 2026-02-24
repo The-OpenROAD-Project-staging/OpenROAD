@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "odb/db.h"
-#include "sta/Corner.hh"
 #include "sta/NetworkClass.hh"
 
 namespace utl {
@@ -27,6 +26,7 @@ class dbSta;
 class FuncExpr;
 class LibertyCell;
 class LibertyPort;
+class Scene;
 }  // namespace sta
 
 namespace gpl {
@@ -228,12 +228,14 @@ class MBFF
   void displayFlopClusters(const char* stage,
                            std::vector<std::vector<Flop>>& clusters);
 
+  float getLeakage(odb::dbMaster* master);
+
   // OpenROAD vars
   odb::dbDatabase* db_;
   odb::dbBlock* block_;
   sta::dbSta* sta_;
   sta::dbNetwork* network_;
-  sta::Corner* corner_;
+  sta::Scene* corner_;
   std::unique_ptr<AbstractGraphics> graphics_;
   utl::Logger* log_;
   rsz::Resizer* resizer_;

@@ -20,6 +20,7 @@
 #include "FastRoute.h"
 #include "db_sta/dbNetwork.hh"
 #include "db_sta/dbSta.hh"
+#include "grt/GRoute.h"
 #include "odb/db.h"
 #include "odb/geom.h"
 #include "sta/MinMax.hh"
@@ -1638,7 +1639,7 @@ float FastRouteCore::getNetSlack(odb::dbNet* net)
 {
   sta::dbNetwork* network = sta_->getDbNetwork();
   sta::Net* sta_net = network->dbToSta(net);
-  float slack = sta_->netSlack(sta_net, sta::MinMax::max());
+  float slack = sta_->slack(sta_net, sta::MinMax::max());
   return slack;
 }
 
