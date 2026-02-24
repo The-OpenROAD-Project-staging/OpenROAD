@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 #include "dbCore.h"
 #include "dbVector.h"
@@ -48,7 +49,8 @@ class _dbInstHdr : public _dbObject
   dbId<_dbLib> lib_;
   dbId<_dbMaster> master_;
   dbVector<dbId<_dbMTerm>> mterms_;
-  int inst_cnt_;  // number of instances of this InstHdr
+  std::vector<_dbMTerm*> mterm_ptrs_;  // non-persistent
+  int inst_cnt_;                       // number of instances of this InstHdr
 };
 
 dbOStream& operator<<(dbOStream& stream, const _dbInstHdr& inst_hdr);
