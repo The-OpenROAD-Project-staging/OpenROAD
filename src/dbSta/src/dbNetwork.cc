@@ -199,22 +199,26 @@ ObjectId dbNetwork::getDbNwkObjectId(const dbObject* object) const
 {
   const dbObjectType typ = object->getObjectType();
   const ObjectId db_id = object->getId();
+
+  // Optimize for most common types to avoid switch overhead
+  if (typ == dbInstObj) {
+    return ((db_id << DBIDTAG_WIDTH) | DBINST_ID);
+  }
+  if (typ == dbNetObj) {
+    return ((db_id << DBIDTAG_WIDTH) | DBNET_ID);
+  }
+  if (typ == dbITermObj) {
+    return ((db_id << DBIDTAG_WIDTH) | DBITERM_ID);
+  }
+
+  // Bounds check only for debug/rare cases
   if (db_id > (std::numeric_limits<ObjectId>::max() >> DBIDTAG_WIDTH)) {
     logger_->error(ORD, 2019, "Database id exceeds capacity");
   }
 
   switch (typ) {
-    case dbITermObj: {
-      return ((db_id << DBIDTAG_WIDTH) | DBITERM_ID);
-    } break;
     case dbBTermObj: {
       return ((db_id << DBIDTAG_WIDTH) | DBBTERM_ID);
-    } break;
-    case dbInstObj: {
-      return ((db_id << DBIDTAG_WIDTH) | DBINST_ID);
-    } break;
-    case dbNetObj: {
-      return ((db_id << DBIDTAG_WIDTH) | DBNET_ID);
     } break;
     case dbModITermObj: {
       return ((db_id << DBIDTAG_WIDTH) | DBMODITERM_ID);
@@ -3471,13 +3475,17 @@ LibertyPort* dbNetwork::libertyPort(const Port* port) const
 
 LibertyPort* dbNetwork::libertyPort(const Pin* pin) const
 {
-  const Instance* cur_instance = instance(pin);
-  dbInst* db_inst = nullptr;
-  odb::dbModInst* mod_inst = nullptr;
-  staToDb(cur_instance, db_inst, mod_inst);
-  if (db_inst) {
-    LibertyPort* ret = ConcreteNetwork::libertyPort(pin);
-    return ret;
+  dbITerm* iterm;
+  dbBTerm* bterm;
+  dbModITerm* moditerm;
+  staToDb(pin, iterm, bterm, moditerm);
+
+  if (iterm) {
+    odb::dbMTerm* mterm = iterm->getMTerm();
+    Port* port = dbToSta(mterm);
+    if (port) {
+      return ConcreteNetwork::libertyPort(port);
+    }
   }
   return nullptr;
 }
