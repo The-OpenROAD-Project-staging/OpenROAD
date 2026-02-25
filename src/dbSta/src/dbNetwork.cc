@@ -200,6 +200,10 @@ ObjectId dbNetwork::getDbNwkObjectId(const dbObject* object) const
   const dbObjectType typ = object->getObjectType();
   const ObjectId db_id = object->getId();
 
+  // Bounds check only for debug/rare cases
+  if (db_id > (std::numeric_limits<ObjectId>::max() >> DBIDTAG_WIDTH)) {
+    logger_->error(ORD, 2019, "Database id exceeds capacity");
+  }
   // Optimize for most common types to avoid switch overhead
   if (typ == dbInstObj) {
     return ((db_id << DBIDTAG_WIDTH) | DBINST_ID);
@@ -209,11 +213,6 @@ ObjectId dbNetwork::getDbNwkObjectId(const dbObject* object) const
   }
   if (typ == dbITermObj) {
     return ((db_id << DBIDTAG_WIDTH) | DBITERM_ID);
-  }
-
-  // Bounds check only for debug/rare cases
-  if (db_id > (std::numeric_limits<ObjectId>::max() >> DBIDTAG_WIDTH)) {
-    logger_->error(ORD, 2019, "Database id exceeds capacity");
   }
 
   switch (typ) {
