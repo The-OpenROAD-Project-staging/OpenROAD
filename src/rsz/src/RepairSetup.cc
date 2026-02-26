@@ -807,14 +807,14 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
                                      sta::Slack path_slack,
                                      const float setup_slack_margin)
 {
-  PathExpanded expanded(path, sta_);
+  sta::PathExpanded expanded(path, sta_);
 
   if (expanded.size() > 1) {
     const int path_length = expanded.size();
     vector<pair<int, sta::Delay>> wire_delays;
     vector<pair<int, sta::Delay>> gate_delays;
     const int start_index = expanded.startIndex();
-    const Scene* corner = path->scene(sta_);
+    const sta::Scene* corner = path->scene(sta_);
     if (path->minMax(sta_) != resizer_->max_) {
       logger_->error(RSZ, 502, "repairSetup expects max delay path");
       return false;
@@ -830,16 +830,16 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
       const sta::Pin* path_pin = path->pin(sta_);
       if (i > 0 && path_vertex->isDriver(network_)
           && !network_->isTopLevelPort(path_pin)) {
-        const TimingArc* prev_arc = path->prevArc(sta_);
-        const TimingArc* corner_arc = prev_arc->sceneArc(lib_ap);
-        Edge* prev_edge = path->prevEdge(sta_);
+        const sta::TimingArc* prev_arc = path->prevArc(sta_);
+        const sta::TimingArc* corner_arc = prev_arc->sceneArc(lib_ap);
+        sta::Edge* prev_edge = path->prevEdge(sta_);
 
         // Wire delay: look ahead to the next node in the path (the sink pin)
         // to get the wire edge delay.
         sta::Delay wire_delay = 0.0;
         if (i + 1 < path_length) {
           const sta::Path* next_path_node = expanded.path(i + 1);
-          Edge* net_edge = next_path_node->prevEdge(sta_);
+          sta::Edge* net_edge = next_path_node->prevEdge(sta_);
           const sta::TimingArc* net_arc = next_path_node->prevArc(sta_);
           if (net_edge && net_edge->isWire()) {
             wire_delay = graph_->arcDelay(
