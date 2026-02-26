@@ -27,6 +27,7 @@ Net::Net(odb::dbNet* net, bool has_wires)
       is_merged_net_(false),
       is_dirty_net_(false),
       is_clk_(false),
+      is_connected_to_pad_or_macro_(false),
       is_res_aware_(false)
 {
 }
