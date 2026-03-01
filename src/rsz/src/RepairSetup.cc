@@ -361,13 +361,7 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
       }
       sta::Path* end_path = sta_->vertexWorstSlackPath(end, max_);
 
-      bool changed;
-      if (resizer_->resistanceAware() && resizer_->global_router_
-          && resizer_->global_router_->haveRoutes()) {
-        changed = repairPathResAware(end_path, end_slack, setup_slack_margin);
-      } else {
-        changed = repairPath(end_path, end_slack, setup_slack_margin);
-      }
+      const bool changed = repairPath(end_path, end_slack, setup_slack_margin);
 
       if (!changed) {
         if (pass != 1) {
@@ -803,16 +797,489 @@ bool RepairSetup::repairPath(sta::Path* path,
   return changed > 0;
 }
 
+// Shared endpoint optimization loop for repairSetupResAware.
+// Iterates over violating endpoints and calls repairPathResAware with the
+// given phase (WIRE or GATE) for each.
+bool RepairSetup::repairEndpoints(
+    const vector<pair<sta::Vertex*, sta::Slack>>& violating_ends,
+    const int max_end_count,
+    const int max_passes,
+    const int max_iterations,
+    const float setup_slack_margin,
+    const bool verbose,
+    const float initial_tns,
+    int& opto_iteration,
+    int& num_viols,
+    const ResAwarePhase phase)
+{
+  constexpr int digits = 3;
+  bool any_changed = false;
+  int end_index = 0;
+  float prev_tns = sta_->totalNegativeSlack(max_);
+  bool prev_termination = false;
+  bool two_cons_terminations = false;
+  float fix_rate_threshold = inc_fix_rate_threshold_;
+
+  // Wire-phase stagnation detection: track WNS/TNS every
+  // stagnation_check_interval_ iterations and bail out if both
+  // improved less than 1%.
+  float stagnation_wns = sta_->worstSlack(max_);
+  float stagnation_tns = sta_->totalNegativeSlack(max_);
+  int stagnation_iter_start = 0;
+
+  for (const auto& end_original_slack : violating_ends) {
+    fallback_ = false;
+    sta::Vertex* end = end_original_slack.first;
+    sta::Slack end_slack = sta_->slack(end, max_);
+    sta::Slack worst_slack;
+    sta::Vertex* worst_vertex;
+    sta_->worstSlack(max_, worst_slack, worst_vertex);
+    debugPrint(logger_,
+               RSZ,
+               "repair_setup",
+               1,
+               "{} slack = {} worst_slack = {}",
+               end->name(network_),
+               delayAsString(end_slack, sta_, digits),
+               delayAsString(worst_slack, sta_, digits));
+    end_index++;
+    if (end_index > max_end_count) {
+      break;
+    }
+    sta::Slack prev_end_slack = end_slack;
+    sta::Slack prev_worst_slack = worst_slack;
+    int pass = 1;
+    int decreasing_slack_passes = 0;
+    resizer_->journalBegin();
+    bool journal_open = true;
+    while (pass <= max_passes) {
+      opto_iteration++;
+      if (verbose || opto_iteration == 1) {
+        printProgress(opto_iteration, false, false, false, num_viols);
+      }
+      if (terminateProgress(opto_iteration,
+                            initial_tns,
+                            prev_tns,
+                            fix_rate_threshold,
+                            end_index,
+                            max_end_count)) {
+        if (prev_termination) {
+          two_cons_terminations = true;
+        } else {
+          prev_termination = true;
+        }
+        resizer_->journalRestore();
+        journal_open = false;
+        break;
+      }
+      if (opto_iteration % opto_small_interval_ == 0) {
+        prev_termination = false;
+      }
+
+      // Wire-phase stagnation check every stagnation_check_interval_
+      // iterations: bail out if WNS and TNS both improved less than 1%.
+      if (phase == ResAwarePhase::WIRE
+          && (opto_iteration - stagnation_iter_start)
+                 >= stagnation_check_interval_) {
+        const float current_wns = sta_->worstSlack(max_);
+        const float current_tns = sta_->totalNegativeSlack(max_);
+        const float wns_improvement
+            = (stagnation_wns != 0.0f)
+                  ? std::abs((current_wns - stagnation_wns) / stagnation_wns)
+                  : 0.0f;
+        const float tns_improvement
+            = (stagnation_tns != 0.0f)
+                  ? std::abs((current_tns - stagnation_tns) / stagnation_tns)
+                  : 0.0f;
+        if (wns_improvement < stagnation_threshold_) {
+          //&& tns_improvement < stagnation_threshold_) {
+          debugPrint(logger_,
+                     RSZ,
+                     "repair_setup",
+                     1,
+                     "Wire phase stagnation: WNS improved {:.2f}%, "
+                     "TNS improved {:.2f}% over {} iterations",
+                     wns_improvement * 100.0,
+                     tns_improvement * 100.0,
+                     stagnation_check_interval_);
+          if (pass != 1) {
+            resizer_->journalRestore();
+          } else {
+            resizer_->journalEnd();
+          }
+          journal_open = false;
+          break;
+        }
+        // Reset checkpoint for next interval.
+        stagnation_wns = current_wns;
+        stagnation_tns = current_tns;
+        stagnation_iter_start = opto_iteration;
+      }
+
+      if (end_slack > setup_slack_margin) {
+        --num_viols;
+        if (pass != 1) {
+          resizer_->journalRestore();
+        } else {
+          resizer_->journalEnd();
+        }
+        journal_open = false;
+        break;
+      }
+      sta::Path* end_path = sta_->vertexWorstSlackPath(end, max_);
+
+      const bool changed
+          = repairPathResAware(end_path, end_slack, setup_slack_margin, phase);
+
+      if (!changed) {
+        if (pass != 1) {
+          resizer_->journalRestore();
+        } else {
+          resizer_->journalEnd();
+        }
+        journal_open = false;
+        break;
+      }
+      any_changed = true;
+      estimate_parasitics_->updateParasitics();
+      sta_->findRequireds();
+      end_slack = sta_->slack(end, max_);
+      sta_->worstSlack(max_, worst_slack, worst_vertex);
+      const bool better
+          = (sta::fuzzyGreater(worst_slack, prev_worst_slack)
+             || (end_index != 1
+                 && sta::fuzzyEqual(worst_slack, prev_worst_slack)
+                 && sta::fuzzyGreater(end_slack, prev_end_slack)));
+      debugPrint(logger_,
+                 RSZ,
+                 "repair_setup",
+                 2,
+                 "pass {} slack = {} worst_slack = {} {}",
+                 pass,
+                 delayAsString(end_slack, sta_, digits),
+                 delayAsString(worst_slack, sta_, digits),
+                 better ? "save" : "");
+      if (better) {
+        if (end_slack > setup_slack_margin) {
+          --num_viols;
+        }
+        prev_end_slack = end_slack;
+        prev_worst_slack = worst_slack;
+        decreasing_slack_passes = 0;
+        resizer_->journalEnd();
+        if (pass < max_passes) {
+          resizer_->journalBegin();
+        } else {
+          journal_open = false;
+        }
+      } else {
+        fallback_ = true;
+        decreasing_slack_passes++;
+        if (decreasing_slack_passes > decreasing_slack_max_passes_) {
+          resizer_->journalRestore();
+          journal_open = false;
+          break;
+        }
+      }
+
+      if (resizer_->overMaxArea()) {
+        resizer_->journalEnd();
+        journal_open = false;
+        break;
+      }
+      if (end_index == 1) {
+        end = worst_vertex;
+      }
+      pass++;
+      if (max_iterations > 0 && opto_iteration >= max_iterations) {
+        resizer_->journalEnd();
+        journal_open = false;
+        break;
+      }
+    }  // while pass <= max_passes
+    if (journal_open) {
+      resizer_->journalEnd();
+    }
+    if (verbose || opto_iteration == 1) {
+      printProgress(opto_iteration, true, false, false, num_viols);
+    }
+    if (two_cons_terminations) {
+      break;
+    }
+    if (max_iterations > 0 && opto_iteration >= max_iterations) {
+      break;
+    }
+  }  // for each violating endpoint
+  return any_changed;
+}
+
+// Two-phase resistance-aware setup repair.
+// Phase 1: optimize wire delays (res_aware_move, buffer_move, split_load_move)
+// Phase 2: optimize gate delays (unbuffer, vt_swap, size_up, swap_pins, clone)
+bool RepairSetup::repairSetupResAware(const float setup_slack_margin,
+                                      const double repair_tns_end_percent,
+                                      const int max_passes,
+                                      const int max_iterations,
+                                      const int max_repairs_per_pass,
+                                      const bool verbose,
+                                      const bool skip_pin_swap,
+                                      const bool skip_gate_cloning,
+                                      const bool skip_buffering,
+                                      const bool skip_buffer_removal,
+                                      const bool skip_last_gasp,
+                                      const bool skip_vt_swap,
+                                      const bool skip_crit_vt_swap)
+{
+  bool repaired = false;
+  init();
+  resizer_->rebuffer_->init();
+  resizer_->rebuffer_->initOnCorner(sta_->cmdScene());
+  max_repairs_per_pass_ = max_repairs_per_pass;
+  resizer_->buffer_moved_into_core_ = false;
+
+  // Sort failing endpoints by slack.
+  const sta::VertexSet& endpoints = sta_->endpoints();
+  vector<pair<sta::Vertex*, sta::Slack>> violating_ends;
+  for (sta::Vertex* end : endpoints) {
+    const sta::Slack end_slack = sta_->slack(end, max_);
+    if (end_slack < setup_slack_margin) {
+      violating_ends.emplace_back(end, end_slack);
+    }
+  }
+  std::ranges::stable_sort(violating_ends, [](const auto& a, const auto& b) {
+    return a.second < b.second;
+  });
+
+  if (violating_ends.empty()) {
+    logger_->metric("design__instance__count__setup_buffer", 0);
+    logger_->info(RSZ, 106, "No setup violations found");
+    return false;
+  }
+
+  logger_->info(RSZ,
+                108,
+                "Found {} endpoints with setup violations.",
+                violating_ends.size());
+
+  int max_end_count = violating_ends.size() * repair_tns_end_percent;
+  max_end_count = max(max_end_count, 1);
+  const float initial_tns = sta_->totalNegativeSlack(max_);
+  int num_viols = violating_ends.size();
+
+  logger_->info(RSZ,
+                104,
+                "Repairing {} out of {} ({:0.2f}%) violating endpoints...",
+                max_end_count,
+                violating_ends.size(),
+                repair_tns_end_percent * 100.0);
+
+  sta_->checkCapacitancesPreamble(sta_->scenes());
+  sta_->checkSlewsPreamble();
+  sta_->checkFanoutPreamble();
+
+  if (!violating_ends.empty()) {
+    min_viol_ = -violating_ends.back().second;
+    max_viol_ = -violating_ends.front().second;
+  }
+
+  est::IncrementalParasiticsGuard guard(estimate_parasitics_);
+  int opto_iteration = 0;
+  printProgress(opto_iteration, false, false, false, num_viols);
+
+  // --- Phase 1: Wire optimization ---
+  logger_->info(RSZ, 503, "Phase 1: Wire delay optimization");
+  move_sequence_.clear();
+  move_sequence_ = {resizer_->res_aware_move_.get(),
+                    resizer_->buffer_move_.get(),
+                    resizer_->split_load_move_.get()};
+  for (auto move : move_sequence_) {
+    move->init();
+  }
+
+  if (repairEndpoints(violating_ends,
+                      max_end_count,
+                      max_passes,
+                      max_iterations,
+                      setup_slack_margin,
+                      verbose,
+                      initial_tns,
+                      opto_iteration,
+                      num_viols,
+                      ResAwarePhase::WIRE)) {
+    repaired = true;
+  }
+
+  printProgress(opto_iteration, true, false, false, num_viols);
+
+  // --- Phase 2: Gate optimization ---
+  logger_->info(RSZ, 504, "Phase 2: Gate delay optimization");
+
+  // Re-sort violating endpoints after wire optimization changed timing.
+  violating_ends.clear();
+  estimate_parasitics_->updateParasitics();
+  sta_->findRequireds();
+  for (sta::Vertex* end : endpoints) {
+    const sta::Slack end_slack = sta_->slack(end, max_);
+    if (end_slack < setup_slack_margin) {
+      violating_ends.emplace_back(end, end_slack);
+    }
+  }
+  std::ranges::stable_sort(violating_ends, [](const auto& a, const auto& b) {
+    return a.second < b.second;
+  });
+
+  if (!violating_ends.empty()) {
+    min_viol_ = -violating_ends.back().second;
+    max_viol_ = -violating_ends.front().second;
+    max_end_count = violating_ends.size() * repair_tns_end_percent;
+    max_end_count = max(max_end_count, 1);
+    num_viols = violating_ends.size();
+
+    logger_->info(RSZ,
+                  505,
+                  "{} endpoints with setup violations remain after Phase 1.",
+                  violating_ends.size());
+
+    move_sequence_.clear();
+    if (!skip_buffer_removal) {
+      move_sequence_.push_back(resizer_->unbuffer_move_.get());
+    }
+    if (!skip_vt_swap && resizer_->lib_data_->sorted_vt_categories.size() > 1) {
+      move_sequence_.push_back(resizer_->vt_swap_speed_move_.get());
+    }
+    move_sequence_.push_back(resizer_->size_up_move_.get());
+    if (!skip_pin_swap) {
+      move_sequence_.push_back(resizer_->swap_pins_move_.get());
+    }
+    if (!skip_gate_cloning) {
+      move_sequence_.push_back(resizer_->clone_move_.get());
+    }
+    for (auto move : move_sequence_) {
+      move->init();
+    }
+
+    if (repairEndpoints(violating_ends,
+                        max_end_count,
+                        max_passes,
+                        max_iterations,
+                        setup_slack_margin,
+                        verbose,
+                        initial_tns,
+                        opto_iteration,
+                        num_viols,
+                        ResAwarePhase::GATE)) {
+      repaired = true;
+    }
+  }
+
+  // --- Last gasp and VT swap (same as repairSetup) ---
+  if (!skip_last_gasp) {
+    OptoParams params(setup_slack_margin,
+                      verbose,
+                      skip_pin_swap,
+                      skip_gate_cloning,
+                      false,  // skip_size_down
+                      skip_buffering,
+                      skip_buffer_removal,
+                      skip_vt_swap);
+    params.iteration = opto_iteration;
+    params.initial_tns = initial_tns;
+    repairSetupLastGasp(params, num_viols, max_iterations);
+  }
+
+  if (!skip_crit_vt_swap && !skip_vt_swap
+      && resizer_->lib_data_->sorted_vt_categories.size() > 1) {
+    OptoParams params(setup_slack_margin,
+                      verbose,
+                      skip_pin_swap,
+                      skip_gate_cloning,
+                      false,  // skip_size_down
+                      skip_buffering,
+                      skip_buffer_removal,
+                      skip_vt_swap);
+    if (swapVTCritCells(params, num_viols)) {
+      estimate_parasitics_->updateParasitics();
+      sta_->findRequireds();
+    }
+  }
+
+  // --- Reporting ---
+  printProgress(opto_iteration, true, true, false, num_viols);
+
+  const int buffer_moves = resizer_->buffer_move_->numCommittedMoves();
+  const int size_up_moves = resizer_->size_up_move_->numCommittedMoves();
+  const int size_down_moves = resizer_->size_down_move_->numCommittedMoves();
+  const int swap_pins_moves = resizer_->swap_pins_move_->numCommittedMoves();
+  const int clone_moves = resizer_->clone_move_->numCommittedMoves();
+  const int split_load_moves = resizer_->split_load_move_->numCommittedMoves();
+  const int unbuffer_moves = resizer_->unbuffer_move_->numCommittedMoves();
+  const int vt_swap_moves = resizer_->vt_swap_speed_move_->numCommittedMoves();
+  const int res_aware_moves = resizer_->res_aware_move_->numCommittedMoves();
+
+  if (unbuffer_moves > 0) {
+    repaired = true;
+    logger_->info(RSZ, 109, "Removed {} buffers.", unbuffer_moves);
+  }
+  if (buffer_moves > 0 || split_load_moves > 0) {
+    repaired = true;
+    if (split_load_moves == 0) {
+      logger_->info(RSZ, 71, "Inserted {} buffers.", buffer_moves);
+    } else {
+      logger_->info(RSZ,
+                    57,
+                    "Inserted {} buffers, {} to split loads.",
+                    buffer_moves + split_load_moves,
+                    split_load_moves);
+    }
+  }
+  logger_->metric("design__instance__count__setup_buffer",
+                  buffer_moves + split_load_moves);
+  if (size_up_moves + size_down_moves + vt_swap_moves > 0) {
+    repaired = true;
+    logger_->info(RSZ,
+                  56,
+                  "Resized {} instances: {} up, {} up match, {} down, {} VT",
+                  size_up_moves + size_down_moves + vt_swap_moves,
+                  size_up_moves,
+                  0,
+                  size_down_moves,
+                  vt_swap_moves);
+  }
+  if (swap_pins_moves > 0) {
+    repaired = true;
+    logger_->info(RSZ, 55, "Swapped pins on {} instances.", swap_pins_moves);
+  }
+  if (clone_moves > 0) {
+    repaired = true;
+    logger_->info(RSZ, 54, "Cloned {} instances.", clone_moves);
+  }
+  if (res_aware_moves > 0) {
+    repaired = true;
+    logger_->info(
+        RSZ, 506, "Applied {} resistance-aware moves.", res_aware_moves);
+  }
+  const sta::Slack worst_slack = sta_->worstSlack(max_);
+  if (sta::fuzzyLess(worst_slack, setup_slack_margin)) {
+    repaired = true;
+    logger_->warn(RSZ, 63, "Unable to repair all setup violations.");
+  }
+  if (resizer_->overMaxArea()) {
+    logger_->error(RSZ, 53, "max utilization reached.");
+  }
+
+  return repaired;
+}
+
 bool RepairSetup::repairPathResAware(sta::Path* path,
                                      sta::Slack path_slack,
-                                     const float setup_slack_margin)
+                                     const float setup_slack_margin,
+                                     const ResAwarePhase phase)
 {
   sta::PathExpanded expanded(path, sta_);
 
   if (expanded.size() > 1) {
     const int path_length = expanded.size();
-    vector<pair<int, sta::Delay>> wire_delays;
-    vector<pair<int, sta::Delay>> gate_delays;
+    vector<pair<int, sta::Delay>> delays;
     const int start_index = expanded.startIndex();
     const sta::Scene* corner = path->scene(sta_);
     if (path->minMax(sta_) != resizer_->max_) {
@@ -820,10 +1287,8 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
       return false;
     }
     const int lib_ap = corner->libertyIndex(resizer_->max_);
-    // const sta::DcalcAnalysisPt* dcalc_ap
-    //     = expanded.path(expanded.startIndex())->dcalcAnalysisPt(sta_);
 
-    // Build separate wire and gate delay lists from the expanded path.
+    // Build the delay list for the requested phase.
     for (int i = start_index; i < path_length; i++) {
       const sta::Path* path = expanded.path(i);
       sta::Vertex* path_vertex = path->vertex(sta_);
@@ -834,127 +1299,77 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
         const sta::TimingArc* corner_arc = prev_arc->sceneArc(lib_ap);
         sta::Edge* prev_edge = path->prevEdge(sta_);
 
-        // Wire delay: look ahead to the next node in the path (the sink pin)
-        // to get the wire edge delay.
-        sta::Delay wire_delay = 0.0;
-        if (i + 1 < path_length) {
-          const sta::Path* next_path_node = expanded.path(i + 1);
-          sta::Edge* net_edge = next_path_node->prevEdge(sta_);
-          const sta::TimingArc* net_arc = next_path_node->prevArc(sta_);
-          if (net_edge && net_edge->isWire()) {
-            wire_delay = graph_->arcDelay(
-                net_edge, net_arc, corner->dcalcAnalysisPtIndex(max_));
+        sta::Delay delay = 0.0;
+        if (phase == ResAwarePhase::WIRE) {
+          // Wire delay: look ahead to the next node (sink pin)
+          if (i + 1 < path_length) {
+            const sta::Path* next_path_node = expanded.path(i + 1);
+            sta::Edge* net_edge = next_path_node->prevEdge(sta_);
+            const sta::TimingArc* net_arc = next_path_node->prevArc(sta_);
+            if (net_edge && net_edge->isWire()) {
+              delay = graph_->arcDelay(
+                  net_edge, net_arc, corner->dcalcAnalysisPtIndex(max_));
+            }
           }
+        } else {
+          // Gate delay: load-dependent part (total arc delay minus intrinsic)
+          delay = graph_->arcDelay(
+                      prev_edge, prev_arc, corner->dcalcAnalysisPtIndex(max_))
+                  - corner_arc->intrinsicDelay();
         }
 
-        // Gate delay: load-dependent part (total arc delay minus intrinsic)
-        sta::Delay gate_delay
-            = graph_->arcDelay(
-                  prev_edge, prev_arc, corner->dcalcAnalysisPtIndex(max_))
-              - corner_arc->intrinsicDelay();
-
-        if (wire_delay > 0.0) {
-          wire_delays.emplace_back(i, wire_delay);
-        }
-        if (gate_delay > 0.0) {
-          gate_delays.emplace_back(i, gate_delay);
+        if (delay > 0.0) {
+          delays.emplace_back(i, delay);
         }
 
         debugPrint(logger_,
                    RSZ,
                    "repair_setup",
                    3,
-                   "{} wire_delay = {} gate_delay = {} intrinsic_delay = {}",
+                   "{} {} delay = {} intrinsic_delay = {}",
                    path_vertex->name(network_),
-                   delayAsString(wire_delay, sta_, 3),
-                   delayAsString(gate_delay, sta_, 3),
+                   (phase == ResAwarePhase::WIRE) ? "wire" : "gate",
+                   delayAsString(delay, sta_, 3),
                    delayAsString(corner_arc->intrinsicDelay(), sta_, 3));
       }
     }
 
-    // Sort both lists by descending delay (largest bottleneck first).
+    // Sort by descending delay (largest bottleneck first).
     auto delay_cmp = [](const pair<int, sta::Delay>& a,
                         const pair<int, sta::Delay>& b) {
       return a.second > b.second || (a.second == b.second && a.first > b.first);
     };
-    std::ranges::sort(wire_delays, delay_cmp);
-    std::ranges::sort(gate_delays, delay_cmp);
+    std::ranges::sort(delays, delay_cmp);
 
+    const char* phase_name = (phase == ResAwarePhase::WIRE) ? "wire" : "gate";
     debugPrint(logger_,
                RSZ,
                "repair_setup",
                3,
-               "ResAware pass: wire_delays: {} gate_delays: {}",
-               wire_delays.size(),
-               gate_delays.size());
+               "ResAware {} pass: delays: {}, path slack: {}",
+               phase_name,
+               delays.size(),
+               delayAsString(path_slack, sta_, 3));
 
-    debugPrint(logger_,
-               RSZ,
-               "repair_setup",
-               3,
-               "Path slack: {}, wire_delays: {}, gate_delays: {}",
-               delayAsString(path_slack, sta_, 3),
-               wire_delays.size(),
-               gate_delays.size());
+    // Select moves for this phase.
+    std::vector<BaseMove*> moves;
+    if (phase == ResAwarePhase::WIRE) {
+      moves = {resizer_->res_aware_move_.get(),
+               resizer_->buffer_move_.get(),
+               resizer_->split_load_move_.get()};
+    } else {
+      moves = {resizer_->unbuffer_move_.get(),
+               resizer_->vt_swap_speed_move_.get(),
+               resizer_->size_up_move_.get(),
+               resizer_->swap_pins_move_.get(),
+               resizer_->clone_move_.get()};
+    }
 
-    // Wire-focused moves: ResAwareMove, BufferMove
-    const std::vector<BaseMove*> wire_moves
-        = {resizer_->res_aware_move_.get(),
-           resizer_->buffer_move_.get(),
-           resizer_->clone_move_.get(),
-           resizer_->split_load_move_.get()};
-
-    // Gate-focused moves: SizeUpMove, VTSwapSpeedMove
-    const std::vector<BaseMove*> gate_moves
-        = {resizer_->unbuffer_move_.get(),
-           resizer_->vt_swap_speed_move_.get(),
-           resizer_->size_up_move_.get(),
-           resizer_->swap_pins_move_.get()};
-
-    // Interleave both lists by delay magnitude: always attack the largest
-    // bottleneck first, whether it is a wire or a gate.
-    // After any successful move we return immediately because
-    // topology-changing moves invalidate the PathExpanded; the caller's loop
-    // will re-invoke with a fresh path.
-    size_t wi = 0;
-    size_t gi = 0;
-    while (true) {
-      // Pick the list with the larger next delay.
-      enum class Pick
-      {
-        WIRE,
-        GATE,
-        NONE
-      };
-      Pick pick = Pick::NONE;
-      const bool wire_avail = wi < wire_delays.size();
-      const bool gate_avail = gi < gate_delays.size();
-
-      if (!wire_avail && !gate_avail) {
-        break;
-      }
-
-      if (wire_avail && gate_avail) {
-        pick = wire_delays[wi].second >= gate_delays[gi].second ? Pick::WIRE
-                                                                : Pick::GATE;
-      } else if (wire_avail) {
-        pick = Pick::WIRE;
-      } else {
-        pick = Pick::GATE;
-      }
-
-      const int drvr_index = (pick == Pick::WIRE) ? wire_delays[wi].first
-                                                  : gate_delays[gi].first;
-      const std::vector<BaseMove*>& moves
-          = (pick == Pick::WIRE) ? wire_moves : gate_moves;
-
-      // Advance the chosen list index.
-      if (pick == Pick::WIRE) {
-        wi++;
-      } else {
-        gi++;
-      }
-
+    // Try moves on drivers sorted by descending delay.
+    // Return immediately after a successful move because topology-changing
+    // moves invalidate the PathExpanded; the caller's loop will re-invoke
+    // with a fresh path.
+    for (const auto& [drvr_index, ignored] : delays) {
       const sta::Path* drvr_path = expanded.path(drvr_index);
       sta::Vertex* drvr_vertex = drvr_path->vertex(sta_);
       const sta::Pin* drvr_pin = drvr_vertex->pin();
@@ -971,7 +1386,7 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
                  drvr_cell ? drvr_cell->name() : "none",
                  fo,
                  drvr_index,
-                 (pick == Pick::WIRE) ? "wire" : "gate");
+                 phase_name);
 
       for (BaseMove* move : moves) {
         debugPrint(logger_,
@@ -987,10 +1402,6 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
                          path_slack,
                          &expanded,
                          setup_slack_margin)) {
-          // Return immediately after a successful move. Topology-changing
-          // moves invalidate the PathExpanded, making subsequent
-          // expanded->path() accesses unsafe. The caller's outer loop will
-          // re-invoke with a fresh path.
           return true;
         }
         debugPrint(logger_,

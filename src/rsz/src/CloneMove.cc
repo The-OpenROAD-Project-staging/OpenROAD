@@ -108,6 +108,12 @@ bool CloneMove::doMove(const Path* drvr_path,
   Vertex* load_vertex = load_path->vertex(sta_);
   Pin* load_pin = load_vertex->pin();
 
+  Instance* drvr_inst = network_->instance(drvr_pin);
+  if (hasMoves(drvr_inst)) {
+    // logger_->report("Clone has moves");
+    return false;
+  }
+
   const int fanout = this->fanout(drvr_vertex);
   if (fanout <= split_load_min_fanout_) {
     return false;
@@ -173,7 +179,7 @@ bool CloneMove::doMove(const Path* drvr_path,
                                       pair1.first->pin(), pair2.first->pin())));
                     });
 
-  Instance* drvr_inst = db_network_->instance(drvr_pin);
+  // Instance* drvr_inst = db_network_->instance(drvr_pin);
 
   if (!resizer_->isSingleOutputCombinational(drvr_inst)) {
     debugPrint(logger_,
