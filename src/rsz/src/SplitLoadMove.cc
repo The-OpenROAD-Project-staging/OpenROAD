@@ -88,12 +88,6 @@ bool SplitLoadMove::doMove(const Path* drvr_path,
   const Path* load_path = expanded->path(drvr_index + 1);
   Vertex* load_vertex = load_path->vertex(sta_);
   Pin* load_pin = load_vertex->pin();
-  Instance* drvr_inst = network_->instance(drvr_pin);
-
-  // if (hasMoves(drvr_inst)) {
-  //  logger_->report("Buffering has moves");
-  //  return false;
-  //}
 
   const int fanout = this->fanout(drvr_vertex);
   // Don't split loads on low fanout nets.

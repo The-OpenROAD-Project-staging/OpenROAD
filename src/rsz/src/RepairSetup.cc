@@ -1052,7 +1052,7 @@ bool RepairSetup::repairSetupResAware(const float setup_slack_margin,
 
   if (violating_ends.empty()) {
     logger_->metric("design__instance__count__setup_buffer", 0);
-    logger_->info(RSZ, 106, "No setup violations found");
+    logger_->info(RSZ, 111, "No setup violations found");
     return false;
   }
 
@@ -1067,7 +1067,7 @@ bool RepairSetup::repairSetupResAware(const float setup_slack_margin,
   int num_viols = violating_ends.size();
 
   logger_->info(RSZ,
-                104,
+                112,
                 "Repairing {} out of {} ({:0.2f}%) violating endpoints...",
                 max_end_count,
                 violating_ends.size(),
