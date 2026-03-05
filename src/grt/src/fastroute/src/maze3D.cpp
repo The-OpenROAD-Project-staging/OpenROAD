@@ -727,10 +727,9 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
                                          : kHighDetourPenalty);
   }
 
-  // const int endIND = ceil(tree_order_pv_.size() * 0.9);
-  // const int endIND = tree_order_pv_.size();
-  const int endIND = is_incremental_grt_ ? tree_order_pv_.size()
-                                         : tree_order_pv_.size() * 0.9;
+  const int endIND = (enable_resistance_aware_ && is_incremental_grt_)
+                         ? tree_order_pv_.size()
+                         : tree_order_pv_.size() * 0.9;
 
   for (int orderIndex = 0; orderIndex < endIND; orderIndex++) {
     const int netID = tree_order_pv_[orderIndex].treeIndex;
