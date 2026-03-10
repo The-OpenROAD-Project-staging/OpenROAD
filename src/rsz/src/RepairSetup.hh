@@ -127,6 +127,34 @@ class RepairSetup : public sta::dbStaState
                           sta::Slack path_slack,
                           float setup_slack_margin,
                           ResAwarePhase phase);
+
+  bool resAwareWireOpt(
+      float setup_slack_margin,
+      int max_passes,
+      int max_iterations,
+      bool verbose,
+      float initial_tns,
+      int& opto_iteration,
+      int& num_viols,
+      std::vector<std::pair<sta::Vertex*, sta::Slack>>& violating_ends,
+      int max_end_count);
+
+  bool resAwareGateOpt(
+      float setup_slack_margin,
+      double repair_tns_end_percent,
+      int max_passes,
+      int max_iterations,
+      bool verbose,
+      bool skip_pin_swap,
+      bool skip_gate_cloning,
+      bool skip_buffer_removal,
+      bool skip_vt_swap,
+      float initial_tns,
+      int& opto_iteration,
+      int& num_viols,
+      std::vector<std::pair<sta::Vertex*, sta::Slack>>& violating_ends,
+      int& max_end_count);
+
   // Shared endpoint optimization loop used by repairSetupResAware.
   bool repairEndpoints(
       const std::vector<std::pair<sta::Vertex*, sta::Slack>>& violating_ends,

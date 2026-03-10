@@ -63,11 +63,6 @@ bool BufferMove::doMove(const Path* drvr_path,
     return false;
   }
 
-  // if (hasMoves(drvr_inst)) {
-  //  logger_->report("Buffering has moves");
-  //  return false;
-  //}
-
   const int rebuffer_count = rebuffer(drvr_pin);
   if (rebuffer_count > 0) {
     debugPrint(logger_,

@@ -1086,90 +1086,33 @@ bool RepairSetup::repairSetupResAware(const float setup_slack_margin,
   int opto_iteration = 0;
   printProgress(opto_iteration, false, false, false, num_viols);
 
-  // --- Phase 1: Wire optimization ---
-  logger_->info(RSZ, 503, "Phase 1: Wire delay optimization");
-  move_sequence_.clear();
-  move_sequence_ = {resizer_->res_aware_move_.get(),
-                    resizer_->buffer_move_.get(),
-                    resizer_->split_load_move_.get()};
-  for (auto move : move_sequence_) {
-    move->init();
-  }
-
-  if (repairEndpoints(violating_ends,
-                      max_end_count,
+  if (resAwareWireOpt(setup_slack_margin,
                       max_passes,
                       max_iterations,
-                      setup_slack_margin,
                       verbose,
                       initial_tns,
                       opto_iteration,
                       num_viols,
-                      ResAwarePhase::WIRE)) {
+                      violating_ends,
+                      max_end_count)) {
     repaired = true;
   }
 
-  printProgress(opto_iteration, true, false, false, num_viols);
-
-  // --- Phase 2: Gate optimization ---
-  logger_->info(RSZ, 504, "Phase 2: Gate delay optimization");
-
-  // Re-sort violating endpoints after wire optimization changed timing.
-  violating_ends.clear();
-  estimate_parasitics_->updateParasitics();
-  sta_->findRequireds();
-  for (sta::Vertex* end : endpoints) {
-    const sta::Slack end_slack = sta_->slack(end, max_);
-    if (end_slack < setup_slack_margin) {
-      violating_ends.emplace_back(end, end_slack);
-    }
-  }
-  std::ranges::stable_sort(violating_ends, [](const auto& a, const auto& b) {
-    return a.second < b.second;
-  });
-
-  if (!violating_ends.empty()) {
-    min_viol_ = -violating_ends.back().second;
-    max_viol_ = -violating_ends.front().second;
-    max_end_count = violating_ends.size() * repair_tns_end_percent;
-    max_end_count = max(max_end_count, 1);
-    num_viols = violating_ends.size();
-
-    logger_->info(RSZ,
-                  505,
-                  "{} endpoints with setup violations remain after Phase 1.",
-                  violating_ends.size());
-
-    move_sequence_.clear();
-    if (!skip_buffer_removal) {
-      move_sequence_.push_back(resizer_->unbuffer_move_.get());
-    }
-    if (!skip_vt_swap && resizer_->lib_data_->sorted_vt_categories.size() > 1) {
-      move_sequence_.push_back(resizer_->vt_swap_speed_move_.get());
-    }
-    move_sequence_.push_back(resizer_->size_up_move_.get());
-    if (!skip_pin_swap) {
-      move_sequence_.push_back(resizer_->swap_pins_move_.get());
-    }
-    if (!skip_gate_cloning) {
-      move_sequence_.push_back(resizer_->clone_move_.get());
-    }
-    for (auto move : move_sequence_) {
-      move->init();
-    }
-
-    if (repairEndpoints(violating_ends,
-                        max_end_count,
-                        max_passes,
-                        max_iterations,
-                        setup_slack_margin,
-                        verbose,
-                        initial_tns,
-                        opto_iteration,
-                        num_viols,
-                        ResAwarePhase::GATE)) {
-      repaired = true;
-    }
+  if (resAwareGateOpt(setup_slack_margin,
+                      repair_tns_end_percent,
+                      max_passes,
+                      max_iterations,
+                      verbose,
+                      skip_pin_swap,
+                      skip_gate_cloning,
+                      skip_buffer_removal,
+                      skip_vt_swap,
+                      initial_tns,
+                      opto_iteration,
+                      num_viols,
+                      violating_ends,
+                      max_end_count)) {
+    repaired = true;
   }
 
   // --- Last gasp and VT swap (same as repairSetup) ---
@@ -1267,6 +1210,125 @@ bool RepairSetup::repairSetupResAware(const float setup_slack_margin,
     logger_->error(RSZ, 53, "max utilization reached.");
   }
 
+  return repaired;
+}
+
+bool RepairSetup::resAwareWireOpt(
+    float setup_slack_margin,
+    int max_passes,
+    int max_iterations,
+    bool verbose,
+    float initial_tns,
+    int& opto_iteration,
+    int& num_viols,
+    std::vector<std::pair<sta::Vertex*, sta::Slack>>& violating_ends,
+    int max_end_count)
+{
+  bool repaired = false;
+  logger_->info(RSZ, 503, "Phase 1: Wire delay optimization");
+  move_sequence_.clear();
+  move_sequence_ = {resizer_->res_aware_move_.get(),
+                    resizer_->buffer_move_.get(),
+                    resizer_->split_load_move_.get()};
+  for (auto move : move_sequence_) {
+    move->init();
+  }
+
+  if (repairEndpoints(violating_ends,
+                      max_end_count,
+                      max_passes,
+                      max_iterations,
+                      setup_slack_margin,
+                      verbose,
+                      initial_tns,
+                      opto_iteration,
+                      num_viols,
+                      ResAwarePhase::WIRE)) {
+    repaired = true;
+  }
+
+  printProgress(opto_iteration, true, false, false, num_viols);
+  return repaired;
+}
+
+bool RepairSetup::resAwareGateOpt(
+    float setup_slack_margin,
+    double repair_tns_end_percent,
+    int max_passes,
+    int max_iterations,
+    bool verbose,
+    bool skip_pin_swap,
+    bool skip_gate_cloning,
+    bool skip_buffer_removal,
+    bool skip_vt_swap,
+    float initial_tns,
+    int& opto_iteration,
+    int& num_viols,
+    std::vector<std::pair<sta::Vertex*, sta::Slack>>& violating_ends,
+    int& max_end_count)
+{
+  bool repaired = false;
+  logger_->info(RSZ, 504, "Phase 2: Gate delay optimization");
+
+  // Re-sort violating endpoints after wire optimization changed timing.
+  violating_ends.clear();
+  estimate_parasitics_->updateParasitics();
+  sta_->findRequireds();
+  const sta::VertexSet& endpoints = sta_->endpoints();
+  for (sta::Vertex* end : endpoints) {
+    const sta::Slack end_slack = sta_->slack(end, max_);
+    if (end_slack < setup_slack_margin) {
+      violating_ends.emplace_back(end, end_slack);
+    }
+  }
+  std::ranges::stable_sort(violating_ends, [](const auto& a, const auto& b) {
+    return a.second < b.second;
+  });
+
+  if (!violating_ends.empty()) {
+    min_viol_ = -violating_ends.back().second;
+    max_viol_ = -violating_ends.front().second;
+    max_end_count = violating_ends.size() * repair_tns_end_percent;
+    max_end_count = max(max_end_count, 1);
+    num_viols = violating_ends.size();
+
+    logger_->info(RSZ,
+                  505,
+                  "{} endpoints with setup violations remain after Phase 1.",
+                  violating_ends.size());
+
+    move_sequence_.clear();
+
+    if (!skip_buffer_removal) {
+      move_sequence_.push_back(resizer_->unbuffer_move_.get());
+    }
+    if (!skip_vt_swap && resizer_->lib_data_->sorted_vt_categories.size() > 1) {
+      move_sequence_.push_back(resizer_->vt_swap_speed_move_.get());
+    }
+    move_sequence_.push_back(resizer_->size_up_move_.get());
+    if (!skip_pin_swap) {
+      move_sequence_.push_back(resizer_->swap_pins_move_.get());
+    }
+    if (!skip_gate_cloning) {
+      move_sequence_.push_back(resizer_->clone_move_.get());
+    }
+    for (auto move : move_sequence_) {
+      move->init();
+    }
+
+    if (repairEndpoints(violating_ends,
+                        max_end_count,
+                        max_passes,
+                        max_iterations,
+                        setup_slack_margin,
+                        verbose,
+                        initial_tns,
+                        opto_iteration,
+                        num_viols,
+                        ResAwarePhase::GATE)) {
+      repaired = true;
+    }
+  }
   return repaired;
 }
 
