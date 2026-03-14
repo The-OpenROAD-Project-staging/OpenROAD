@@ -860,7 +860,6 @@ void GlobalRouter::setNetIsResAware(odb::dbNet* db_net, bool res_aware)
   Net* net = db_net_map_[db_net];
   if (net) {
     net->setIsResAware(res_aware);
-    // logger_->report("Setting net {} as res-aware", net->getConstName());
   } else {
     logger_->warn(
         GRT, 103, "Net {} is not in the db_net_map_", db_net->getConstName());

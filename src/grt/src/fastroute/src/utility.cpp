@@ -113,8 +113,7 @@ float FastRouteCore::getResAwareScore(FrNet* net)
   const float kNetLengthWeight = 1.0f;
 
   return net->getResistance() / worst_net_resistance_ * kResistanceWeight
-         + (!is_incremental_grt_ ? kSlackWeight * net->getSlack() / worst_slack_
-                                 : 0)
+         + kSlackWeight * net->getSlack() / worst_slack_
          + (float) net->getNumPins() / worst_fanout_ * kFanoutWeight
          + (float) net->getNetLength() / worst_net_length_ * kNetLengthWeight;
 }
