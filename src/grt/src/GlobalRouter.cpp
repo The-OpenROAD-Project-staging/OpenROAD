@@ -5880,6 +5880,13 @@ void GlobalRouter::addDirtyNet(odb::dbNet* net)
   dirty_nets_.insert(net);
 }
 
+void GlobalRouter::updateCUGRNet(odb::dbNet* net)
+{
+  if (use_cugr_) {
+    cugr_->updateNet(net);
+  }
+}
+
 std::vector<Net*> GlobalRouter::updateDirtyRoutes(bool save_guides)
 {
   callback_handler_->triggerOnPinAccessUpdateRequired();
