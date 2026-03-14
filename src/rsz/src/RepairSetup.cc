@@ -1417,8 +1417,10 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
     std::vector<BaseMove*> moves;
     if (phase == ResAwarePhase::WIRE) {
       moves = {resizer_->res_aware_move_.get(),
-               resizer_->buffer_move_.get(),
-               resizer_->split_load_move_.get()};
+               resizer_->vt_swap_speed_move_.get(),
+               resizer_->size_up_move_.get(),
+               resizer_->split_load_move_.get(),
+               resizer_->buffer_move_.get()};
     } else {
       moves = {resizer_->unbuffer_move_.get(),
                resizer_->vt_swap_speed_move_.get(),
