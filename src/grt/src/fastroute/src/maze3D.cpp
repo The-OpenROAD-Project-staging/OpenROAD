@@ -778,7 +778,8 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
         const auto [ymin, ymax] = std::minmax(n1y, n2y);
         const auto [xmin, xmax] = std::minmax(n1x, n2x);
 
-        int original_len = treeedge->route.routelen;
+        // int original_len = treeedge->route.routelen;
+        int original_len = treeedge->len;
 
         // ripup the routing for the edge
         if (!newRipup3DType3(netID, edgeID)) {
@@ -1070,12 +1071,13 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
             // Via cost
             const float cost = getMazeRouteCost3D(
                 netID, curL, curL - 1, curX, curY, curX, curY, true);
-            const int new_len = path_len_3D_[curL][curY][curX] + 1;
-            const float penalty = (new_len > original_len && resistance_aware_
-                                   && !is_incremental_grt_)
-                                      ? detour_penalty_
-                                      : 0;
-            const float tmp = d1_3D_[curL][curY][curX] + cost + penalty;
+            const int new_len = path_len_3D_[curL][curY][curX];  // + 1;
+            // const float penalty = (new_len > original_len &&
+            // resistance_aware_
+            //                        && !is_incremental_grt_)
+            //                           ? detour_penalty_
+            //                           : 0;
+            const float tmp = d1_3D_[curL][curY][curX] + cost;  // + penalty;
             const int tmpL = curL - 1;  // the bottom neighbor
 
             if (d1_3D_[tmpL][curY][curX]
@@ -1120,12 +1122,13 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
             // Via cost
             const float cost = getMazeRouteCost3D(
                 netID, curL, curL + 1, curX, curY, curX, curY, true);
-            const int new_len = path_len_3D_[curL][curY][curX] + 1;
-            const float penalty = (new_len > original_len && resistance_aware_
-                                   && !is_incremental_grt_)
-                                      ? detour_penalty_
-                                      : 0;
-            const float tmp = d1_3D_[curL][curY][curX] + cost + penalty;
+            const int new_len = path_len_3D_[curL][curY][curX];  // + 1;
+            // const float penalty = (new_len > original_len &&
+            // resistance_aware_
+            //                        && !is_incremental_grt_)
+            //                           ? detour_penalty_
+            //                           : 0;
+            const float tmp = d1_3D_[curL][curY][curX] + cost;  // + penalty;
             const int tmpL = curL + 1;  // the bottom neighbor
             if (d1_3D_[tmpL][curY][curX]
                 >= BIG_INT)  // bottom neighbor not been put into src_heap_3D
