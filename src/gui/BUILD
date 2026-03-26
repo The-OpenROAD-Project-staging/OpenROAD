@@ -8,6 +8,7 @@ load("@qt-bazel//:build_defs.bzl", "qt6_library", "qt6_resource_library")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//bazel:tcl_encode_or.bzl", "tcl_encode")
 load("//bazel:tcl_wrap_cc.bzl", "tcl_wrap_cc")
+load("//test:regression.bzl", "messages_txt")
 
 package(
     default_visibility = ["//:__subpackages__"],
@@ -38,8 +39,10 @@ cc_library(
         "include/gui/gui.h",
         "include/gui/heatMap.h",
     ],
-    copts = ["-Isrc/gui/src"],
-    includes = ["include"],
+    includes = [
+        "include",
+        "src",
+    ],
     deps = [
         "//src/dbSta",
         "//src/dbSta:dbNetwork",
@@ -161,4 +164,17 @@ tcl_encode(
     ],
     char_array_name = "gui_tcl_inits",
     namespace = "gui",
+)
+
+filegroup(
+    name = "doc_files",
+    srcs = [
+        "README.md",
+        "src/gui.tcl",
+    ],
+    visibility = ["//src/gui/test:__pkg__"],
+)
+
+messages_txt(
+    visibility = ["//src/gui/test:__pkg__"],
 )

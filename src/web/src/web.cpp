@@ -5,13 +5,6 @@
 
 #include <netinet/in.h>
 
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/signal_set.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/websocket.hpp>
 #include <csignal>
 #include <cstdint>
 #include <cstdlib>
@@ -31,6 +24,13 @@
 #include <utility>
 #include <vector>
 
+#include "boost/asio/io_context.hpp"
+#include "boost/asio/ip/tcp.hpp"
+#include "boost/asio/signal_set.hpp"
+#include "boost/asio/strand.hpp"
+#include "boost/beast/core.hpp"
+#include "boost/beast/http.hpp"
+#include "boost/beast/websocket.hpp"
 #include "clock_tree_report.h"
 #include "gui/heatMap.h"
 #include "odb/db.h"
@@ -79,6 +79,10 @@ static WebSocketRequest parse_web_socket_request(const std::string& msg)
   } else if (type_str == "tcl_eval") {
     req.type = WebSocketRequest::TCL_EVAL;
     req.tcl_cmd = extract_string(msg, "cmd");
+  } else if (type_str == "tcl_complete") {
+    req.type = WebSocketRequest::TCL_COMPLETE;
+    req.tcl_complete_line = extract_string(msg, "line");
+    req.tcl_complete_cursor_pos = extract_int_or(msg, "cursor_pos", -1);
   } else if (type_str == "timing_report") {
     req.type = WebSocketRequest::TIMING_REPORT;
     req.timing_is_setup = extract_int_or(msg, "is_setup", 1);
@@ -508,6 +512,13 @@ void WebSocketSession::on_read(beast::error_code ec)
                 [self = std::move(self), req = std::move(req)]() {
                   self->queue_response(self->tcl_handler_.handleTclEval(req));
                 });
+      break;
+    case WebSocketRequest::TCL_COMPLETE:
+      net::post(
+          websocket_.get_executor(),
+          [self = std::move(self), req = std::move(req)]() {
+            self->queue_response(self->tcl_handler_.handleTclComplete(req));
+          });
       break;
     case WebSocketRequest::TIMING_REPORT:
       net::post(
@@ -989,9 +1000,7 @@ WebServer::WebServer(odb::dbDatabase* db,
 
 WebServer::~WebServer() = default;
 
-void WebServer::serve(const std::string& host,
-                      int port,
-                      const std::string& doc_root)
+void WebServer::serve(int port, const std::string& doc_root)
 {
   try {
     generator_ = std::make_shared<TileGenerator>(db_, sta_, logger_);
@@ -1001,7 +1010,7 @@ void WebServer::serve(const std::string& host,
     // Create Tcl evaluator with logger sink for output capture
     auto tcl_eval = std::make_shared<TclEvaluator>(interp_, logger_);
 
-    auto const address = net::ip::make_address(host);
+    auto const address = net::ip::make_address("127.0.0.1");
     uint16_t const u_port = port;
     int const num_threads = 32;
 
@@ -1009,7 +1018,7 @@ void WebServer::serve(const std::string& host,
       logger_->info(utl::WEB, 4, "Serving static files from {}", doc_root);
     }
 
-    std::string url = "http://" + host + ":" + std::to_string(port);
+    const std::string url = "http://localhost:" + std::to_string(port);
     logger_->info(utl::WEB,
                   1,
                   "Server starting on {} with {} threads...",
