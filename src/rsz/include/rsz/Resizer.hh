@@ -328,6 +328,7 @@ class Resizer : public sta::dbStaState, public sta::dbNetworkObserver
                    bool match_cell_footprint,
                    bool verbose,
                    const std::vector<MoveType>& sequence,
+                   const char* phases,
                    bool skip_pin_swap,
                    bool skip_gate_cloning,
                    bool skip_size_down,
@@ -615,7 +616,7 @@ class Resizer : public sta::dbStaState, public sta::dbNetworkObserver
   void findBufferTargetSlews(sta::LibertyCell* buffer,
                              const sta::Pvt* pvt,
                              // Return values.
-                             sta::Slew slews[],
+                             float slews[],
                              int counts[]);
   bool hasMultipleOutputs(const sta::Instance* inst);
 
@@ -993,6 +994,7 @@ class Resizer : public sta::dbStaState, public sta::dbNetworkObserver
   friend class ConcreteSwapArithModules;
   friend class Rebuffer;
   friend class OdbCallBack;
+  friend class ViolatorCollector;
 };
 
 }  // namespace rsz
