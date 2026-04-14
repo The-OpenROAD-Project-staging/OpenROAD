@@ -96,9 +96,9 @@ void FastRouteCore::ConvertToFull3DType2()
 float FastRouteCore::getResAwareScore(FrNet* net)
 {
   const float kResistanceWeight = 1.0f;
-  const float kSlackWeight = 5.0f;
-  const float kFanoutWeight = 2.0f;
-  const float kNetLengthWeight = 3.0f;
+  const float kSlackWeight = 4.0f;
+  const float kFanoutWeight = 3.0f;
+  const float kNetLengthWeight = 2.0f;
 
   return kResistanceWeight * (net->getResistance() / worst_net_resistance_)
          + kSlackWeight * (net->getSlack() / worst_slack_)

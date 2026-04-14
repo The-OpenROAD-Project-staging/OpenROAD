@@ -110,21 +110,20 @@ class RepairSetup : public sta::dbStaState
                    bool skip_last_gasp,
                    bool skip_vt_swap,
                    bool skip_crit_vt_swap);
-  // Two-phase resistance-aware repair: wire optimization then gate
-  // optimization.
-  bool repairSetupResAware(float setup_slack_margin,
-                           double repair_tns_end_percent,
-                           int max_passes,
-                           int max_iterations,
-                           int max_repairs_per_pass,
-                           bool verbose,
-                           bool skip_pin_swap,
-                           bool skip_gate_cloning,
-                           bool skip_buffering,
-                           bool skip_buffer_removal,
-                           bool skip_last_gasp,
-                           bool skip_vt_swap,
-                           bool skip_crit_vt_swap);
+  // Wire delay optimization
+  // bool repairSetupResAware(float setup_slack_margin,
+  //                          double repair_tns_end_percent,
+  //                          int max_passes,
+  //                          int max_iterations,
+  //                          int max_repairs_per_pass,
+  //                          bool verbose,
+  //                          bool skip_pin_swap,
+  //                          bool skip_gate_cloning,
+  //                          bool skip_buffering,
+  //                          bool skip_buffer_removal,
+  //                          bool skip_last_gasp,
+  //                          bool skip_vt_swap,
+  //                          bool skip_crit_vt_swap);
   // For testing.
   void repairSetup(const sta::Pin* end_pin);
   // For testing.
@@ -149,45 +148,18 @@ class RepairSetup : public sta::dbStaState
                           float setup_slack_margin,
                           ResAwarePhase phase);
 
-  bool resAwareWireOpt(
-      float setup_slack_margin,
-      int max_passes,
-      int max_iterations,
-      bool verbose,
-      float initial_tns,
-      int& opto_iteration,
-      int& num_viols,
-      std::vector<std::pair<sta::Vertex*, sta::Slack>>& violating_ends,
-      int max_end_count);
-
-  bool resAwareGateOpt(
-      float setup_slack_margin,
-      double repair_tns_end_percent,
-      int max_passes,
-      int max_iterations,
-      bool verbose,
-      bool skip_pin_swap,
-      bool skip_gate_cloning,
-      bool skip_buffer_removal,
-      bool skip_vt_swap,
-      float initial_tns,
-      int& opto_iteration,
-      int& num_viols,
-      std::vector<std::pair<sta::Vertex*, sta::Slack>>& violating_ends,
-      int& max_end_count);
-
   // Shared endpoint optimization loop used by repairSetupResAware.
-  bool repairEndpoints(
-      const std::vector<std::pair<sta::Vertex*, sta::Slack>>& violating_ends,
-      int max_end_count,
-      int max_passes,
-      int max_iterations,
-      float setup_slack_margin,
-      bool verbose,
-      float initial_tns,
-      int& opto_iteration,
-      int& num_viols,
-      ResAwarePhase phase);
+  bool repairEndpoints(int max_end_count,
+                       int max_passes,
+                       int max_iterations,
+                       float setup_slack_margin,
+                       bool verbose,
+                       float initial_tns,
+                       int& opto_iteration,
+                       int& num_viols,
+                       ResAwarePhase phase,
+                       const char* phase_name,
+                       char phase_marker);
   int fanout(sta::Vertex* vertex);
   bool hasTopLevelOutputPort(sta::Net* net);
 
@@ -224,6 +196,15 @@ class RepairSetup : public sta::dbStaState
                           float initial_tns,
                           float& prev_tns,
                           char phase_marker = 'L');
+  void repairSetup_ResAware(float setup_slack_margin,
+                            int max_passes,
+                            int max_iterations,
+                            int max_repairs_per_pass,
+                            bool verbose,
+                            int& opto_iteration,
+                            float initial_tns,
+                            float& prev_tns,
+                            char phase_marker = 'R');
   void repairSetup_Wns(float setup_slack_margin,
                        int max_passes_per_endpoint,
                        int max_repairs_per_pass,
@@ -310,10 +291,6 @@ class RepairSetup : public sta::dbStaState
   static constexpr float inc_fix_rate_threshold_
       = 0.0001;  // default fix rate threshold = 0.01%
   static constexpr int max_last_gasp_passes_ = 10;
-  // Wire-phase stagnation detection: check every N iterations.
-  static constexpr int stagnation_check_interval_ = 200;
-  // Minimum improvement (1%) required to continue wire phase.
-  static constexpr float stagnation_threshold_ = 0.01f;
 };
 
 }  // namespace rsz

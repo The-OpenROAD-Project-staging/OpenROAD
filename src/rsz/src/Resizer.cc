@@ -4423,23 +4423,7 @@ bool Resizer::repairSetup(double setup_margin,
              == est::ParasiticsSrc::detailed_routing) {
     opendp_->initMacrosAndGrid();
   }
-  // When resistance-aware mode is active with global routes, use the
-  // two-phase optimization (wire then gate) instead of the standard flow.
-  if (resistanceAware() && global_router_ && global_router_->haveRoutes()) {
-    return repair_setup_->repairSetupResAware(setup_margin,
-                                              repair_tns_end_percent,
-                                              max_passes,
-                                              max_iterations,
-                                              max_repairs_per_pass,
-                                              verbose,
-                                              skip_pin_swap,
-                                              skip_gate_cloning,
-                                              skip_buffering,
-                                              skip_buffer_removal,
-                                              skip_last_gasp,
-                                              skip_vt_swap,
-                                              skip_crit_vt_swap);
-  }
+
   return repair_setup_->repairSetup(setup_margin,
                                     repair_tns_end_percent,
                                     max_passes,

@@ -10,11 +10,7 @@
 
 namespace rsz {
 
-bool ResAwareMove::doMove(const sta::Path* drvr_path,
-                          int drvr_index,
-                          sta::Slack drvr_slack,
-                          sta::PathExpanded* expanded,
-                          float setup_slack_margin)
+bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
 {
   if (!resizer_->global_router_ || !resizer_->global_router_->haveRoutes()) {
     logger_->report("dont have routes");
@@ -93,7 +89,7 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path,
   // If subsequent operations use the global router without setting it back,
   // they might be affected. I'll leave it as is for now, as per instructions.
 
-  addMove(drvr_inst);
+  countMove(drvr_inst);
   return true;
 }
 
