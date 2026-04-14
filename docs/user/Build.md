@@ -19,21 +19,21 @@ There are three methods for building OpenROAD (in order of recommendation): preb
 
 Build OpenROAD with GUI support and install into ../install/OpenROAD/bin
 
-    bazelisk run --//:platform=gui //packaging:install
+    bazelisk run --//:platform=gui //:install
 
 To install to a custom location, e.g. /tmp/myinstall
 
-    bazelisk run --//:platform=gui //packaging:install -- /tmp/myinstall
+    bazelisk run --//:platform=gui //:install -- /tmp/myinstall
 
 To produce an openroad.tar file with install files
 
-    bazelisk build --//:platform=gui //packaging:tarfile
+    bazelisk build --//:platform=gui //:tarfile
 
 The tarfile is located at bazel-bin/packaging/openroad.tar.
 
 To embed the real git version string, add `--config=release`:
 
-    bazelisk run --config=release --//:platform=gui //packaging:install
+    bazelisk run --config=release --//:platform=gui //:install
 
 The install process will install the binary "openroad" and the runfile directory
 "openroad.runfiles" which contains runtime data needed by the binary.
@@ -93,6 +93,26 @@ There is a `openroad_build.log` file that is generated
 with every build in the build directory. In case of filing issues,
 it can be uploaded in the "Relevant log output" section of OpenROAD
 [issue forms](https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts/issues/new/choose).
+```
+
+### Only for macOS Setup
+
+On macOS, it is recommended to use a Python virtual environment to isolate dependencies and avoid system conflicts.
+
+1. Create a virtual environment in the OpenROAD directory:
+``` shell
+python3 -m venv .venv
+```
+
+2. Activate the virtual environment:
+``` shell
+source .venv/bin/activate
+```
+
+3. With virtual environment activated, run without `sudo`:
+``` shell
+./etc/DependencyInstaller.sh -base
+./etc/DependencyInstaller.sh -common -local
 ```
 
 ### Install Dependencies
