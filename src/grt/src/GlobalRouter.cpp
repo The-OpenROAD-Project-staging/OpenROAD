@@ -3470,6 +3470,11 @@ float GlobalRouter::getViaResistance(int from_layer, int to_layer)
   return total_via_resistance;
 }
 
+float GlobalRouter::getFRNetResistance(odb::dbNet* db_net)
+{
+  return fastroute_->getNetResistance(db_net);
+}
+
 float GlobalRouter::estimatePathResistance(odb::dbObject* pin1,
                                            odb::dbObject* pin2,
                                            bool verbose)

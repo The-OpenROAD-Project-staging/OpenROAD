@@ -620,6 +620,17 @@ void FastRouteCore::resetWorstMetrics()
   worst_fanout_ = 0;
 }
 
+float FastRouteCore::getNetResistance(odb::dbNet* db_net)
+{
+  int net_id;
+  bool exists;
+  getNetId(db_net, net_id, exists);
+  if (!exists) {
+    return 0.0f;
+  }
+  return getNetResistance(nets_[net_id]);
+}
+
 // Calculate entire net resistance considering wire and via resistance
 // If assume_layer is true, it will assume the net is routed on the min layer
 float FastRouteCore::getNetResistance(FrNet* net, bool assume_layer)
