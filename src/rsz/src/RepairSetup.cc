@@ -144,11 +144,11 @@ void RepairSetup::setupMoveSequence(const std::vector<MoveType>& sequence,
         case MoveType::SIZEUP_MATCH:
           move_sequence_.push_back(resizer_->size_up_match_move_.get());
           break;
-        case MoveType::RES_AWARE:  // Ignore
-          // if (resizer_->global_router_
-          //     && resizer_->global_router_->haveRoutes()) {
-          //   move_sequence_.push_back(resizer_->res_aware_move_.get());
-          // }
+        case MoveType::RES_AWARE:
+          if (resizer_->global_router_
+              && resizer_->global_router_->haveRoutes()) {
+            move_sequence_.push_back(resizer_->res_aware_move_.get());
+          }
           break;
       }
     }
@@ -918,8 +918,7 @@ bool RepairSetup::repairEndpoint(sta::Pin* end_pin,
 }
 
 // Shared endpoint optimization loop for repairSetupResAware.
-// Iterates over violating endpoints and calls repairPathResAware with the
-// given phase (WIRE or GATE) for each.
+// Iterates over violating endpoints and calls repairPathResAware for each.
 bool RepairSetup::repairEndpoints(const int max_end_count,
                                   const int max_passes,
                                   const int max_iterations,
@@ -928,7 +927,6 @@ bool RepairSetup::repairEndpoints(const int max_end_count,
                                   const float initial_tns,
                                   int& opto_iteration,
                                   int& num_viols,
-                                  const ResAwarePhase phase,
                                   const char* phase_name,
                                   const char phase_marker)
 {
@@ -1064,7 +1062,7 @@ bool RepairSetup::repairEndpoints(const int max_end_count,
       sta::Path* end_path = sta_->vertexWorstSlackPath(end, max_);
 
       const bool changed
-          = repairPathResAware(end_path, end_slack, setup_slack_margin, phase);
+          = repairPathResAware(end_path, end_slack, setup_slack_margin);
 
       if (!changed) {
         if (pass != 1) {
@@ -1238,154 +1236,94 @@ bool RepairSetup::repairEndpoints(const int max_end_count,
 
 bool RepairSetup::repairPathResAware(sta::Path* path,
                                      sta::Slack path_slack,
-                                     const float setup_slack_margin,
-                                     const ResAwarePhase phase)
+                                     const float setup_slack_margin)
 {
   sta::PathExpanded expanded(path, sta_);
 
-  if (expanded.size() > 1) {
-    const int path_length = expanded.size();
-    vector<pair<int, sta::Delay>> delays;
-    const int start_index = expanded.startIndex();
-    const sta::Scene* corner = path->scene(sta_);
-    if (path->minMax(sta_) != resizer_->max_) {
-      logger_->error(RSZ, 502, "repairSetup expects max delay path");
-      return false;
-    }
-    const int lib_ap = corner->libertyIndex(resizer_->max_);
+  if (expanded.size() <= 1) {
+    return false;
+  }
 
-    // Build the delay list for the requested phase.
-    for (int i = start_index; i < path_length; i++) {
-      const sta::Path* path = expanded.path(i);
-      sta::Vertex* path_vertex = path->vertex(sta_);
-      const sta::Pin* path_pin = path->pin(sta_);
-      if (i > 0 && path_vertex->isDriver(network_)
-          && !network_->isTopLevelPort(path_pin)) {
-        const sta::TimingArc* prev_arc = path->prevArc(sta_);
-        const sta::TimingArc* corner_arc = prev_arc->sceneArc(lib_ap);
-        sta::Edge* prev_edge = path->prevEdge(sta_);
+  const int path_length = expanded.size();
+  const int start_index = expanded.startIndex();
+  const sta::Scene* corner = path->scene(sta_);
+  if (path->minMax(sta_) != resizer_->max_) {
+    logger_->error(RSZ, 502, "repairSetup expects max delay path");
+    return false;
+  }
 
-        sta::Delay delay = 0.0;
-        if (phase == ResAwarePhase::WIRE) {
-          // Wire delay: look ahead to the next node (sink pin)
-          if (i + 1 < path_length) {
-            const sta::Path* next_path_node = expanded.path(i + 1);
-            sta::Edge* net_edge = next_path_node->prevEdge(sta_);
-            const sta::TimingArc* net_arc = next_path_node->prevArc(sta_);
-            if (net_edge && net_edge->isWire()) {
-              delay = graph_->arcDelay(
-                  net_edge, net_arc, corner->dcalcAnalysisPtIndex(max_));
-            }
-          }
-        } else {
-          // Gate delay: load-dependent part (total arc delay minus intrinsic)
-          delay = graph_->arcDelay(
-                      prev_edge, prev_arc, corner->dcalcAnalysisPtIndex(max_))
-                  - corner_arc->intrinsicDelay();
-        }
-
+  // Build wire-delay list: for each driver node look ahead to the following
+  // sink edge and record its wire delay.
+  vector<pair<int, sta::Delay>> delays;
+  for (int i = start_index; i < path_length; i++) {
+    const sta::Path* path_node = expanded.path(i);
+    sta::Vertex* path_vertex = path_node->vertex(sta_);
+    const sta::Pin* path_pin = path_node->pin(sta_);
+    if (i > 0 && path_vertex->isDriver(network_)
+        && !network_->isTopLevelPort(path_pin)
+        && i + 1 < path_length) {
+      const sta::Path* next_node = expanded.path(i + 1);
+      sta::Edge* net_edge = next_node->prevEdge(sta_);
+      const sta::TimingArc* net_arc = next_node->prevArc(sta_);
+      if (net_edge && net_edge->isWire()) {
+        const sta::Delay delay = graph_->arcDelay(
+            net_edge, net_arc, corner->dcalcAnalysisPtIndex(max_));
         if (delay > 0.0) {
           delays.emplace_back(i, delay);
         }
-
         debugPrint(logger_,
                    RSZ,
                    "repair_setup",
                    3,
-                   "{} {} delay = {} intrinsic_delay = {}",
+                   "{} wire delay = {}",
                    path_vertex->name(network_),
-                   (phase == ResAwarePhase::WIRE) ? "wire" : "gate",
-                   delayAsString(delay, 3, sta_),
-                   delayAsString(corner_arc->intrinsicDelay(), 3, sta_));
+                   delayAsString(delay, 3, sta_));
       }
     }
+  }
 
-    // Sort by descending delay (largest bottleneck first).
-    auto delay_cmp = [](const pair<int, sta::Delay>& a,
-                        const pair<int, sta::Delay>& b) {
-      return a.second > b.second || (a.second == b.second && a.first > b.first);
-    };
-    std::ranges::sort(delays, delay_cmp);
+  // Sort by descending wire delay (largest bottleneck first).
+  std::ranges::sort(delays,
+                    [](const pair<int, sta::Delay>& a,
+                       const pair<int, sta::Delay>& b) {
+                      return a.second > b.second
+                             || (a.second == b.second && a.first > b.first);
+                    });
 
-    const char* phase_name = (phase == ResAwarePhase::WIRE) ? "wire" : "gate";
+  debugPrint(logger_,
+             RSZ,
+             "repair_setup",
+             3,
+             "ResAware wire pass: delays: {}, path slack: {}",
+             delays.size(),
+             delayAsString(path_slack, 3, sta_));
+
+  // Try ResAwareMove on each driver sorted by descending wire delay.
+  // Return immediately after a successful move because topology-changing
+  // moves invalidate the PathExpanded; the caller's loop will re-invoke
+  // with a fresh path.
+  BaseMove* move = resizer_->res_aware_move_.get();
+  for (const auto& [drvr_index, ignored] : delays) {
+    const sta::Path* drvr_path = expanded.path(drvr_index);
+    const sta::Pin* drvr_pin = drvr_path->vertex(sta_)->pin();
+    const string drvr_pin_name = network_->pathName(drvr_pin);
     debugPrint(logger_,
                RSZ,
                "repair_setup",
-               3,
-               "ResAware {} pass: delays: {}, path slack: {}",
-               phase_name,
-               delays.size(),
-               delayAsString(path_slack, 3, sta_));
-
-    // Select moves for this phase.
-    std::vector<BaseMove*> moves;
-    if (phase == ResAwarePhase::WIRE) {
-      moves = {
-          resizer_->res_aware_move_.get()
-          //  resizer_->unbuffer_move_.get(),
-          //  resizer_->vt_swap_speed_move_.get(),
-          //  resizer_->size_up_move_.get(),
-          //  resizer_->swap_pins_move_.get(),
-          //  resizer_->buffer_move_.get(),
-          //  resizer_->clone_move_.get(),
-          //  resizer_->split_load_move_.get()
-      };
-    } else {
-      moves = {resizer_->unbuffer_move_.get(),
-               resizer_->vt_swap_speed_move_.get(),
-               resizer_->size_up_move_.get(),
-               resizer_->swap_pins_move_.get(),
-               resizer_->res_aware_move_.get(),
-               resizer_->buffer_move_.get(),
-               resizer_->clone_move_.get(),
-               resizer_->split_load_move_.get()};
+               1,
+               "Considering {} for {}",
+               move->name(),
+               drvr_pin_name);
+    if (move->doMove(drvr_path, setup_slack_margin)) {
+      return true;
     }
-
-    // Try moves on drivers sorted by descending delay.
-    // Return immediately after a successful move because topology-changing
-    // moves invalidate the PathExpanded; the caller's loop will re-invoke
-    // with a fresh path.
-    for (const auto& [drvr_index, ignored] : delays) {
-      const sta::Path* drvr_path = expanded.path(drvr_index);
-      sta::Vertex* drvr_vertex = drvr_path->vertex(sta_);
-      const sta::Pin* drvr_pin = drvr_vertex->pin();
-      sta::LibertyPort* drvr_port = network_->libertyPort(drvr_pin);
-      sta::LibertyCell* drvr_cell
-          = drvr_port ? drvr_port->libertyCell() : nullptr;
-      const int fo = this->fanout(drvr_vertex);
-      const string drvr_pin_name = network_->pathName(drvr_pin);
-      debugPrint(logger_,
-                 RSZ,
-                 "repair_setup",
-                 3,
-                 "{} {} fanout = {} drvr_index = {} target = {}",
-                 drvr_pin_name,
-                 drvr_cell ? drvr_cell->name() : "none",
-                 fo,
-                 drvr_index,
-                 phase_name);
-
-      for (BaseMove* move : moves) {
-        debugPrint(logger_,
-                   RSZ,
-                   "repair_setup",
-                   1,
-                   "Considering {} for {}",
-                   move->name(),
-                   drvr_pin_name);
-
-        if (move->doMove(drvr_path, setup_slack_margin)) {
-          return true;
-        }
-        debugPrint(logger_,
-                   RSZ,
-                   "repair_setup",
-                   6,
-                   "Move {} failed for {}",
-                   move->name(),
-                   drvr_pin_name);
-      }
-    }
+    debugPrint(logger_,
+               RSZ,
+               "repair_setup",
+               6,
+               "Move {} failed for {}",
+               move->name(),
+               drvr_pin_name);
   }
   return false;
 }
@@ -1909,21 +1847,6 @@ void RepairSetup::repairSetup_ResAware(const float setup_slack_margin,
              phase_marker,
              max_endpoint_count);
 
-  // Wire-delay move sequence: ResAwareMove targets the highest net delay on
-  // each path, followed by buffering and load-splitting moves.
-  // move_sequence_.clear();
-  // move_sequence_ = {resizer_->res_aware_move_.get(),
-  //                   resizer_->unbuffer_move_.get(),
-  //                   resizer_->vt_swap_speed_move_.get(),
-  //                   resizer_->size_up_move_.get(),
-  //                   resizer_->swap_pins_move_.get(),
-  //                   resizer_->buffer_move_.get(),
-  //                   resizer_->clone_move_.get(),
-  //                   resizer_->split_load_move_.get()};
-  // for (auto move : move_sequence_) {
-  //   move->init();
-  // }
-
   printProgress(opto_iteration, false, false, phase_marker);
 
   // num_viols is decremented inside repairEndpoints as endpoints are fixed.
@@ -1936,7 +1859,6 @@ void RepairSetup::repairSetup_ResAware(const float setup_slack_margin,
                   initial_tns,
                   opto_iteration,
                   num_viols,
-                  ResAwarePhase::WIRE,
                   "RESAWARE",
                   phase_marker);
 

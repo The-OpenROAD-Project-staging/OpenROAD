@@ -39,12 +39,6 @@ class BaseMove;
 class ViolatorCollector;
 class MoveTracker;
 
-enum class ResAwarePhase
-{
-  WIRE,
-  GATE
-};
-
 struct OptoParams
 {
   int iteration;
@@ -145,8 +139,7 @@ class RepairSetup : public sta::dbStaState
       = nullptr);
   bool repairPathResAware(sta::Path* path,
                           sta::Slack path_slack,
-                          float setup_slack_margin,
-                          ResAwarePhase phase);
+                          float setup_slack_margin);
 
   // Shared endpoint optimization loop used by repairSetupResAware.
   bool repairEndpoints(int max_end_count,
@@ -157,7 +150,6 @@ class RepairSetup : public sta::dbStaState
                        float initial_tns,
                        int& opto_iteration,
                        int& num_viols,
-                       ResAwarePhase phase,
                        const char* phase_name,
                        char phase_marker);
   int fanout(sta::Vertex* vertex);
