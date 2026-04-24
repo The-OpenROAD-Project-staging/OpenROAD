@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <set>
 #include <string>
@@ -24,8 +25,8 @@
 #include "stt/SteinerTreeBuilder.h"
 
 namespace utl {
-class CallBackHandler;
 class Logger;
+class ServiceRegistry;
 }  // namespace utl
 
 namespace odb {
@@ -90,7 +91,7 @@ class FastRouteCore
  public:
   FastRouteCore(odb::dbDatabase* db,
                 utl::Logger* log,
-                utl::CallBackHandler* callback_handler,
+                utl::ServiceRegistry* service_registry,
                 stt::SteinerTreeBuilder* stt_builder,
                 sta::dbSta* sta);
   ~FastRouteCore();
@@ -654,10 +655,10 @@ class FastRouteCore
   bool enable_resistance_aware_ = false;
   bool is_3d_step_ = false;
   bool is_incremental_grt_ = false;
-  float worst_slack_;
-  float worst_net_resistance_;
-  int worst_net_length_;
-  int worst_fanout_;
+  float worst_slack_ = std::numeric_limits<float>::max();
+  float worst_net_resistance_ = 0;
+  int worst_net_length_ = 0;
+  int worst_fanout_ = 0;
   int num_adjust_;
   int v_capacity_;
   int h_capacity_;
@@ -731,7 +732,7 @@ class FastRouteCore
   std::vector<StTree> sttrees_;  // the Steiner trees
   std::vector<StTree> sttrees_bk_;
 
-  utl::CallBackHandler* callback_handler_;
+  utl::ServiceRegistry* service_registry_;
   utl::Logger* logger_;
   stt::SteinerTreeBuilder* stt_builder_;
   sta::dbSta* sta_;

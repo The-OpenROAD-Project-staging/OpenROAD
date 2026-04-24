@@ -38,6 +38,7 @@ genrule(
         "src/schematic-widget.js",
         "src/charts-widget.js",
         "src/timing-widget.js",
+        "src/drc-widget.js",
         "src/main.js",
     ],
     outs = ["src/report_assets.cpp"],
@@ -61,6 +62,7 @@ genrule(
           " $(location src/schematic-widget.js)" +
           " $(location src/charts-widget.js)" +
           " $(location src/timing-widget.js)" +
+          " $(location src/drc-widget.js)" +
           " $(location src/main.js)",
     tools = [":embed_report_assets"],
 )
@@ -84,6 +86,13 @@ cc_library(
         "src/timing_report.cpp",
         "src/timing_report.h",
         "src/web.cpp",
+        "src/web_chart.cpp",
+        "src/web_chart.h",
+        "src/web_painter.cpp",
+        "src/web_painter.h",
+        "src/web_serve.cpp",
+        "src/web_viewer_hook.cpp",
+        "src/web_viewer_hook.h",
         ":report_assets",
     ],
     hdrs = [
@@ -107,6 +116,7 @@ cc_library(
         "@boost.asio",
         "@boost.beast",
         "@boost.geometry",
+        "@spdlog",
         "@tcl_lang//:tcl",
     ],
 )

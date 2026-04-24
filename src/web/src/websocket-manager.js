@@ -17,7 +17,12 @@ export class WebSocketManager {
         this.onStatusChange = onStatusChange || (() => {});
         this.onPush = null; // callback for server-push notifications
         this._cache = null;
+        this._isConnected = false;
         this.connect();
+    }
+
+    get isConnected() {
+        return this._isConnected || (this.socket && this.socket.readyState === WebSocket.OPEN);
     }
 
     // Create a cache-backed instance (no WebSocket connection).
@@ -31,6 +36,7 @@ export class WebSocketManager {
         mgr.onStatusChange = onStatusChange || (() => {});
         mgr.onPush = null;
         mgr._cache = cache;
+        mgr._isConnected = true; // cache is always "connected"
         mgr.readyPromise = Promise.resolve();
         mgr.readyResolve = null;
         return mgr;
@@ -50,8 +56,10 @@ export class WebSocketManager {
 
         this.socket.onopen = () => {
             console.log('WebSocket connected');
+            this._isConnected = true;
             this.reconnectDelay = 1000;
             this.readyResolve();
+            this.onStatusChange();
         };
 
         this.socket.onmessage = (event) => {
@@ -60,6 +68,8 @@ export class WebSocketManager {
 
         this.socket.onclose = () => {
             console.log('WebSocket closed, reconnecting...');
+            this._isConnected = false;
+            this.onStatusChange();
             for (const [id, handler] of this.pending) {
                 handler.reject(new Error('WebSocket closed'));
             }
@@ -174,6 +184,20 @@ export class WebSocketManager {
         }
         const json = this._cache.json && this._cache.json[key];
         if (json !== undefined) {
+            // Filter timing paths by slack range when histogram column clicked.
+            // Tag each path with its original index so overlay lookup still
+            // works after the array is narrowed down.
+            if (type === 'timing_report'
+                && msg.slack_min != null && msg.slack_max != null
+                && json.paths) {
+                const filtered = [];
+                json.paths.forEach((p, i) => {
+                    if (p.slack >= msg.slack_min && p.slack < msg.slack_max) {
+                        filtered.push({ ...p, _originalIndex: i });
+                    }
+                });
+                return Promise.resolve({ ...json, paths: filtered });
+            }
             return Promise.resolve(json);
         }
 
