@@ -154,17 +154,8 @@ void RepairSetup::setupMoveSequence(const std::vector<MoveType>& sequence,
     }
   } else {
     move_sequence_.clear();
-    // if (resizer_->global_router_ && resizer_->global_router_->haveRoutes()) {
-    //   move_sequence_.push_back(resizer_->res_aware_move_.get());
-    // }
     if (!skip_buffer_removal) {
       move_sequence_.push_back(resizer_->unbuffer_move_.get());
-    }
-    // if (resizer_->global_router_ && resizer_->global_router_->haveRoutes()) {
-    //   move_sequence_.push_back(resizer_->res_aware_move_.get());
-    // }
-    if (!skip_vt_swap && resizer_->lib_data_->sorted_vt_categories.size() > 1) {
-      move_sequence_.push_back(resizer_->vt_swap_speed_move_.get());
     }
     // Always  have sizing
     move_sequence_.push_back(resizer_->size_up_move_.get());
@@ -1260,8 +1251,7 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
     sta::Vertex* path_vertex = path_node->vertex(sta_);
     const sta::Pin* path_pin = path_node->pin(sta_);
     if (i > 0 && path_vertex->isDriver(network_)
-        && !network_->isTopLevelPort(path_pin)
-        && i + 1 < path_length) {
+        && !network_->isTopLevelPort(path_pin) && i + 1 < path_length) {
       const sta::Path* next_node = expanded.path(i + 1);
       sta::Edge* net_edge = next_node->prevEdge(sta_);
       const sta::TimingArc* net_arc = next_node->prevArc(sta_);
@@ -1283,12 +1273,12 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
   }
 
   // Sort by descending wire delay (largest bottleneck first).
-  std::ranges::sort(delays,
-                    [](const pair<int, sta::Delay>& a,
-                       const pair<int, sta::Delay>& b) {
-                      return a.second > b.second
-                             || (a.second == b.second && a.first > b.first);
-                    });
+  std::ranges::sort(
+      delays,
+      [](const pair<int, sta::Delay>& a, const pair<int, sta::Delay>& b) {
+        return a.second > b.second
+               || (a.second == b.second && a.first > b.first);
+      });
 
   debugPrint(logger_,
              RSZ,

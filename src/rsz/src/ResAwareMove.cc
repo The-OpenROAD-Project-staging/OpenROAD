@@ -11,7 +11,7 @@ namespace rsz {
 
 bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
 {
-  if (!resizer_->global_router_ || !resizer_->global_router_->haveRoutes()) {
+  if (!resizer_->global_router_) {
     return false;
   }
 
@@ -36,6 +36,13 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
 
   odb::dbNet* db_net = db_network_->staToDb(net);
   if (!db_net) {
+    logger_->report("db_net is null");
+    return false;
+  }
+
+  const std::string drvr_pin_name = network_->pathName(drvr_pin);
+  if (!resizer_->global_router_->getNet(db_net)) {
+    logger_->report("db_net for {} is not in the grt structure", drvr_pin_name);
     return false;
   }
 
