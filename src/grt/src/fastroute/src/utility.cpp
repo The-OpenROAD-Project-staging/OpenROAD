@@ -101,12 +101,11 @@ float FastRouteCore::getResAwareScore(FrNet* net)
   const float kFanoutWeight = 3.0f;
   const float kNetLengthWeight = 2.0f;
 
-  return kResistanceWeight * (net->getResistance() / worst_net_resistance_)
-         + kSlackWeight * (net->getSlack() / worst_slack_)
-         + kFanoutWeight
-               * (static_cast<float>(net->getNumPins()) / worst_fanout_)
-         + kNetLengthWeight
-               * (static_cast<float>(net->getNetLength()) / worst_net_length_);
+  return net->getResistance() / worst_net_resistance_ * kResistanceWeight
+         + net->getSlack() / worst_slack_ * kSlackWeight
+         + static_cast<float>(net->getNumPins()) / worst_fanout_ * kFanoutWeight
+         + static_cast<float>(net->getNetLength()) / worst_net_length_
+               * kNetLengthWeight;
 }
 
 static bool compareNetPins(const OrderNetPin& a, const OrderNetPin& b)
