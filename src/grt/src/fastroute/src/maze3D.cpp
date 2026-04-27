@@ -1610,14 +1610,6 @@ void FastRouteCore::mazeRouteMSMDOrder3D(int expand,
               graph2d_.updateUsageH(min_x, grids[i].y, net, net->getEdgeCost());
               h_edges_3D_[grids[i].layer][grids[i].y][min_x].usage
                   += net->getLayerEdgeCost(grids[i].layer);
-              if (min_x == 31 && grids[i].y == 282) {
-                logger_->report(
-                    "Maze3D {} l{} - Usage: {} - Cap: {}",
-                    net->getName(),
-                    grids[i].layer,
-                    h_edges_3D_[grids[i].layer][grids[i].y][min_x].usage,
-                    h_edges_3D_[grids[i].layer][grids[i].y][min_x].cap);
-              }
             }
           }
         }

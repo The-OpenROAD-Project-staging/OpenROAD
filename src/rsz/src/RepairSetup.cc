@@ -154,6 +154,10 @@ void RepairSetup::setupMoveSequence(const std::vector<MoveType>& sequence,
     }
   } else {
     move_sequence_.clear();
+    if (resizer_->global_router_ && resizer_->global_router_->haveRoutes()
+        && resizer_->resistanceAware()) {
+      move_sequence_.push_back(resizer_->res_aware_move_.get());
+    }
     if (!skip_buffer_removal) {
       move_sequence_.push_back(resizer_->unbuffer_move_.get());
     }
