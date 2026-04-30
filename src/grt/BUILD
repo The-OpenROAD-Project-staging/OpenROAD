@@ -47,6 +47,9 @@ cc_library(
         "src/fastroute/include/FastRouteRenderer.h",
         "src/fastroute/include/Graph2D.h",
     ],
+    copts = [
+        "-fopenmp",
+    ],
     includes = [
         "include",
         "src/fastroute/include",
@@ -65,6 +68,7 @@ cc_library(
         "@boost.container_hash",
         "@boost.icl",
         "@boost.multi_array",
+        "@openmp",
     ],
 )
 
