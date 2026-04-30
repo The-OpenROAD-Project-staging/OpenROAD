@@ -135,11 +135,11 @@ Total Placement Failures:          0
 ---------------------------------------
 Placement Analysis
 ---------------------------------
-total displacement       3754.4 u
+total displacement       3746.8 u
 average displacement        1.2 u
-max displacement          141.1 u
+max displacement          141.0 u
 original HPWL          193681.5 u
-legalized HPWL         194510.2 u
+legalized HPWL         194513.2 u
 delta HPWL                    0 %
 
 Clock clk
