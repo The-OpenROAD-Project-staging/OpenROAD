@@ -298,6 +298,7 @@ class FastRouteCore
   void writeCongestionMap(const std::string& filename);
 
   float getNetResistance(odb::dbNet* db_net);
+  float getNetResistanceOnLayer(odb::dbNet* db_net, int layer);
 
  private:
   void convertGridsToSegments(

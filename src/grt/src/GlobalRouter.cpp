@@ -871,12 +871,13 @@ void GlobalRouter::setNetIsResAware(odb::dbNet* db_net, bool res_aware)
 
 bool GlobalRouter::isNetResAware(odb::dbNet* db_net)
 {
-  Net* net = db_net_map_[db_net];
-  if (net) {
-    return net->isResAware();
+  auto it = db_net_map_.find(db_net);
+  if (it != db_net_map_.end()) {
+    return it->second->isResAware();
   }
-  logger_->warn(
-      GRT, 100, "Net {} is not in the db_net_map_", db_net->getConstName());
+
+  logger_->warn(GRT, 100, "Net is not in the db_net_map_");
+
   return false;
 }
 
@@ -3474,6 +3475,14 @@ float GlobalRouter::getViaResistance(int from_layer, int to_layer)
 float GlobalRouter::getFRNetResistance(odb::dbNet* db_net)
 {
   return fastroute_->getNetResistance(db_net);
+}
+
+float GlobalRouter::getFRNetResistanceOnMinClockLayer(odb::dbNet* db_net)
+{
+  int min_layer = getMinLayerForClock() > 0 ? getMinLayerForClock()
+                                            : getMinRoutingLayer();
+  // FastRouteCore uses 0-based layer indices; routing layer numbers are 1-based
+  return fastroute_->getNetResistanceOnLayer(db_net, min_layer - 1);
 }
 
 float GlobalRouter::estimatePathResistance(odb::dbObject* pin1,

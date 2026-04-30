@@ -36,17 +36,6 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
     return false;
   }
 
-  if (hasMoves(drvr_inst)) {
-    debugPrint(logger_,
-               RSZ,
-               "res_aware_move",
-               2,
-               "REJECT ResAwareMove {}: {} already has moves",
-               network_->pathName(drvr_pin),
-               network_->pathName(drvr_inst));
-    return false;
-  }
-
   sta::Net* net = network_->net(drvr_pin);
   if (!net) {
     debugPrint(logger_,
@@ -90,43 +79,47 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
     return false;
   }
 
-  // Check net resistance before accepting the move
-  // If there is no improvement, skip it
+  // Fast pre-filter: estimate resistance on the minimum clock layer using the
+  // existing Steiner tree topology, avoiding an expensive incremental reroute.
+  // Reject the move if the expected resistance reduction is below 50%.
   float resistance = resizer_->global_router_->getFRNetResistance(db_net);
+  float estimated_resistance
+      = resizer_->global_router_->getFRNetResistanceOnMinClockLayer(db_net);
 
-  resizer_->global_router_->setResistanceAware(true);
-  resizer_->global_router_->addDirtyNet(db_net);
-  resizer_->global_router_->setNetIsResAware(db_net, true);
-
-  grt::IncrementalGRoute incr_groute(resizer_->global_router_,
-                                     resizer_->getDbBlock());
-  incr_groute.updateRoutes();
-
-  float new_resistance = resizer_->global_router_->getFRNetResistance(db_net);
-  if (resistance <= new_resistance) {
+  constexpr float kMinResistanceReduction = 0.50f;
+  const float reduction_ratio
+      = (resistance > 0.0f) ? (resistance - estimated_resistance) / resistance
+                            : 0.0f;
+  if (reduction_ratio < kMinResistanceReduction) {
     debugPrint(logger_,
                RSZ,
                "res_aware_move",
                2,
-               "REJECT ResAwareMove {}: No resistance improvement "
-               "({} -> {})",
+               "REJECT ResAwareMove {}: Expected resistance reduction {:.1f}% "
+               "below threshold {:.1f}% ({} -> {} estimated)",
                network_->pathName(drvr_pin),
+               100.0f * reduction_ratio,
+               100.0f * kMinResistanceReduction,
                resistance,
-               new_resistance);
+               estimated_resistance);
     return false;
   }
 
+  resizer_->global_router_->setResistanceAware(true);
+  resizer_->global_router_->addDirtyNet(db_net);
+  resizer_->global_router_->setNetIsResAware(db_net, true);
   estimate_parasitics_->parasiticsInvalid(db_net);
 
   debugPrint(logger_,
              RSZ,
              "res_aware_move",
              1,
-             "ACCEPT ResAwareMove {}: Rerouted net {} resistance {} -> {}",
+             "ACCEPT ResAwareMove {}: Rerouted net {} (resistance {} -> {} "
+             "estimated)",
              network_->pathName(drvr_pin),
              db_net->getName(),
              resistance,
-             new_resistance);
+             estimated_resistance);
   countMove(drvr_inst);
   return true;
 }

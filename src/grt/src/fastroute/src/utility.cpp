@@ -631,6 +631,41 @@ float FastRouteCore::getNetResistance(odb::dbNet* db_net)
   return getNetResistance(nets_[net_id]);
 }
 
+// Estimate net resistance assuming all wires are routed on a given layer.
+// Uses the existing Steiner tree topology without triggering a reroute.
+// Via resistances use the actual layer transition from the existing route,
+// matching the behaviour of getNetResistance(FrNet*, assume_layer=false).
+float FastRouteCore::getNetResistanceOnLayer(odb::dbNet* db_net, int layer)
+{
+  int net_id;
+  bool exists;
+  getNetId(db_net, net_id, exists);
+  if (!exists) {
+    return 0.0f;
+  }
+
+  FrNet* net = nets_[net_id];
+  float total_resistance = 0.0f;
+  for (const auto& edge : sttrees_[net_id].edges) {
+    if (edge.len == 0 && edge.route.routelen == 0) {
+      continue;
+    }
+    const std::vector<GPoint3D>& grids = edge.route.grids;
+    const int route_len = edge.route.routelen;
+    for (int i = 0; i < route_len; i++) {
+      if (grids[i].layer == grids[i + 1].layer) {
+        const int seg_len = std::abs(grids[i].x - grids[i + 1].x)
+                            + std::abs(grids[i].y - grids[i + 1].y);
+        total_resistance += getWireResistance(layer, seg_len * tile_size_, net);
+      } else {
+        total_resistance
+            += getViaResistance(grids[i].layer, grids[i + 1].layer);
+      }
+    }
+  }
+  return total_resistance;
+}
+
 // Calculate entire net resistance considering wire and via resistance
 // If assume_layer is true, it will assume the net is routed on the min layer
 float FastRouteCore::getNetResistance(FrNet* net, bool assume_layer)
