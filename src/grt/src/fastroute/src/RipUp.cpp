@@ -302,10 +302,18 @@ bool FastRouteCore::newRipup3DType3(const int netID, const int edgeID)
       }
     }
     node.conCNT--;
-    node.botL = bl;
-    node.lID = bid;
-    node.topL = hl;
-    node.hID = hid;
+    if (node.conCNT > 0) {
+      node.botL = bl;
+      node.lID = bid;
+      node.topL = hl;
+      node.hID = hid;
+    } else {
+      // No remaining edges: reset to the TreeNode constructor defaults.
+      node.botL = -1;
+      node.lID = -1;
+      node.topL = -1;
+      node.hID = -1;
+    }
   };
 
   removeEdgeFromNode(n1a);

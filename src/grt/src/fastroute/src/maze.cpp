@@ -1135,7 +1135,7 @@ bool FastRouteCore::runSnapshotBatchedMazeRoute(const int iter,
           = std::min(semantic_wave_size,
                      static_cast<int>(batch_net_ids.size())
                          - static_cast<int>(wave_begin));
-      const int active_threads
+      [[maybe_unused]] const int active_threads
           = resolveSnapshotExecutionThreads(batches_in_wave);
       std::vector<BatchResult> batch_results(batches_in_wave);
       wave_count++;
