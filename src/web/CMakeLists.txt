@@ -112,6 +112,7 @@ target_link_libraries(web
   PUBLIC
     odb
   PRIVATE
+    gui
     gui_descriptors
     gui_heatmap_core
     dbSta_lib
