@@ -100,7 +100,7 @@ bazel_dep(name = "verilator", version = "5.036.bcr.3", dev_dependency = True)
 bazel_dep(name = "bazel-orfs", dev_dependency = True)
 bazel_dep(name = "bazel-orfs-verilog", dev_dependency = True)
 
-BAZEL_ORFS_COMMIT = "d9f8b75704ebecfe281134dce8a293b8faa8776f"
+BAZEL_ORFS_COMMIT = "f8847569f76452e3f80d293408991d6b8c65459b"
 
 BAZEL_ORFS_REMOTE = "https://github.com/The-OpenROAD-Project/bazel-orfs.git"
 
@@ -108,13 +108,6 @@ BAZEL_ORFS_REMOTE = "https://github.com/The-OpenROAD-Project/bazel-orfs.git"
 git_override(
     module_name = "bazel-orfs",
     commit = BAZEL_ORFS_COMMIT,
-    patch_strip = 1,
-    # Local patch: add `yosys_plugins` attribute to orfs.default() so
-    # consumers can pass plugin .so files directly instead of merging
-    # them into a custom yosys_share tree. Drop this once upstreamed.
-    patches = [
-        "//bazel/bazel-orfs-patches:yosys-plugins-attr.patch",
-    ],
     remote = BAZEL_ORFS_REMOTE,
 )
 
@@ -135,6 +128,11 @@ git_override(
     patch_strip = 1,
     patches = [
         "//bazel/bazel-orfs-patches:0035-fix-remove-non-root-overrides-from-MODULE.bazel.patch",
+        # genMetrics.py shells out to `git` for run__flow__scripts_commit
+        # and run__flow__platform_commit. In a hermetic Bazel sandbox
+        # `git` is not on PATH, which raised FileNotFoundError instead of
+        # the "not a git repo" fallback. Drop this once upstreamed.
+        "//bazel/bazel-orfs-patches:genMetrics-tolerate-missing-git.patch",
     ],
     remote = "https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts.git",
 )
