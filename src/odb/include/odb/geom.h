@@ -356,9 +356,6 @@ class Rect
   // Indicates if the box has a negative width or height
   bool isInverted() const;
 
-  // Indicates if the box is unmerged after mergeInit()
-  bool isMergeInit() const;
-
   int minDXDY() const;
   int maxDXDY() const;
   Orientation2D getDir() const;
@@ -897,12 +894,6 @@ inline void Rect::mergeInit()
 inline bool Rect::isInverted() const
 {
   return xlo_ > xhi_ || ylo_ > yhi_;
-}
-
-inline bool Rect::isMergeInit() const
-{
-  return xlo_ == INT_MAX && ylo_ == INT_MAX && xhi_ == INT_MIN
-         && yhi_ == INT_MIN;
 }
 
 inline void Rect::printf(FILE* fp, const char* prefix)

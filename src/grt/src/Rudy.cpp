@@ -148,7 +148,7 @@ void Rudy::processNet(odb::dbNet* net)
 
 void Rudy::processIntersectionSignalNet(const odb::Rect net_rect)
 {
-  if (net_rect.isMergeInit()) {
+  if (net_rect.isInverted()) {
     return;
   }
   const auto net_area = net_rect.area();
