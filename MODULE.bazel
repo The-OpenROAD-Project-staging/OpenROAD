@@ -100,7 +100,7 @@ bazel_dep(name = "verilator", version = "5.036.bcr.3", dev_dependency = True)
 bazel_dep(name = "bazel-orfs", dev_dependency = True)
 bazel_dep(name = "bazel-orfs-verilog", dev_dependency = True)
 
-BAZEL_ORFS_COMMIT = "177609af0967cd9a9641d831b7c1051a975080ed"
+BAZEL_ORFS_COMMIT = "d9f8b75704ebecfe281134dce8a293b8faa8776f"
 
 BAZEL_ORFS_REMOTE = "https://github.com/The-OpenROAD-Project/bazel-orfs.git"
 
