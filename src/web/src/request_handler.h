@@ -98,6 +98,7 @@ struct WebSocketRequest
     kDrcHighlight,
     kDebugContinue,
     kDebugCharts,
+    kGet3DData,
     kUnknown
   };
 
@@ -193,6 +194,7 @@ class SelectHandler
   WebSocketResponse handleSchematicFull(const WebSocketRequest& req);
   WebSocketResponse handleSchematicInspect(const WebSocketRequest& req,
                                            SessionState& state);
+  WebSocketResponse handleGet3DData(const WebSocketRequest& req);
 
  private:
   std::shared_ptr<TileGenerator> gen_;

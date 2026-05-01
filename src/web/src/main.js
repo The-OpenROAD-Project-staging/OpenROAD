@@ -18,6 +18,7 @@ import { DrcWidget } from './drc-widget.js';
 import { TclCompleter } from './tcl-completer.js';
 import { setCookie, applyGLTheme } from './theme.js';
 import { updateDocumentTitle } from './title.js';
+import { ThreeDViewerWidget } from './3d-viewer-widget.js';
 
 // ─── Status Indicator ───────────────────────────────────────────────────────
 
@@ -97,6 +98,9 @@ const app = {
     heatMapLegendEl: null,
     renderHeatMapControls: null,
     rulerManager: null,
+    getDbuPerMicron() {
+        return this.techData?.dbu_per_micron || 1000;
+    },
 };
 
 const visibility = {
@@ -333,7 +337,7 @@ function createLayoutViewer(container) {
         const { dbuX, dbuY } = latLngToDbu(
             e.latlng.lat, e.latlng.lng, app.designScale, app.designMaxDXDY,
             app.designOriginX, app.designOriginY);
-        const dbuPerUm = app.techData?.dbu_per_micron || 1000;
+        const dbuPerUm = app.getDbuPerMicron();
         const precision = Math.ceil(Math.log10(dbuPerUm));
         const xUm = (dbuX / dbuPerUm).toFixed(precision);
         const yUm = (dbuY / dbuPerUm).toFixed(precision);
@@ -396,6 +400,9 @@ function createTclConsole(container) {
                         tclAppend(data.result + '\n',
                                   data.is_error ? 'tcl-error' : '');
                     }
+                    if (!data.is_error && app.drcWidget) {
+                        app.drcWidget.refresh();
+                    }
                 })
                 .catch(err => tclAppend(`Error: ${err}\n`, 'tcl-error'));
         }
@@ -457,6 +464,10 @@ function createSelectHighlight(container) {
 
 function createSchematicWidget(container) {
     new SchematicWidget(container, app);
+}
+
+function create3DViewerWidget(container) {
+    app.threeDViewerWidget = new ThreeDViewerWidget(container, app);
 }
 
 function createStubPanel(container, title, description) {
@@ -568,6 +579,7 @@ app.goldenLayout.registerComponentFactoryFunction('DRCWidget', createDRCWidget);
 app.goldenLayout.registerComponentFactoryFunction('ClockWidget', createClockWidget);
 app.goldenLayout.registerComponentFactoryFunction('ChartsWidget', createChartsWidget);
 app.goldenLayout.registerComponentFactoryFunction('SchematicWidget', createSchematicWidget);
+app.goldenLayout.registerComponentFactoryFunction('3DViewer', create3DViewerWidget);
 app.goldenLayout.registerComponentFactoryFunction('HelpWidget', createHelpWidget);
 app.goldenLayout.registerComponentFactoryFunction('SelectHighlight', createSelectHighlight);
 
@@ -627,6 +639,7 @@ const componentTitles = {
     ClockWidget: 'Clock Tree',
     ChartsWidget: 'Charts',
     SchematicWidget: 'Schematic',
+    '3DViewer': '3D Viewer',
     HelpWidget: 'Help',
     SelectHighlight: 'Select Highlight',
 };
@@ -698,6 +711,15 @@ app.websocketManager.onPush = (msg) => {
     if (msg.type === 'refresh') {
         document.getElementById('loading-overlay').style.display = 'none';
         redrawAllLayers();
+    } else if (msg.type === 'drcUpdated') {
+        if (app._drcUpdateTimeout) {
+            clearTimeout(app._drcUpdateTimeout);
+        }
+        app._drcUpdateTimeout = setTimeout(() => {
+            if (app.drcWidget) {
+                app.drcWidget.refresh();
+            }
+        }, 500);
     } else if (msg.type === 'debug_paused') {
         ensureDebugContinueButton().style.display = 'block';
         // Refetch tiles so the user sees the current paused state.
