@@ -8,6 +8,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include <string_view>
@@ -15,6 +16,7 @@
 #include <vector>
 
 #include "color.h"
+#include "glyph_cache.h"
 #include "json_builder.h"
 #include "odb/db.h"
 #include "odb/geom.h"
@@ -162,6 +164,10 @@ class TileGenerator
   std::vector<std::string> getLayers() const;
   std::vector<std::string> getSites() const;
 
+  // Per-layer colors matching gui::DisplayControls layer palette.  Computed
+  // lazily and cached; the cache is rebuilt only if the tech changes.
+  const std::map<odb::dbTechLayer*, Color>& getLayerColorMap() const;
+
   std::vector<SelectionResult> selectAt(
       int dbu_x,
       int dbu_y,
@@ -187,6 +193,7 @@ class TileGenerator
 
   odb::dbBlock* getBlock() const;
   odb::dbChip* getChip() const;
+  odb::dbTech* getTech() const;
 
   std::vector<unsigned char> generateTile(
       const std::string& layer,
@@ -274,22 +281,25 @@ class TileGenerator
                         int x,
                         int y) const;
 
-  static int getBitmapTextWidth(std::string_view text, int scale);
-  static int getBitmapTextHeight(int scale);
-  static void drawBitmapText(std::vector<unsigned char>& image,
-                             int x,
-                             int y,
-                             std::string_view text,
-                             int scale,
-                             const Color& color);
-  // Draw text rotated 90° CCW (reads bottom-to-top).
-  // (x, y) is the bottom-left corner of the rotated text block.
-  static void drawBitmapTextRotated(std::vector<unsigned char>& image,
-                                    int x,
-                                    int y,
-                                    std::string_view text,
-                                    int scale,
-                                    const Color& color);
+  // Anti-aliased text rendering.  All methods take a pre-resolved FontSize
+  // handle so callers lock the glyph cache once per rendering context rather
+  // than once per character.
+  static int getTextWidth(std::string_view text,
+                          const GlyphCache::FontSize& font);
+  static int getTextHeight(const GlyphCache::FontSize& font);
+  static void drawText(std::vector<unsigned char>& image,
+                       int x,
+                       int y,
+                       std::string_view text,
+                       const GlyphCache::FontSize& font,
+                       const Color& color);
+  // Draw text rotated 90° CW (reads top-to-bottom).
+  static void drawTextRotated(std::vector<unsigned char>& image,
+                              int x,
+                              int y,
+                              std::string_view text,
+                              const GlyphCache::FontSize& font,
+                              const Color& color);
 
   void drawHighlight(std::vector<unsigned char>& image,
                      const std::vector<odb::Rect>& rects,
@@ -351,10 +361,21 @@ class TileGenerator
                        const Color& c,
                        int width = 3);
 
+  void computePinLabelMargin();
+
   odb::dbDatabase* db_;
   sta::dbSta* sta_;
   utl::Logger* logger_;
   std::unique_ptr<Search> search_;
+  int pin_label_margin_dbu_ = 0;  // cached by computePinLabelMargin()
+
+  // Cached layer-color map keyed by tech (see getLayerColorMap).  Each tech is
+  // computed once and kept; std::map reference stability means a returned ref
+  // stays valid even if another tech is added later.
+  mutable std::mutex layer_colors_mutex_;
+  mutable std::map<odb::dbTech*, std::map<odb::dbTechLayer*, Color>>
+      layer_colors_by_tech_;
+
   static constexpr int kTileSizeInPixel = 256;
 };
 

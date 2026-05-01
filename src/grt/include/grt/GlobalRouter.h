@@ -155,6 +155,9 @@ class GlobalRouter
   void setGridOrigin(int x, int y);
   void setAllowCongestion(bool allow_congestion);
   void setResistanceAware(bool resistance_aware);
+  void setSnapshotBatchedWidth(int snapshot_batched_width);
+  int getSnapshotBatchedWidth() const;
+  int getSnapshotBatchCount() const;
   bool isResistanceAware() { return resistance_aware_; };
   void setNetIsResAware(odb::dbNet* db_net, bool res_aware);
   bool isNetResAware(odb::dbNet* db_net);
@@ -164,6 +167,7 @@ class GlobalRouter
   {
     skip_large_fanout_ = skip_large_fanout;
   };
+  void setNumThreads(int num_threads);
 
   void setInfiniteCapacity(bool infinite_capacity);
 
@@ -536,6 +540,8 @@ class GlobalRouter
   int congestion_report_iter_step_;
   bool allow_congestion_;
   bool resistance_aware_{false};
+  int snapshot_batched_width_{0};
+  int num_threads_;
   std::vector<int> vertical_capacities_;
   std::vector<int> horizontal_capacities_;
   int macro_extension_;

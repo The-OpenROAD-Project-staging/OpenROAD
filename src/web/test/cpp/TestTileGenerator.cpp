@@ -8,7 +8,9 @@
 #include <string>
 #include <vector>
 
+#include "color.h"
 #include "gtest/gtest.h"
+#include "json_builder.h"
 #include "odb/db.h"
 #include "odb/dbTypes.h"
 #include "odb/geom.h"
@@ -95,6 +97,35 @@ TEST_F(TileGeneratorTest, GetBoundsReflectsInstances)
   EXPECT_LE(bounds.yMin(), 10000);
 }
 
+TEST_F(TileGeneratorTest, BoundsIncludeLabelMargin)
+{
+  // Place instances to fill the BBox across the die.
+  placeInst("BUF_X16", "buf_ll", 0, 0);
+  placeInst("BUF_X16", "buf_ur", 90000, 90000);
+
+  // Create a BTerm pin at the right die edge.
+  const char* pin_name = "my_long_pin_name";
+  odb::dbNet* net = odb::dbNet::create(block_, pin_name);
+  odb::dbBTerm* bterm = odb::dbBTerm::create(net, pin_name);
+  bterm->setIoType(odb::dbIoType::INPUT);
+  odb::dbBPin* bpin = odb::dbBPin::create(bterm);
+  odb::dbTechLayer* m1 = getDb()->getTech()->findLayer("metal1");
+  ASSERT_NE(m1, nullptr);
+  // Place at right die edge (x=99800..100000).
+  odb::dbBox::create(bpin, m1, 99800, 50000, 100000, 50200);
+  bpin->setPlacementStatus(odb::dbPlacementStatus::PLACED);
+
+  makeTileGen();
+  const odb::Rect die = block_->getDieArea();
+  const odb::Rect bounds = tile_gen_->getBounds();
+
+  // The margin should be larger than just the pin marker size,
+  // because it now accounts for the label text width.
+  const int pin_max = tile_gen_->getPinMaxSize();
+  const int margin = bounds.xMax() - die.xMax();
+  EXPECT_GT(margin, pin_max);
+}
+
 TEST_F(TileGeneratorTest, GetLayers)
 {
   makeTileGen();
@@ -103,6 +134,99 @@ TEST_F(TileGeneratorTest, GetLayers)
   EXPECT_EQ(layers.size(), 19);
   EXPECT_EQ(layers.front(), "metal1");
   EXPECT_EQ(layers.back(), "metal10");
+}
+
+// Layer colors must mirror gui::DisplayControls::techInit so the GUI and the
+// web frontend show the same color for the same layer.  Spot-check the first
+// few entries of each palette and exercise the type-based assignment rules.
+TEST_F(TileGeneratorTest, GetLayerColorMapMatchesGuiPalette)
+{
+  makeTileGen();
+  const auto& colors = tile_gen_->getLayerColorMap();
+
+  odb::dbTech* tech = getDb()->getTech();
+  ASSERT_NE(tech, nullptr);
+
+  odb::dbTechLayer* metal1 = tech->findLayer("metal1");
+  odb::dbTechLayer* metal2 = tech->findLayer("metal2");
+  odb::dbTechLayer* metal3 = tech->findLayer("metal3");
+  odb::dbTechLayer* via1 = tech->findLayer("via1");
+  odb::dbTechLayer* via2 = tech->findLayer("via2");
+  ASSERT_NE(metal1, nullptr);
+  ASSERT_NE(metal2, nullptr);
+  ASSERT_NE(metal3, nullptr);
+  ASSERT_NE(via1, nullptr);
+  ASSERT_NE(via2, nullptr);
+
+  // First three metals match the GUI's seeded #00F, #F00, #0D0 entries.
+  const Color m1 = colors.at(metal1);
+  EXPECT_EQ(m1.r, 0);
+  EXPECT_EQ(m1.g, 0);
+  EXPECT_EQ(m1.b, 254);
+  EXPECT_EQ(m1.a, 180);
+
+  const Color m2 = colors.at(metal2);
+  EXPECT_EQ(m2.r, 254);
+  EXPECT_EQ(m2.g, 0);
+  EXPECT_EQ(m2.b, 0);
+
+  const Color m3 = colors.at(metal3);
+  EXPECT_EQ(m3.r, 9);
+  EXPECT_EQ(m3.g, 221);
+  EXPECT_EQ(m3.b, 0);
+
+  // First two cuts match the GUI's cut palette (light blue, light red).
+  const Color v1 = colors.at(via1);
+  EXPECT_EQ(v1.r, 126);
+  EXPECT_EQ(v1.g, 126);
+  EXPECT_EQ(v1.b, 255);
+  EXPECT_EQ(v1.a, 180);
+
+  const Color v2 = colors.at(via2);
+  EXPECT_EQ(v2.r, 255);
+  EXPECT_EQ(v2.g, 126);
+  EXPECT_EQ(v2.b, 126);
+}
+
+TEST_F(TileGeneratorTest, GetLayerColorMapIsCached)
+{
+  makeTileGen();
+  // Identity check: same tech ⇒ same map object.  This is the contract that
+  // makes caching observable to callers (no rebuild between tile renders).
+  const auto& first = tile_gen_->getLayerColorMap();
+  const auto& second = tile_gen_->getLayerColorMap();
+  EXPECT_EQ(&first, &second);
+}
+
+TEST_F(TileGeneratorTest, EagerInitClearsLayerColorCache)
+{
+  makeTileGen();
+  // Prime the cache.
+  tile_gen_->getLayerColorMap();
+  // eagerInit must drop cached entries so a reloaded design with a new
+  // dbTech allocated at the same address can't read stale colors.
+  tile_gen_->eagerInit();
+  // Recomputing still produces correct values.
+  const auto& colors = tile_gen_->getLayerColorMap();
+  odb::dbTechLayer* metal1 = getDb()->getTech()->findLayer("metal1");
+  ASSERT_NE(metal1, nullptr);
+  EXPECT_EQ(colors.at(metal1).r, 0);
+  EXPECT_EQ(colors.at(metal1).g, 0);
+  EXPECT_EQ(colors.at(metal1).b, 254);
+}
+
+TEST_F(TileGeneratorTest, SerializeTechResponseIncludesLayerColors)
+{
+  makeTileGen();
+  JsonBuilder b;
+  serializeTechResponse(b, *tile_gen_);
+  const std::string json = b.str();
+
+  EXPECT_NE(json.find("\"layer_colors\""), std::string::npos)
+      << "tech response missing layer_colors key; got: " << json;
+  // The metal1 color [0, 0, 254] should appear since metal1 is layers[0].
+  EXPECT_NE(json.find("[0, 0, 254]"), std::string::npos)
+      << "tech response missing metal1 color [0, 0, 254]; got: " << json;
 }
 
 TEST_F(TileGeneratorTest, GenerateTileReturnsValidPng)
@@ -543,6 +667,26 @@ TEST_F(RowRenderingTest, RowsDefaultOff)
 {
   TileVisibility vis;
   EXPECT_FALSE(vis.rows);
+}
+
+//------------------------------------------------------------------------------
+// serializeTechResponse — exercises the contract main.js relies on for the
+// document title (techData.block_name).
+//------------------------------------------------------------------------------
+
+TEST_F(TileGeneratorTest, SerializeTechResponseContainsBlockName)
+{
+  // Nangate45Fixture creates the block with name "top".
+  makeTileGen();
+  JsonBuilder b;
+  serializeTechResponse(b, *tile_gen_);
+  const std::string json = b.str();
+  // Field name and value should both appear.  Looser than a full JSON
+  // parse but sufficient: this is the contract main.js consumes.
+  EXPECT_NE(json.find("\"block_name\""), std::string::npos)
+      << "tech response missing block_name key; got: " << json;
+  EXPECT_NE(json.find("\"top\""), std::string::npos)
+      << "tech response missing block name value \"top\"; got: " << json;
 }
 
 }  // namespace
