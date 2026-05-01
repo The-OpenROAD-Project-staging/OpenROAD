@@ -81,12 +81,12 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
 
   // Fast pre-filter: estimate resistance on the minimum clock layer using the
   // existing Steiner tree topology, avoiding an expensive incremental reroute.
-  // Reject the move if the expected resistance reduction is below 50%.
+  // Reject the move if the expected resistance reduction is below 40%.
   float resistance = resizer_->global_router_->getFRNetResistance(db_net);
   float estimated_resistance
       = resizer_->global_router_->getFRNetResistanceOnMinClockLayer(db_net);
 
-  constexpr float kMinResistanceReduction = 0.50f;
+  constexpr float kMinResistanceReduction = 0.40f;
   const float reduction_ratio
       = (resistance > 0.0f) ? (resistance - estimated_resistance) / resistance
                             : 0.0f;

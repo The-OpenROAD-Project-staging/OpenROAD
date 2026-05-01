@@ -87,6 +87,9 @@ or_integration_tests(
     repair_hold_multi_output_load
     repair_setup_sizedown
     repair_setup_sizeup_match
+    repair_setup_res_aware1
+    repair_setup_res_aware2
+    repair_setup_res_aware3
     repair_setup1
     repair_setup2
     repair_setup3
