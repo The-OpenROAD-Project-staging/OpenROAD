@@ -132,17 +132,7 @@ git_override(
     remote = "https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts.git",
 )
 
-bazel_dep(name = "yosys", version = "0.62", dev_dependency = True)
-single_version_override(
-    module_name = "yosys",
-    patch_strip = 1,
-    patches = [
-        "//bazel/bazel-orfs-patches:yosys-visibility.patch",
-        "//bazel/bazel-orfs-patches:yosys-hdrs.patch",
-        "//bazel/bazel-orfs-patches:yosys-tcl9-mp-to-ubin.patch",
-        "//bazel/bazel-orfs-patches:yosys-backend-aiger2.patch",
-    ],
-)
+bazel_dep(name = "yosys", version = "0.62.bcr.2", dev_dependency = True)
 
 # --- Extensions ---
 
