@@ -124,15 +124,10 @@ git_override(
 bazel_dep(name = "orfs", dev_dependency = True)
 git_override(
     module_name = "orfs",
-    commit = "454702182f4907f21c066a730011ac2c49d81f35",
+    commit = "172bd233dabd45d04cd80062cd1894e5ac8e5d52",
     patch_strip = 1,
     patches = [
         "//bazel/bazel-orfs-patches:0035-fix-remove-non-root-overrides-from-MODULE.bazel.patch",
-        # genMetrics.py shells out to `git` for run__flow__scripts_commit
-        # and run__flow__platform_commit. In a hermetic Bazel sandbox
-        # `git` is not on PATH, which raised FileNotFoundError instead of
-        # the "not a git repo" fallback. Drop this once upstreamed.
-        "//bazel/bazel-orfs-patches:genMetrics-tolerate-missing-git.patch",
     ],
     remote = "https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts.git",
 )
