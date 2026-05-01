@@ -1,0 +1,126 @@
+diff --git a/config.bzl b/config.bzl
+index 9b912a3..b47a389 100644
+--- a/config.bzl
++++ b/config.bzl
+@@ -6,6 +6,9 @@ def _global_config_impl(repository_ctx):
+         num_cpus = int(result.stdout.strip())
+     else:
+         num_cpus = 4
++    yosys_plugins_repr = "[" + ", ".join(
++        ['"{}"'.format(p) for p in repository_ctx.attr.yosys_plugins],
++    ) + "]"
+     repository_ctx.file(
+         "global_config.bzl",
+         """
+@@ -19,6 +22,7 @@ CONFIG_PDK = "{pdk}"
+ CONFIG_YOSYS = "{yosys}"
+ CONFIG_YOSYS_ABC = "{yosys_abc}"
+ CONFIG_YOSYS_SHARE = "{yosys_share}"
++CONFIG_YOSYS_PLUGINS = {yosys_plugins}
+ NUM_CPUS = {num_cpus}
+ """.format(
+             klayout = repository_ctx.attr.klayout,
+@@ -31,6 +35,7 @@ NUM_CPUS = {num_cpus}
+             yosys = repository_ctx.attr.yosys,
+             yosys_abc = repository_ctx.attr.yosys_abc,
+             yosys_share = repository_ctx.attr.yosys_share,
++            yosys_plugins = yosys_plugins_repr,
+             num_cpus = num_cpus,
+         ),
+     )
+@@ -68,6 +73,7 @@ global_config = repository_rule(
+             cfg = "exec",
+         ),
+         "yosys_share": attr.label(mandatory = True),
++        "yosys_plugins": attr.label_list(),
+     },
+     doc = "A repository that provides global configuration values as strings.",
+ )
+diff --git a/extension.bzl b/extension.bzl
+index d73112b..baa56a4 100644
+--- a/extension.bzl
++++ b/extension.bzl
+@@ -66,6 +66,12 @@ _default_tag = tag_class(
+             mandatory = False,
+             default = Label("@yosys//:yosys_share"),
+         ),
++        "yosys_plugins": attr.label_list(
++            mandatory = False,
++            doc = "Extra .so plugin files to expose via YOSYS_PLUGIN_PATH " +
++                  "during yosys actions. Use to load out-of-tree plugins " +
++                  "(e.g. yosys-slang) without merging them into yosys_share.",
++        ),
+     },
+ )
+ 
+@@ -90,6 +96,7 @@ def _orfs_repositories_impl(module_ctx):
+             yosys = default.yosys,
+             yosys_abc = default.yosys_abc,
+             yosys_share = default.yosys_share,
++            yosys_plugins = default.yosys_plugins,
+         )
+ 
+         load_json_file(
+diff --git a/private/attrs.bzl b/private/attrs.bzl
+index dc8a76a..23b0124 100644
+--- a/private/attrs.bzl
++++ b/private/attrs.bzl
+@@ -12,6 +12,7 @@ load(
+     "CONFIG_PDK",
+     "CONFIG_YOSYS",
+     "CONFIG_YOSYS_ABC",
++    "CONFIG_YOSYS_PLUGINS",
+     "CONFIG_YOSYS_SHARE",
+ )
+ load(
+@@ -163,6 +164,12 @@ def yosys_only_attrs():
+             cfg = "exec",
+             default = CONFIG_YOSYS_SHARE,
+         ),
++        "_yosys_plugins": attr.label_list(
++            doc = "Extra .so plugin files exposed via YOSYS_PLUGIN_PATH.",
++            allow_files = True,
++            cfg = "exec",
++            default = CONFIG_YOSYS_PLUGINS,
++        ),
+     }
+ 
+ def renamed_inputs_attr():
+diff --git a/private/environment.bzl b/private/environment.bzl
+index 7f0a96e..265de78 100644
+--- a/private/environment.bzl
++++ b/private/environment.bzl
+@@ -55,11 +55,19 @@ def yosys_environment(ctx):
+         "YOSYS_EXE": ctx.executable.yosys.path,
+     } | orfs_environment(ctx)
+ 
+-    # When yosys_share is a single tree artifact (e.g. merged share with
+-    # plugins), tell yosys where to find plugins via YOSYS_PLUGIN_PATH.
+-    # BCR yosys discovers plugins via /proc/self/exe and won't find plugins
+-    # that live outside its own share/ tree without this hint.
+-    if len(ctx.files._yosys_share) == 1:
++    # Tell yosys where to find out-of-tree plugins (e.g. yosys-slang)
++    # via YOSYS_PLUGIN_PATH. BCR yosys discovers plugins via
++    # /proc/self/exe and won't find plugins that live outside its own
++    # share/ tree without this hint.
++    plugin_dirs = []
++    for f in ctx.files._yosys_plugins:
++        if f.dirname not in plugin_dirs:
++            plugin_dirs.append(f.dirname)
++    if plugin_dirs:
++        env["YOSYS_PLUGIN_PATH"] = ":".join(plugin_dirs)
++    elif len(ctx.files._yosys_share) == 1:
++        # Backwards-compat: a single tree-artifact yosys_share with a
++        # plugins/ subdir still works.
+         env["YOSYS_PLUGIN_PATH"] = ctx.files._yosys_share[0].path + "/plugins"
+     return env
+ 
+@@ -133,7 +141,7 @@ def test_inputs(ctx):
+ 
+ def yosys_inputs(ctx):
+     return depset(
+-        ctx.files._yosys_share,
++        ctx.files._yosys_share + ctx.files._yosys_plugins,
+         transitive = [
+             _runfiles(
+                 [

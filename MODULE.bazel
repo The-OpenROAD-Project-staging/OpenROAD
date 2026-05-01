@@ -108,6 +108,13 @@ BAZEL_ORFS_REMOTE = "https://github.com/The-OpenROAD-Project/bazel-orfs.git"
 git_override(
     module_name = "bazel-orfs",
     commit = BAZEL_ORFS_COMMIT,
+    patch_strip = 1,
+    # Local patch: add `yosys_plugins` attribute to orfs.default() so
+    # consumers can pass plugin .so files directly instead of merging
+    # them into a custom yosys_share tree. Drop this once upstreamed.
+    patches = [
+        "//bazel/bazel-orfs-patches:yosys-plugins-attr.patch",
+    ],
     remote = BAZEL_ORFS_REMOTE,
 )
 
@@ -133,6 +140,18 @@ git_override(
 )
 
 bazel_dep(name = "yosys", version = "0.62.bcr.2", dev_dependency = True)
+
+# yosys-slang is not on BCR. Pin to a commit on povik/yosys-slang master
+# that has the upstream Bazel build (povik/yosys-slang#310) and the
+# slang.so visibility fix (povik/yosys-slang#311). Submodules pull in
+# vendored slang and fmt sources.
+bazel_dep(name = "yosys-slang", dev_dependency = True)
+git_override(
+    module_name = "yosys-slang",
+    commit = "7753ea70431d85929292b90c33b32f6dbdb3b048",
+    init_submodules = True,
+    remote = "https://github.com/povik/yosys-slang.git",
+)
 
 # --- Extensions ---
 
@@ -191,13 +210,10 @@ orfs = use_extension("@bazel-orfs//:extension.bzl", "orfs_repositories", dev_dep
 orfs.default(
     # Use OpenROAD of this repo instead of the one bundled with @orfs
     openroad = "//:openroad",
-    # Merged yosys share dir that includes the slang plugin, so
+    # Expose the yosys-slang plugin via YOSYS_PLUGIN_PATH so
     # SYNTH_HDL_FRONTEND=slang works in mock-array and other tests.
-    yosys_share = "//:yosys_share_with_slang",
+    yosys_plugins = ["@yosys-slang//src/yosys_plugin:slang.so"],
 )
-
-yosys_slang_ext = use_extension("//bazel:yosys_slang.bzl", "yosys_slang", dev_dependency = True)
-use_repo(yosys_slang_ext, "yosys-slang")
 
 # --- Overrides ---
 
