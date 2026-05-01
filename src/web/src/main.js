@@ -368,8 +368,14 @@ function tclAppend(text, className) {
 // a terminal overlay so the user knows the web_server stopped and they
 // can close the tab manually.
 function handleServerShutdown() {
-    // Suppress the normal "disconnected" banner — the disconnect is intentional.
+    // Idempotent: invoked from both the Tcl-eval response (`action: shutdown`)
+    // and the broadcast push (`type: shutdown`); whichever arrives first wins.
+    if (app._shutdownHandled) return;
+    app._shutdownHandled = true;
+    // Disable auto-reconnect and suppress the "disconnected" banner —
+    // the disconnect is intentional.
     if (app.websocketManager) {
+        app.websocketManager._shutdown = true;
         app.websocketManager.onPush = () => {};
     }
     const overlay = document.createElement('div');
@@ -756,7 +762,11 @@ app.websocketManager.onPush = (msg) => {
         if (text) tclAppend(text + '\n', '');
     } else if (msg.type === 'shutdown') {
         // Server is stopping intentionally (web_server -stop).
-        // Disable auto-reconnect and show a clear message.
+        // Disable auto-reconnect and show a clear message. Note that
+        // when the user typed `exit`/`quit` in the browser, the eval
+        // response's `action: shutdown` already ran handleServerShutdown
+        // (which set _shutdown and replaced onPush with a no-op), so
+        // this branch only runs in the external-stop case.
         app.websocketManager._shutdown = true;
         statusDiv.innerHTML = '<div class="disconnected-banner">Server stopped</div>';
         statusDiv.style.display = 'block';

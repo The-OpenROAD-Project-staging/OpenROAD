@@ -4,7 +4,6 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -27,16 +26,18 @@ class RequestDispatcher;
 class TimingReport;
 class ClockTreeReport;
 
+// Sentinel string set as the Tcl result by WebServer::tclExitHandler
+// when the browser-side Tcl `exit`/`quit` is invoked.  TclHandler
+// detects this in handleTclEval and converts the response to a clean
+// shutdown signal for the browser.
+inline constexpr const char* kExitResultMsg = "_WEB_EXITING_";
+
 // Thread-safe Tcl command evaluation with output capture.
 struct TclEvaluator
 {
   Tcl_Interp* interp;
   utl::Logger* logger;
   std::mutex mutex;
-  // Callback wired up by WebServer::serve() that stops the web server
-  // without killing the OpenROAD process. Invoked by the Tcl handler
-  // when the browser sends `exit`/`quit` (see handleTclEval).
-  std::function<void()> close_session;
 
   struct Result
   {

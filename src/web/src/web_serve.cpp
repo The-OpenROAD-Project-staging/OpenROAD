@@ -48,7 +48,6 @@ using Tcp = net::ip::tcp;
 // Tcl command name used to stash the original `exit` while our override
 // is installed.  Mirrors gui::TclCmdInputWidget's kCommandRenamePrefix.
 static constexpr const char* kRenamedExitCmd = "::tcl::openroad::web_orig_exit";
-static constexpr const char* kExitResultMsg = "_WEB_EXITING_";
 
 // Logger sink that accumulates lines and sends them as a batch to
 // connected browser clients.  Flushing is explicit (via drainToClients)
@@ -135,18 +134,14 @@ void WebServer::serve(int port)
     auto clock_report = std::make_shared<ClockTreeReport>(sta_);
 
     auto tcl_eval = std::make_shared<TclEvaluator>(interp_, logger_);
-    // The Tcl handler calls this when the browser sends `exit`/`quit`.
-    // Use requestStop() (not stop()) so waitForStop() on the main thread
-    // wakes up and tears down the server itself; calling stop() directly
-    // from the worker would leave the main thread blocked on stop_cv_,
-    // and the Tcl prompt would never resume reading stdin.
-    tcl_eval->close_session = [this] { requestStop(); };
 
     // Override Tcl's `exit` so a user typing `exit` in the browser tcl
     // widget doesn't run Tcl_Exit on the worker thread (which triggers
     // ~WebServer's self-join → std::terminate).  Same pattern as
     // gui::TclCmdInputWidget.  The handler signals waitForStop() and
     // sets exit_requested_; the main thread does the real exit.
+    // TclHandler::handleTclEval detects kExitResultMsg in the Tcl
+    // result and sends `action: "shutdown"` to the browser.
     exit_requested_ = false;
     {
       const std::string rename_orig
