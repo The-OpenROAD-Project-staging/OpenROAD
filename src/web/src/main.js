@@ -361,11 +361,15 @@ function tclAppend(text, className) {
     app.tclOutputEl.scrollTop = app.tclOutputEl.scrollHeight;
 }
 
-// Browser UX for `exit`/`quit` typed in the Tcl console. The OpenROAD
-// process keeps running in the terminal — only the web session ends.
+// Browser UX for `exit`/`quit` typed in the Tcl console. The browser
+// override (web_serve.cpp tclExitHandler) sets exit_requested_, and
+// Main.cc calls exit(EXIT_SUCCESS) once waitForStop() returns — so the
+// whole OpenROAD process exits, not just the web session. (Compare
+// `web_server -stop`, which only stops serving and arrives here as a
+// broadcast `type: shutdown` handled below.)
 // window.close() only succeeds when the tab was opened via JS (or via
-// certain launcher integrations); when it fails we replace the page with
-// a terminal overlay so the user knows the web_server stopped and they
+// certain launcher integrations); when it fails we replace the page
+// with a terminal overlay so the user knows OpenROAD exited and they
 // can close the tab manually.
 function handleServerShutdown() {
     // Idempotent: invoked from both the Tcl-eval response (`action: shutdown`)
@@ -384,10 +388,13 @@ function handleServerShutdown() {
         'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
         'font-family:system-ui,sans-serif;font-size:16px;padding:24px;text-align:center;';
     overlay.innerHTML =
-        '<div style="font-size:22px;margin-bottom:12px;">Web session closed</div>' +
-        '<div style="opacity:0.7;">OpenROAD is still running in the terminal. You can close this tab.</div>';
+        '<div style="font-size:22px;margin-bottom:12px;">OpenROAD exited</div>' +
+        '<div style="opacity:0.7;">You can close this tab.</div>';
     document.body.appendChild(overlay);
-    setTimeout(() => { try { window.close(); } catch (e) { /* ignore */ } }, 400);
+    // Hold the overlay visible long enough for the user to read it before
+    // window.close() fires.  400 ms was below the perceptual threshold and
+    // looked like the tab vanished instantly on `exit`.
+    setTimeout(() => { try { window.close(); } catch (e) { /* ignore */ } }, 1500);
 }
 
 function createTclConsole(container) {

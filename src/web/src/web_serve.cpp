@@ -217,7 +217,15 @@ void WebServer::serve(int port)
 #elif defined(_WIN32)
     std::string open_cmd = "start " + url + " > nul 2>&1";
 #else
-    std::string open_cmd = "xdg-open " + url + " > /dev/null 2>&1 &";
+    // `setsid -f` forks the launcher into a new session, severing the
+    // SIGHUP cascade from openroad's controlling pty.  Without this,
+    // running openroad from inside an emacs shell-mode buffer kills
+    // the browser tab as soon as openroad exits, because emacs holds
+    // the pty master and SIGHUPs every process in the session.  Also
+    // redirect stdin from /dev/null so xdg-open never blocks on input
+    // inherited from the pty.
+    std::string open_cmd
+        = "setsid -f xdg-open " + url + " < /dev/null > /dev/null 2>&1";
 #endif
     int ret = std::system(open_cmd.c_str());
     (void) ret;

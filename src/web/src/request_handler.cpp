@@ -1433,9 +1433,7 @@ WebSocketResponse TclHandler::handleTclEval(const WebSocketRequest& req)
     if (is_exit) {
       tcl_eval_->logger->info(
           utl::WEB, 40, "Exit requested from web GUI; shutting down.");
-      builder.field(
-          "result",
-          "Web session closed. OpenROAD is still running in the terminal.");
+      builder.field("result", "Exiting OpenROAD.");
       builder.field("is_error", false);
       builder.field("action", "shutdown");
     } else {
