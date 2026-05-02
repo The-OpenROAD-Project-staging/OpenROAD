@@ -17,11 +17,6 @@ orfs_sweep(
         # Demonstrate clock period specified in arguments, useful
         # for Optuna scripts.
         "ABC_CLOCK_PERIOD_IN_PS": "310.001",
-        # SWAP_ARITH_OPERATORS=1 was set as a smoketest but triggers a
-        # non-deterministic bug in yosys 0.62 WRAPCELL that occasionally
-        # emits a control character (0x1d) inside the generated
-        # *_KOGGE_STONE module name and aborts synthesis. Re-enable once
-        # the upstream yosys bug is fixed.
     },
     sources = {
         "RULES_JSON": [":rules-base.json"],
@@ -76,12 +71,7 @@ sh_test(
 check_same(
     name = "gcd_idempotent_test",
     flow = "gcd",
-    # Non-deterministic yosys wrapcell output under SWAP_ARITH_OPERATORS makes
-    # this flaky; keep manual until the upstream bug is fixed.
-    tags = [
-        "manual",
-        "orfs",
-    ],
+    tags = ["orfs"],
     variant_a = "base",
     variant_b = "b",
 )
