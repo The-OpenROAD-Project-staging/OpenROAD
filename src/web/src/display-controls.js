@@ -100,6 +100,10 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
                 }
             }
         });
+        // Refresh pins layer so it filters by the updated visible_layers.
+        if (app.pinsLayer && app.map.hasLayer(app.pinsLayer)) {
+            app.pinsLayer.refreshTiles();
+        }
     });
     layerModel.addFromSpec(layerSpec);
 
@@ -257,6 +261,8 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
             { key: 'phys_bump', label: 'Bump' },
             { key: 'phys_other', label: 'Other' },
         ]},
+        { key: 'inst_pins', label: 'Pins' },
+        { key: 'inst_pin_names', label: 'Pin Names', disabledBy: 'inst_pins' },
     ]});
     visTree.add({ label: 'Nets', children: [
         { key: 'net_signal', label: 'Signal' },
@@ -272,7 +278,7 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
         { key: 'routing', label: 'Routing' },
         { key: 'special_nets', label: 'Special Nets' },
         { key: 'pins', label: 'Pins' },
-        { key: 'pin_markers', label: 'Pin Markers' },
+        { key: 'pin_names', label: 'Pin Names', disabledBy: 'pins' },
         { key: 'blockages', label: 'Blockages' },
     ]});
     visTree.add({ label: 'Blockages', children: [

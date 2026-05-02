@@ -108,9 +108,14 @@ struct TileVisibility
   // Shapes
   bool routing = true;
   bool special_nets = true;
-  bool pins = true;
-  bool pin_markers = true;
+  bool pins = true;         // BTerm (IO pin) shapes on tech layers
+  bool pin_markers = true;  // BTerm direction markers on _pins layer
+  bool pin_names = true;    // BTerm name labels on _pins layer
   bool blockages = true;
+
+  // Instance sub-shapes
+  bool inst_pins = true;       // ITerm (cell pin) shapes on tech layers
+  bool inst_pin_names = true;  // ITerm name labels
 
   // Blockages (dbBlockage / dbObstruction)
   bool placement_blockages = true;
@@ -139,6 +144,11 @@ struct TileVisibility
   // overlay renders every frame even when not paused, accepting the
   // occasional inconsistency for smoother visualization.
   bool debug_live = false;
+
+  // Per-metal-layer visibility: when has_visible_layers is true, pin marker
+  // rendering skips BPin boxes whose tech layer is not in this set.
+  std::set<std::string> visible_layers;
+  bool has_visible_layers = false;
 
   void parseFromJson(const std::string& json);
 

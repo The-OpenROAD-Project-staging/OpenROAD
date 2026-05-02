@@ -3,7 +3,7 @@
 
 // Leaflet tile layer that fetches tiles via WebSocket.
 
-export function createWebSocketTileLayer(visibility) {
+export function createWebSocketTileLayer(visibility, visibleLayers) {
     return L.GridLayer.extend({
         initialize: function(websocketManager, layerName, options) {
             this._websocketManager = websocketManager;
@@ -49,6 +49,7 @@ export function createWebSocketTileLayer(visibility) {
                 z: coords.z,
                 x: coords.x,
                 y: coords.y,
+                visible_layers: visibleLayers ? [...visibleLayers] : [],
                 ...vf,
             }).then(data => {
                 if (typeof data === 'string') {
@@ -94,6 +95,7 @@ export function createWebSocketTileLayer(visibility) {
                     z: coords.z,
                     x: coords.x,
                     y: coords.y,
+                    visible_layers: visibleLayers ? [...visibleLayers] : [],
                     ...vf,
                 }).then(data => {
                     if (tile.src && tile.src.startsWith('blob:')) {

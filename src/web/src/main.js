@@ -136,11 +136,14 @@ const visibility = {
     net_tieoff: true,
     net_scan: true,
     net_analog: true,
+    // Instance sub-shapes
+    inst_pins: true,
+    inst_pin_names: true,
     // Shapes
     routing: true,
     special_nets: true,
     pins: true,
-    pin_markers: true,
+    pin_names: true,
     blockages: true,
     // Blockages
     placement_blockages: true,
@@ -156,7 +159,7 @@ const visibility = {
     debug: false,
 };
 
-const WebSocketTileLayer = createWebSocketTileLayer(visibility);
+const WebSocketTileLayer = createWebSocketTileLayer(visibility, app.visibleLayers);
 const BLANK_TILE
     = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
@@ -267,11 +270,11 @@ function redrawAllLayers() {
             app.map.removeLayer(app.modulesLayer);
         }
     }
-    // Show/hide pin markers layer
+    // Show/hide pin markers layer (controlled by Shapes > Pins)
     if (app.pinsLayer) {
-        if (visibility.pin_markers && !app.map.hasLayer(app.pinsLayer)) {
+        if (visibility.pins && !app.map.hasLayer(app.pinsLayer)) {
             app.pinsLayer.addTo(app.map);
-        } else if (!visibility.pin_markers && app.map.hasLayer(app.pinsLayer)) {
+        } else if (!visibility.pins && app.map.hasLayer(app.pinsLayer)) {
             app.map.removeLayer(app.pinsLayer);
         }
     }

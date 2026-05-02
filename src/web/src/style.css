@@ -644,13 +644,11 @@ html, body {
 .display-controls .vis-group-children {
     padding-left: 22px;
 }
-.display-controls .vis-group-children > label {
-    margin-left: 14px;
-}
 .display-controls .vis-group-children.collapsed {
     display: none;
 }
-.display-controls .vis-group-children.disabled {
+.display-controls .vis-group-children.disabled,
+.display-controls .vis-group-children > label.disabled {
     opacity: 0.4;
     pointer-events: none;
 }
