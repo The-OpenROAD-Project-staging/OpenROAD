@@ -264,6 +264,7 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
     ]});
     visTree.add({ label: 'Misc', children: [
         { label: 'Instances', children: [
+            { key: 'inst_names', label: 'Names' },
             { key: 'inst_pins', label: 'Pins' },
             { key: 'inst_pin_names', label: 'Pin Names', disabledBy: 'inst_pins' },
         ]},

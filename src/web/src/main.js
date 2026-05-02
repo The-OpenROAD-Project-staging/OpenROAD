@@ -137,6 +137,7 @@ const visibility = {
     net_scan: true,
     net_analog: true,
     // Instance sub-shapes
+    inst_names: true,
     inst_pins: true,
     inst_pin_names: true,
     // Shapes

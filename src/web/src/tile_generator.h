@@ -114,6 +114,7 @@ struct TileVisibility
   bool blockages = true;
 
   // Instance sub-shapes
+  bool inst_names = true;      // Instance name labels on _instances layer
   bool inst_pins = true;       // ITerm (cell pin) shapes on tech layers
   bool inst_pin_names = true;  // ITerm name labels
 

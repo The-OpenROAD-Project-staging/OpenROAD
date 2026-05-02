@@ -50,6 +50,9 @@ constexpr int kMinPinNameSizePixels = 20;
 constexpr int kPinLabelFontHeight = 14;  // pre-baked atlas size for pin labels
 constexpr int kItermLabelFontHeight = 10;  // atlas size for ITerm pin labels
 constexpr int kMinItermLabelBoxPx = 10;    // min pin-box pixel dim for labels
+constexpr int kMinInstNameFontPx = 10;     // minimum readable font size
+constexpr int kMaxInstNameFontPx = 40;     // cap font size for large macros
+constexpr int kMinInstNameBoxPx = 20;      // min instance pixel dim for names
 
 }  // namespace
 
@@ -102,6 +105,7 @@ void TileVisibility::parseFromJson(const std::string& json)
     {"pins",               &TileVisibility::pins,               true},
     {"pin_markers",        &TileVisibility::pin_markers,        true},
     {"pin_names",          &TileVisibility::pin_names,          true},
+    {"inst_names",         &TileVisibility::inst_names,         true},
     {"inst_pins",          &TileVisibility::inst_pins,          true},
     {"inst_pin_names",     &TileVisibility::inst_pin_names,     true},
     {"blockages",              &TileVisibility::blockages,              true},
@@ -1159,6 +1163,77 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
               setPixel(image_buffer, ix, draw_y, gray);
             }
           }
+
+          // Draw instance name label when zoomed in enough.
+          // Font scales to ~40% of the smaller box dimension, clamped
+          // to [kMinInstNameFontPx, kMaxInstNameFontPx].  Text is
+          // elided from the left ("...suffix") to fit 90% of the
+          // available dimension, matching the Qt GUI's behavior.
+          if (vis.inst_names) {
+            const int box_px_w = pixel_xh - pixel_xl;
+            const int box_px_h = pixel_yh - pixel_yl;
+            const int box_px_min = std::min(box_px_w, box_px_h);
+            if (std::max(box_px_w, box_px_h) >= kMinInstNameBoxPx) {
+              const int font_px = std::clamp(static_cast<int>(box_px_min * 0.4),
+                                             kMinInstNameFontPx,
+                                             kMaxInstNameFontPx);
+              const auto inst_font = fontAtlasGetFont(font_px);
+              const int font_h = getTextHeight(inst_font);
+
+              // Skip if font would dominate the cell (> 50% of cross
+              // dimension), matching GUI's kNonCoreScaleLimit = 2.0.
+              if (2 * font_h <= box_px_min) {
+                constexpr Color name_color{
+                    .r = 255, .g = 255, .b = 0, .a = 220};
+                const std::string full_name = inst->getName();
+                const int full_w = getTextWidth(full_name, inst_font);
+
+                // Rotate if taller than wide and text overflows (85%).
+                const bool rotate
+                    = (box_px_h > box_px_w) && (full_w > box_px_w * 85 / 100);
+
+                // Available width for text (90% of relevant dim).
+                const int avail
+                    = rotate ? (box_px_h * 9 / 10) : (box_px_w * 9 / 10);
+
+                // Elide from the left if text is too wide.
+                std::string name = full_name;
+                int text_w = full_w;
+                if (text_w > avail && name.size() > 4) {
+                  for (size_t skip = 1; skip < name.size() - 1; ++skip) {
+                    const std::string candidate = "..." + name.substr(skip);
+                    const int w = getTextWidth(candidate, inst_font);
+                    if (w <= avail) {
+                      name = candidate;
+                      text_w = w;
+                      break;
+                    }
+                  }
+                }
+
+                // Center of instance bbox in pixel coords.
+                const int cx = (pixel_xl + pixel_xh) / 2;
+                const int cy = 255 - (pixel_yl + pixel_yh) / 2;
+
+                if (rotate) {
+                  const int px = cx - font_h / 2;
+                  const int py = cy - text_w / 2;
+                  if (px > -font_h && px < kTileSizeInPixel && py > -text_w
+                      && py < kTileSizeInPixel) {
+                    drawTextRotated(
+                        image_buffer, px, py, name, inst_font, name_color);
+                  }
+                } else {
+                  const int px = cx - text_w / 2;
+                  const int py = cy - font_h / 2;
+                  if (px > -text_w && px < kTileSizeInPixel && py > -font_h
+                      && py < kTileSizeInPixel) {
+                    drawText(image_buffer, px, py, name, inst_font, name_color);
+                  }
+                }
+              }
+            }
+          }
         } else {
           // Layer-specific: obstructions and pins
           if (vis.blockages) {
@@ -2059,6 +2134,7 @@ std::vector<unsigned char> TileGenerator::renderOverlayPng(
   vis.special_nets = false;
   vis.pins = false;
   vis.pin_names = false;
+  vis.inst_names = false;
   vis.inst_pins = false;
   vis.inst_pin_names = false;
   vis.blockages = false;
