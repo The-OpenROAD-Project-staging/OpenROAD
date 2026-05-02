@@ -40,8 +40,8 @@ struct DbNetPtrLess
 {
   bool operator()(const odb::dbNet* lhs, const odb::dbNet* rhs) const
   {
-    const std::string lhs_name = lhs->getName();
-    const std::string rhs_name = rhs->getName();
+    const std::string& lhs_name = lhs->getName();
+    const std::string& rhs_name = rhs->getName();
     if (lhs_name != rhs_name) {
       return lhs_name < rhs_name;
     }
@@ -53,8 +53,8 @@ struct DbITermPtrLess
 {
   bool operator()(const odb::dbITerm* lhs, const odb::dbITerm* rhs) const
   {
-    const std::string lhs_name = lhs->getName();
-    const std::string rhs_name = rhs->getName();
+    const std::string& lhs_name = lhs->getName();
+    const std::string& rhs_name = rhs->getName();
     if (lhs_name != rhs_name) {
       return lhs_name < rhs_name;
     }
