@@ -30,14 +30,20 @@ if ! command -v bazel >/dev/null 2>&1; then
     exit 1
 fi
 
-workspace=$(bazel info workspace 2>/dev/null || true)
 testlogs=$(bazel info bazel-testlogs 2>/dev/null || true)
-if [ -z "$workspace" ] || [ -z "$testlogs" ]; then
+if [ -z "$testlogs" ]; then
     echo "not inside a bazel workspace" >&2
     exit 1
 fi
 
-pkg=$(realpath --relative-to="$workspace" "$PWD")
+# Ask bazel for the enclosing package label rather than computing it
+# from a path; that's both portable (no GNU `realpath --relative-to`)
+# and authoritative if BUILD files ever move.
+pkg=$(bazel query --output=package ':all' 2>/dev/null | head -1)
+if [ -z "$pkg" ]; then
+    echo "no bazel package found at $PWD" >&2
+    exit 1
+fi
 
 for test_name in "$@"; do
     saved=0
@@ -49,18 +55,25 @@ for test_name in "$@"; do
         # is expected (mismatched .ok is why we're here). Build errors
         # and target-not-found stay visible on stderr.
         bazel test "$target" --test_summary=terse >/dev/null || true
+        # Bazel-testlogs files are read-only and `cp` preserves mode,
+        # so force-replace and chmod so the next iteration can overwrite.
+        dst="${test_name}.${dest_ext}"
         if [ -f "${out_dir}/${artifact}" ]; then
-            cp "${out_dir}/${artifact}" "${test_name}.${dest_ext}"
+            rm -f "$dst"
+            cp "${out_dir}/${artifact}" "$dst"
+            chmod u+w "$dst"
             echo "${test_name}"
             saved=1
             break
         fi
         zip="${out_dir}/outputs.zip"
         if [ -f "$zip" ]; then
-            tmp="${test_name}.${dest_ext}.tmp"
+            tmp="${dst}.tmp"
             if unzip -p "$zip" "$artifact" > "$tmp" 2>/dev/null \
                     && [ -s "$tmp" ]; then
-                mv "$tmp" "${test_name}.${dest_ext}"
+                rm -f "$dst"
+                mv "$tmp" "$dst"
+                chmod u+w "$dst"
                 echo "${test_name}"
                 saved=1
                 break
