@@ -238,28 +238,6 @@ void WebServer::serve(int port)
   }
 }
 
-void WebServer::stopAndJoinIoThreads()
-{
-  if (ioc_) {
-    ioc_->stop();
-  }
-  const auto self_id = std::this_thread::get_id();
-  for (auto& t : threads_) {
-    if (!t.joinable()) {
-      continue;
-    }
-    if (t.get_id() == self_id) {
-      // Self-join would raise EDEADLK. ioc_->stop() above unblocks the
-      // worker so detaching is safe — the thread runs to completion on
-      // its own.
-      t.detach();
-    } else {
-      t.join();
-    }
-  }
-  threads_.clear();
-}
-
 void WebServer::waitForStop()
 {
   std::unique_lock<std::mutex> lock(stop_mutex_);

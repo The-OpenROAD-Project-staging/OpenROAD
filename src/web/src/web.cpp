@@ -813,6 +813,31 @@ WebServer::WebServer(odb::dbDatabase* db,
 {
 }
 
+// Defined here (not in web_serve.cpp) so the destructor's TU does not
+// pull in web_serve.cpp's gui::Gui::get() references — keeps WebServer
+// usable from tests that don't link the full gui library.
+void WebServer::stopAndJoinIoThreads()
+{
+  if (ioc_) {
+    ioc_->stop();
+  }
+  const auto self_id = std::this_thread::get_id();
+  for (auto& t : threads_) {
+    if (!t.joinable()) {
+      continue;
+    }
+    if (t.get_id() == self_id) {
+      // Self-join would raise EDEADLK. ioc_->stop() above unblocks the
+      // worker so detaching is safe — the thread runs to completion on
+      // its own.
+      t.detach();
+    } else {
+      t.join();
+    }
+  }
+  threads_.clear();
+}
+
 WebServer::~WebServer()
 {
   // Wake any thread blocked in waitForStop() so it can return before
