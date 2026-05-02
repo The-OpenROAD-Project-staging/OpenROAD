@@ -1,5 +1,5 @@
-// Quick and dirty reimplementation of DFFHQNx2_ASAP7_75t_R because
-// Verialtor doesn't support and has no plans to support 1995 UDP
+// Quick and dirty reimplementation of DFFHQNx{1,2,3}_ASAP7_75t_R because
+// Verilator doesn't support and has no plans to support 1995 UDP
 // tables.
 //
 // https://github.com/verilator/verilator/issues/5243
