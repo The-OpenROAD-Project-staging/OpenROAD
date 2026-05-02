@@ -147,6 +147,27 @@ TEST_F(TestDbSta, FlatNet)
 
   // 6. flatNet(Net*) on null returns null.
   EXPECT_EQ(db_network_->flatNet(static_cast<Net*>(nullptr)), nullptr);
+
+  // 7. flatNet(Term*) on a top-level bterm returns its dbNet.
+  Term* bterm_term = db_network_->dbToStaTerm(bterm_in1);
+  ASSERT_NE(bterm_term, nullptr);
+  EXPECT_EQ(db_network_->flatNet(bterm_term), bterm_in1->getNet());
+
+  // 8. flatNet(Term*) on a modbterm resolves through its modnet.
+  // SUBMOD::mod_in is the hierarchical port whose modnet shares "net2".
+  odb::dbModule* submod = modnet_mod_in->getParent();
+  ASSERT_NE(submod, nullptr);
+  odb::dbModBTerm* modbterm_mod_in = nullptr;
+  for (odb::dbModBTerm* mbt : submod->getModBTerms()) {
+    if (std::string(mbt->getName()) == "mod_in") {
+      modbterm_mod_in = mbt;
+      break;
+    }
+  }
+  ASSERT_NE(modbterm_mod_in, nullptr);
+  Term* modbterm_term = db_network_->dbToStaTerm(modbterm_mod_in);
+  ASSERT_NE(modbterm_term, nullptr);
+  EXPECT_EQ(db_network_->flatNet(modbterm_term), dbnet_net2);
 }
 
 // Regression for #10210 (stale Path* dereference in rsz).
