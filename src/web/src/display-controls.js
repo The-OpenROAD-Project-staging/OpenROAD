@@ -261,8 +261,12 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
             { key: 'phys_bump', label: 'Bump' },
             { key: 'phys_other', label: 'Other' },
         ]},
-        { key: 'inst_pins', label: 'Pins' },
-        { key: 'inst_pin_names', label: 'Pin Names', disabledBy: 'inst_pins' },
+    ]});
+    visTree.add({ label: 'Misc', children: [
+        { label: 'Instances', children: [
+            { key: 'inst_pins', label: 'Pins' },
+            { key: 'inst_pin_names', label: 'Pin Names', disabledBy: 'inst_pins' },
+        ]},
     ]});
     visTree.add({ label: 'Nets', children: [
         { key: 'net_signal', label: 'Signal' },
