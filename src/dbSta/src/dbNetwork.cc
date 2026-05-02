@@ -1503,6 +1503,9 @@ void dbNetwork::net(const Pin* pin,
 
   if (moditerm) {
     db_modnet = moditerm->getModNet();
+    if (db_modnet) {
+      db_net = db_modnet->findRelatedNet();
+    }
   }
 }
 
@@ -3007,6 +3010,9 @@ dbNet* dbNetwork::flatNet(const Net* net) const
     dbObjectType type = obj->getObjectType();
     if (type == odb::dbNetObj) {
       return static_cast<dbNet*>(obj);
+    }
+    if (type == odb::dbModNetObj) {
+      return static_cast<odb::dbModNet*>(obj)->findRelatedNet();
     }
   }
   return nullptr;

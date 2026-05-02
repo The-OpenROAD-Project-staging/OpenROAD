@@ -102,6 +102,53 @@ TEST_F(TestDbSta, TestHierarchyConnectivity)
   ASSERT_EQ(bterm_clk->getITerm(), nullptr);
 }
 
+// Coverage for dbNetwork::flatNet overloads. Verifies that a flat dbNet
+// can be reached from any of: a leaf iterm pin, a top-level bterm pin,
+// a hierarchical moditerm pin, and a dbModNet (Net*).
+TEST_F(TestDbSta, FlatNet)
+{
+  std::string test_name = "TestDbSta_0";
+  readVerilogAndSetup(test_name + ".v");
+
+  odb::dbNet* dbnet_net2 = block_->findNet("net2");
+  ASSERT_NE(dbnet_net2, nullptr);
+
+  odb::dbModNet* modnet_mod_in = block_->findModNet("sub_inst/mod_in");
+  ASSERT_NE(modnet_mod_in, nullptr);
+  // The hier net for sub_inst/mod_in shares the flat net "net2".
+  ASSERT_EQ(modnet_mod_in->findRelatedNet(), dbnet_net2);
+
+  // 1. flatNet(Pin*) on an iterm pin (buf/Z drives net2).
+  odb::dbInst* buf_inst = block_->findInst("buf");
+  ASSERT_NE(buf_inst, nullptr);
+  Pin* iterm_pin = db_network_->dbToSta(buf_inst->findITerm("Z"));
+  ASSERT_NE(iterm_pin, nullptr);
+  EXPECT_EQ(db_network_->flatNet(iterm_pin), dbnet_net2);
+
+  // 2. flatNet(Pin*) on a top-level bterm pin (in1).
+  odb::dbBTerm* bterm_in1 = block_->findBTerm("in1");
+  ASSERT_NE(bterm_in1, nullptr);
+  Pin* bterm_pin = db_network_->dbToSta(bterm_in1);
+  ASSERT_NE(bterm_pin, nullptr);
+  EXPECT_EQ(db_network_->flatNet(bterm_pin), bterm_in1->getNet());
+
+  // 3. flatNet(Pin*) on a moditerm pin (sub_inst/mod_in).
+  Pin* moditerm_pin = db_network_->findPin("sub_inst/mod_in");
+  ASSERT_NE(moditerm_pin, nullptr);
+  EXPECT_EQ(db_network_->flatNet(moditerm_pin), dbnet_net2);
+
+  // 4. flatNet(Net*) on a flat dbNet returns the same dbNet.
+  Net* sta_dbnet = db_network_->dbToSta(dbnet_net2);
+  EXPECT_EQ(db_network_->flatNet(sta_dbnet), dbnet_net2);
+
+  // 5. flatNet(Net*) on a dbModNet resolves to the related flat dbNet.
+  Net* sta_modnet = db_network_->dbToSta(modnet_mod_in);
+  EXPECT_EQ(db_network_->flatNet(sta_modnet), dbnet_net2);
+
+  // 6. flatNet(Net*) on null returns null.
+  EXPECT_EQ(db_network_->flatNet(static_cast<Net*>(nullptr)), nullptr);
+}
+
 // Regression for #10210 (stale Path* dereference in rsz).
 //
 // Topology (TestDbSta_StalePrevPath.v):
