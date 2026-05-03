@@ -130,7 +130,7 @@ void TileVisibility::parseFromJson(const std::string& json)
   }
   raw_json = json;
   visible_layers = extract_string_array(json, "visible_layers");
-  has_visible_layers = (json.find("\"visible_layers\"") != std::string::npos);
+  has_visible_layers = has_key(json, "visible_layers");
 }
 
 bool TileVisibility::isSiteVisible(const std::string& site_name) const
