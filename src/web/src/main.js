@@ -160,6 +160,8 @@ const visibility = {
     tracks_non_pref: false,
     // Module view
     module_view: false,
+    // Misc
+    scale_bar: true,
     // Debug
     debug: false,
 };
@@ -305,6 +307,10 @@ function redrawAllLayers() {
     if (app.heatMapLayer) {
         app.heatMapLayer.refreshTiles();
     }
+    // Update scale bar visibility.
+    if (app.updateScaleBar) {
+        app.updateScaleBar();
+    }
 }
 
 // Debounced wrapper: coalesces back-to-back server pushes (e.g.
@@ -364,6 +370,59 @@ function createLayoutViewer(container) {
         coordBar.textContent = `X: ${xUm}  Y: ${yUm}`;
     });
     app.map.on('mouseout', () => { app.lastMouseLatLng = null; });
+
+    // Scale bar overlay (bottom-left, above coord bar).
+    const scaleBar = document.createElement('div');
+    scaleBar.id = 'scale-bar';
+    mapDiv.appendChild(scaleBar);
+    const scaleBarLine = document.createElement('div');
+    scaleBarLine.className = 'scale-bar-line';
+    scaleBar.appendChild(scaleBarLine);
+    const scaleBarLabel = document.createElement('span');
+    scaleBarLabel.className = 'scale-bar-label';
+    scaleBar.appendChild(scaleBarLabel);
+
+    function updateScaleBar() {
+        if (!app.designScale || !visibility.scale_bar) {
+            scaleBar.style.display = 'none';
+            return;
+        }
+        scaleBar.style.display = '';
+
+        const dbuPerUm = app.techData?.dbu_per_micron || 1000;
+        // Pixels per DBU at current zoom: designScale * 2^zoom.
+        const zoom = app.map.getZoom();
+        const pxPerDbu = app.designScale * Math.pow(2, zoom);
+        const pxPerUm = pxPerDbu * dbuPerUm;
+
+        // Target bar width: ~15% of the map container width.
+        const containerWidth = app.map.getContainer().clientWidth || 400;
+        const targetPx = containerWidth * 0.15;
+        const targetUm = targetPx / pxPerUm;
+
+        // Pick a nice round number: 1, 2, 5, 10, 20, 50, ...
+        const mag = Math.pow(10, Math.floor(Math.log10(targetUm)));
+        const residual = targetUm / mag;
+        let niceUm;
+        if (residual < 1.5) niceUm = 1 * mag;
+        else if (residual < 3.5) niceUm = 2 * mag;
+        else if (residual < 7.5) niceUm = 5 * mag;
+        else niceUm = 10 * mag;
+
+        const barPx = Math.round(niceUm * pxPerUm);
+
+        // Format with appropriate units.
+        let label;
+        if (niceUm >= 1000) label = (niceUm / 1000) + ' mm';
+        else if (niceUm >= 1) label = niceUm + ' \u00b5m';
+        else if (niceUm >= 0.001) label = (niceUm * 1000) + ' nm';
+        else label = (niceUm * 1e6) + ' pm';
+
+        scaleBarLine.style.width = barPx + 'px';
+        scaleBarLabel.textContent = label;
+    }
+    app.map.on('zoomend moveend resize', updateScaleBar);
+    app.updateScaleBar = updateScaleBar;
 
     app.rulerManager = new RulerManager(app, visibility, updateInspector, focusComponent);
 }
