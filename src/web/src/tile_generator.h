@@ -105,12 +105,16 @@ struct TileVisibility
   bool net_scan = true;
   bool net_analog = true;
 
-  // Shapes
-  bool routing = true;
-  bool special_nets = true;
-  bool pins = true;         // BTerm (IO pin) shapes on tech layers
-  bool pin_markers = true;  // BTerm direction markers on _pins layer
-  bool pin_names = true;    // BTerm name labels on _pins layer
+  // Shapes — routing sub-types
+  bool routing = true;            // parent flag (kept for backward compat)
+  bool routing_segments = true;   // regular wire segments
+  bool routing_vias = true;       // regular vias
+  bool special_nets = true;       // parent flag (kept for backward compat)
+  bool srouting_segments = true;  // special-net segments/straps
+  bool srouting_vias = true;      // special-net vias
+  bool pins = true;               // BTerm (IO pin) shapes on tech layers
+  bool pin_markers = true;        // BTerm direction markers on _pins layer
+  bool pin_names = true;          // BTerm name labels on _pins layer
   bool blockages = true;
 
   // Instance sub-shapes

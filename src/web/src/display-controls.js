@@ -288,8 +288,14 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
         { key: 'tracks_non_pref', label: 'Non Pref' },
     ]});
     visTree.add({ label: 'Shapes', children: [
-        { key: 'routing', label: 'Routing' },
-        { key: 'special_nets', label: 'Special Nets' },
+        { label: 'Routing', visKey: 'routing', children: [
+            { key: 'routing_segments', label: 'Segments' },
+            { key: 'routing_vias', label: 'Vias' },
+        ]},
+        { label: 'Special Routing', visKey: 'special_nets', children: [
+            { key: 'srouting_segments', label: 'Segments' },
+            { key: 'srouting_vias', label: 'Vias' },
+        ]},
         { key: 'pins', label: 'Pins' },
         { key: 'pin_names', label: 'Pin Names', disabledBy: 'pins' },
     ]});

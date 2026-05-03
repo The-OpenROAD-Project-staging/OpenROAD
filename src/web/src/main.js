@@ -142,7 +142,11 @@ const visibility = {
     inst_pin_names: true,
     // Shapes
     routing: true,
+    routing_segments: true,
+    routing_vias: true,
     special_nets: true,
+    srouting_segments: true,
+    srouting_vias: true,
     pins: true,
     pin_names: true,
     blockages: true,

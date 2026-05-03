@@ -101,7 +101,11 @@ void TileVisibility::parseFromJson(const std::string& json)
     {"net_scan",           &TileVisibility::net_scan,           true},
     {"net_analog",         &TileVisibility::net_analog,         true},
     {"routing",            &TileVisibility::routing,            true},
+    {"routing_segments",   &TileVisibility::routing_segments,   true},
+    {"routing_vias",       &TileVisibility::routing_vias,       true},
     {"special_nets",       &TileVisibility::special_nets,       true},
+    {"srouting_segments",  &TileVisibility::srouting_segments,  true},
+    {"srouting_vias",      &TileVisibility::srouting_vias,      true},
     {"pins",               &TileVisibility::pins,               true},
     {"pin_markers",        &TileVisibility::pin_markers,        true},
     {"pin_names",          &TileVisibility::pin_names,          true},
@@ -683,7 +687,10 @@ std::vector<SelectionResult> TileGenerator::selectAt(
         if (type == Search::kBterm && !vis.pins) {
           continue;
         }
-        if (type != Search::kBterm && !vis.routing) {
+        if (type == Search::kWire && !(vis.routing && vis.routing_segments)) {
+          continue;
+        }
+        if (type == Search::kVia && !(vis.routing && vis.routing_vias)) {
           continue;
         }
         odb::dbNet* net = std::get<2>(shape);
@@ -698,8 +705,8 @@ std::vector<SelectionResult> TileGenerator::selectAt(
       }
     }
 
-    // Special net shapes (power/ground straps)
-    if (vis.special_nets) {
+    // Special net vias
+    if (vis.special_nets && vis.srouting_vias) {
       for (const auto& shape :
            search_->searchSNetViaShapes(block, layer, x_lo, y_lo, x_hi, y_hi)) {
         odb::dbNet* net = std::get<1>(shape);
@@ -712,7 +719,10 @@ std::vector<SelectionResult> TileGenerator::selectAt(
           results.push_back({net, net->getName(), "Net", net->getTermBBox()});
         }
       }
+    }
 
+    // Special net shapes (segments/straps)
+    if (vis.special_nets && vis.srouting_segments) {
       for (const auto& shape :
            search_->searchSNetShapes(block, layer, x_lo, y_lo, x_hi, y_hi)) {
         odb::dbNet* net = std::get<2>(shape);
@@ -1384,7 +1394,10 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
           if (type == Search::kBterm && !vis.pins) {
             continue;
           }
-          if (type != Search::kBterm && !vis.routing) {
+          if (type == Search::kWire && !(vis.routing && vis.routing_segments)) {
+            continue;
+          }
+          if (type == Search::kVia && !(vis.routing && vis.routing_vias)) {
             continue;
           }
           odb::dbNet* net = std::get<2>(shape);
@@ -1407,7 +1420,8 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
       }
 
       // Draw special net shapes (power/ground straps) on top of instances
-      if (!instances_only && tech_layer && vis.special_nets) {
+      if (!instances_only && tech_layer && vis.special_nets
+          && vis.srouting_segments) {
         for (const auto& shape : search_->searchSNetShapes(block,
                                                            tech_layer,
                                                            dbu_x_min,
@@ -1432,7 +1446,8 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
       }
 
       // Draw special net vias — decompose into individual cut boxes
-      if (!instances_only && tech_layer && vis.special_nets) {
+      if (!instances_only && tech_layer && vis.special_nets
+          && vis.srouting_vias) {
         for (const auto& shape : search_->searchSNetViaShapes(block,
                                                               tech_layer,
                                                               dbu_x_min,
@@ -1480,7 +1495,7 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
       // rendering a routing layer we look up the cut layers immediately above
       // and below, search for vias there, and draw only the enclosure boxes
       // that belong to the current routing layer.
-      if (!instances_only && tech_layer && vis.special_nets
+      if (!instances_only && tech_layer && vis.special_nets && vis.srouting_vias
           && tech_layer->getType() == odb::dbTechLayerType::ROUTING) {
         odb::dbTechLayer* adj_cuts[2]
             = {tech_layer->getLowerLayer(), tech_layer->getUpperLayer()};
@@ -2131,7 +2146,11 @@ std::vector<unsigned char> TileGenerator::renderOverlayPng(
   vis.std_sequential = false;
   vis.std_combinational = false;
   vis.routing = false;
+  vis.routing_segments = false;
+  vis.routing_vias = false;
   vis.special_nets = false;
+  vis.srouting_segments = false;
+  vis.srouting_vias = false;
   vis.pins = false;
   vis.pin_names = false;
   vis.inst_names = false;
