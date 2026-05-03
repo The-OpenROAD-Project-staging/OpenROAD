@@ -5,6 +5,7 @@
 
 import { CheckboxTreeModel } from './checkbox-tree-model.js';
 import { VisTree } from './vis-tree.js';
+import { getCookie, setCookie } from './theme.js';
 
 // Compute a Set of layer indices around `center` within [0, count).
 // `lower` layers below and `upper` layers above are included.
@@ -65,6 +66,13 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
     const leafletLayers = [];  // index → WebSocketTileLayer
     const layerIds = [];       // index → model node id
 
+    // Restore saved hidden-layers set from previous session.
+    let savedHiddenLayers = new Set();
+    try {
+        const raw = getCookie('or_hidden_layers');
+        if (raw) savedHiddenLayers = new Set(JSON.parse(decodeURIComponent(raw)));
+    } catch (_) { /* ignore */ }
+
     const layerSpec = {
         id: 'layers_parent',
         children: techData.layers.map((name, index) => {
@@ -72,14 +80,17 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
                 opacity: 0.7,
                 zIndex: index + 3,
             });
-            layer.addTo(app.map);
+            const visible = !savedHiddenLayers.has(name);
+            if (visible) {
+                layer.addTo(app.map);
+                app.visibleLayers.add(name);
+            }
             app.allLayers.push(layer);
             leafletLayers.push(layer);
-            app.visibleLayers.add(name);
 
             const id = `layer_${index}`;
             layerIds.push(id);
-            return { id, data: { name, layer, colorIndex: index }, checked: true };
+            return { id, data: { name, layer, colorIndex: index }, checked: visible };
         }),
     };
 
@@ -104,6 +115,9 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
         if (app.pinsLayer && app.map.hasLayer(app.pinsLayer)) {
             app.pinsLayer.refreshTiles();
         }
+        // Persist hidden layers to cookie.
+        const hidden = techData.layers.filter(n => !app.visibleLayers.has(n));
+        setCookie('or_hidden_layers', encodeURIComponent(JSON.stringify(hidden)));
     });
     layerModel.addFromSpec(layerSpec);
 
@@ -121,7 +135,8 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
     const parentNode = layerModel.get('layers_parent');
     const parentCb = document.createElement('input');
     parentCb.type = 'checkbox';
-    parentCb.checked = true;
+    parentCb.checked = parentNode.checked;
+    parentCb.indeterminate = parentNode.indeterminate;
     parentNode.cb = parentCb;
     parentCb.addEventListener('change', () => {
         layerModel.check('layers_parent', parentCb.checked);
@@ -141,7 +156,7 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
 
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
-        checkbox.checked = true;
+        checkbox.checked = modelNode.checked;
         modelNode.cb = checkbox;
         checkbox.addEventListener('change', () => {
             layerModel.check(id, checkbox.checked);

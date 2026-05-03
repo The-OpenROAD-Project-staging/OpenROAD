@@ -16,7 +16,7 @@ import { RulerManager } from './ruler.js';
 import { SchematicWidget } from './schematic-widget.js';
 import { DrcWidget } from './drc-widget.js';
 import { TclCompleter } from './tcl-completer.js';
-import { setCookie, applyGLTheme } from './theme.js';
+import { getCookie, setCookie, applyGLTheme } from './theme.js';
 import { updateDocumentTitle } from './title.js';
 
 // ─── Status Indicator ───────────────────────────────────────────────────────
@@ -164,6 +164,19 @@ const visibility = {
     debug: false,
 };
 
+// Restore saved visibility state from a previous session.
+try {
+    const saved = getCookie('or_visibility');
+    if (saved) {
+        const parsed = JSON.parse(decodeURIComponent(saved));
+        for (const [k, v] of Object.entries(parsed)) {
+            visibility[k] = !!v;
+        }
+    }
+} catch (_) {
+    // Ignore malformed cookie.
+}
+
 const WebSocketTileLayer = createWebSocketTileLayer(visibility, app.visibleLayers);
 const BLANK_TILE
     = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
@@ -267,6 +280,9 @@ function updateHeatMaps(data) {
 app.updateHeatMaps = updateHeatMaps;
 
 function redrawAllLayers() {
+    // Persist visibility state to cookie so it survives page reloads.
+    setCookie('or_visibility', encodeURIComponent(JSON.stringify(visibility)));
+
     // Show/hide modules layer based on module_view visibility
     if (app.modulesLayer) {
         if (visibility.module_view && !app.map.hasLayer(app.modulesLayer)) {
