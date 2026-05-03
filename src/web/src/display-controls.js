@@ -225,8 +225,18 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
 
     app.displayControlsEl.appendChild(layerGroup);
 
-    // --- Visibility tree (Instances, Nets, Shapes, Debug) ---
+    // --- Visibility tree (ordered to match Qt GUI display controls) ---
     const visTree = new VisTree(visibility, redrawAllLayers);
+    visTree.add({ label: 'Nets', children: [
+        { key: 'net_signal', label: 'Signal' },
+        { key: 'net_power', label: 'Power' },
+        { key: 'net_ground', label: 'Ground' },
+        { key: 'net_clock', label: 'Clock' },
+        { key: 'net_reset', label: 'Reset' },
+        { key: 'net_tieoff', label: 'Tie off' },
+        { key: 'net_scan', label: 'Scan' },
+        { key: 'net_analog', label: 'Analog' },
+    ]});
     visTree.add({ label: 'Instances', children: [
         { label: 'Std Cells', visKey: 'stdcells', disabled: !app.hasLiberty, children: [
             { label: 'Bufs/Invs', children: [
@@ -262,30 +272,6 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
             { key: 'phys_other', label: 'Other' },
         ]},
     ]});
-    visTree.add({ label: 'Misc', children: [
-        { label: 'Instances', children: [
-            { key: 'inst_names', label: 'Names' },
-            { key: 'inst_pins', label: 'Pins' },
-            { key: 'inst_pin_names', label: 'Pin Names', disabledBy: 'inst_pins' },
-            { key: 'blockages', label: 'Blockages' },
-        ]},
-    ]});
-    visTree.add({ label: 'Nets', children: [
-        { key: 'net_signal', label: 'Signal' },
-        { key: 'net_power', label: 'Power' },
-        { key: 'net_ground', label: 'Ground' },
-        { key: 'net_clock', label: 'Clock' },
-        { key: 'net_reset', label: 'Reset' },
-        { key: 'net_tieoff', label: 'Tie off' },
-        { key: 'net_scan', label: 'Scan' },
-        { key: 'net_analog', label: 'Analog' },
-    ]});
-    visTree.add({ label: 'Shapes', children: [
-        { key: 'routing', label: 'Routing' },
-        { key: 'special_nets', label: 'Special Nets' },
-        { key: 'pins', label: 'Pins' },
-        { key: 'pin_names', label: 'Pin Names', disabledBy: 'pins' },
-    ]});
     visTree.add({ label: 'Blockages', children: [
         { key: 'placement_blockages', label: 'Placement' },
         { key: 'routing_obstructions', label: 'Routing' },
@@ -300,6 +286,20 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
     visTree.add({ label: 'Tracks', children: [
         { key: 'tracks_pref', label: 'Pref' },
         { key: 'tracks_non_pref', label: 'Non Pref' },
+    ]});
+    visTree.add({ label: 'Shapes', children: [
+        { key: 'routing', label: 'Routing' },
+        { key: 'special_nets', label: 'Special Nets' },
+        { key: 'pins', label: 'Pins' },
+        { key: 'pin_names', label: 'Pin Names', disabledBy: 'pins' },
+    ]});
+    visTree.add({ label: 'Misc', children: [
+        { label: 'Instances', children: [
+            { key: 'inst_names', label: 'Names' },
+            { key: 'inst_pins', label: 'Pins' },
+            { key: 'inst_pin_names', label: 'Pin Names', disabledBy: 'inst_pins' },
+            { key: 'blockages', label: 'Blockages' },
+        ]},
     ]});
     visTree.add({ key: 'module_view', label: 'Module view' });
     visTree.add({ key: 'debug', label: 'Debug tiles' });
