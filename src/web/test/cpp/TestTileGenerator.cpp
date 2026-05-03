@@ -426,8 +426,7 @@ TEST_F(TileGeneratorTest, VisibleLayersFiltersPinMarkers)
   // visible_layers = ["metal1"] → only metal1 pin rendered.
   TileVisibility vis_m1;
   vis_m1.stdcells = false;
-  vis_m1.parseFromJson(
-      R"({"pins":1,"visible_layers":["metal1"]})");
+  vis_m1.parseFromJson(R"({"pins":1,"visible_layers":["metal1"]})");
   auto png_m1 = tile_gen_->generateTile("_pins", 0, 0, 0, vis_m1);
   auto pixels_m1 = decodePng(png_m1, w, h);
   EXPECT_TRUE(hasNonTransparentPixel(pixels_m1))
@@ -438,8 +437,7 @@ TEST_F(TileGeneratorTest, VisibleLayersFiltersPinMarkers)
   // visible_layers = ["metal5"] → neither pin rendered.
   TileVisibility vis_m5;
   vis_m5.stdcells = false;
-  vis_m5.parseFromJson(
-      R"({"pins":1,"visible_layers":["metal5"]})");
+  vis_m5.parseFromJson(R"({"pins":1,"visible_layers":["metal5"]})");
   auto png_m5 = tile_gen_->generateTile("_pins", 0, 0, 0, vis_m5);
   auto pixels_m5 = decodePng(png_m5, w, h);
   EXPECT_FALSE(hasNonTransparentPixel(pixels_m5))
