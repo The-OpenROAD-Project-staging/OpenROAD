@@ -1206,15 +1206,31 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
                 const int avail
                     = rotate ? (box_px_h * 9 / 10) : (box_px_w * 9 / 10);
 
-                // Elide from the left if text is too wide.
+                // Elide from the left if text is too wide.  Maintain a
+                // running prefix width so each candidate "..." +
+                // name.substr(skip) is evaluated in O(1) using
+                //   textWidth(name.substr(skip))
+                //     = full_w - prefix_w - kern(name[skip-1], name[skip])
+                // giving O(N) total instead of O(N^2).
                 std::string name = full_name;
                 int text_w = full_w;
                 if (text_w > avail && name.size() > 4) {
-                  for (size_t skip = 1; skip < name.size() - 1; ++skip) {
-                    const std::string candidate = "..." + name.substr(skip);
-                    const int w = getTextWidth(candidate, inst_font);
+                  const int dots_w = getTextWidth("...", inst_font);
+                  const size_t n = name.size();
+                  int prefix_w = 0;
+                  for (size_t skip = 1; skip < n - 1; ++skip) {
+                    prefix_w += inst_font.glyph(name[skip - 1]).advance;
+                    if (skip >= 2) {
+                      prefix_w
+                          += inst_font.kern(name[skip - 2], name[skip - 1]);
+                    }
+                    const int suffix_w
+                        = full_w - prefix_w
+                          - inst_font.kern(name[skip - 1], name[skip]);
+                    const int w
+                        = dots_w + inst_font.kern('.', name[skip]) + suffix_w;
                     if (w <= avail) {
-                      name = candidate;
+                      name = "..." + name.substr(skip);
                       text_w = w;
                       break;
                     }
