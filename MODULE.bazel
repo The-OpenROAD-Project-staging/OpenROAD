@@ -124,11 +124,10 @@ git_override(
 bazel_dep(name = "orfs", dev_dependency = True)
 git_override(
     module_name = "orfs",
-    commit = "172bd233dabd45d04cd80062cd1894e5ac8e5d52",
+    commit = "10a2baea2171059ec14cda9a5855aa26dd7572c6",
     patch_strip = 1,
     patches = [
         "//bazel/bazel-orfs-patches:0035-fix-remove-non-root-overrides-from-MODULE.bazel.patch",
-        "//bazel/bazel-orfs-patches:genMetrics-tolerate-missing-git.patch",
     ],
     remote = "https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts.git",
 )
