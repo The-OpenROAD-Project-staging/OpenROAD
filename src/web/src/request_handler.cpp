@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <any>
+#include <cctype>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -89,6 +90,24 @@ class ShapeCollector : public gui::Painter
 //------------------------------------------------------------------------------
 // JSON utilities
 //------------------------------------------------------------------------------
+
+bool has_key(const std::string& json, const std::string& key)
+{
+  const std::string needle = "\"" + key + "\"";
+  size_t pos = 0;
+  while ((pos = json.find(needle, pos)) != std::string::npos) {
+    size_t after = pos + needle.size();
+    while (after < json.size()
+           && std::isspace(static_cast<unsigned char>(json[after]))) {
+      ++after;
+    }
+    if (after < json.size() && json[after] == ':') {
+      return true;
+    }
+    pos = after;
+  }
+  return false;
+}
 
 std::string extract_string(const std::string& json, const std::string& key)
 {

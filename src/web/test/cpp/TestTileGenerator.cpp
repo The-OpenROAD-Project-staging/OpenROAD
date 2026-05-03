@@ -76,6 +76,43 @@ class TileGeneratorTest : public tst::Nangate45Fixture
     return inst;
   }
 
+  // Create a BTerm pin on a metal layer at the die boundary.
+  void makeBTermAtEdge(const char* name,
+                       const char* layer_name,
+                       int x,
+                       int y,
+                       int w,
+                       int h,
+                       odb::dbIoType io_type = odb::dbIoType::INPUT)
+  {
+    odb::dbNet* net = odb::dbNet::create(block_, name);
+    odb::dbBTerm* bterm = odb::dbBTerm::create(net, name);
+    bterm->setIoType(io_type);
+    odb::dbBPin* bpin = odb::dbBPin::create(bterm);
+    odb::dbTechLayer* layer = getDb()->getTech()->findLayer(layer_name);
+    ASSERT_NE(layer, nullptr);
+    odb::dbBox::create(bpin, layer, x, y, x + w, y + h);
+    bpin->setPlacementStatus(odb::dbPlacementStatus::PLACED);
+  }
+
+  // Create a BTerm on an existing net (for net-type filtering tests).
+  void makeBTermOnNet(const char* name,
+                      odb::dbNet* net,
+                      const char* layer_name,
+                      int x,
+                      int y,
+                      int w,
+                      int h)
+  {
+    odb::dbBTerm* bterm = odb::dbBTerm::create(net, name);
+    bterm->setIoType(odb::dbIoType::INPUT);
+    odb::dbBPin* bpin = odb::dbBPin::create(bterm);
+    odb::dbTechLayer* layer = getDb()->getTech()->findLayer(layer_name);
+    ASSERT_NE(layer, nullptr);
+    odb::dbBox::create(bpin, layer, x, y, x + w, y + h);
+    bpin->setPlacementStatus(odb::dbPlacementStatus::PLACED);
+  }
+
   std::unique_ptr<TileGenerator> tile_gen_;
 };
 
@@ -319,6 +356,10 @@ TEST_F(TileGeneratorTest, TileVisibilityDefaultAllTrue)
   EXPECT_TRUE(vis.routing);
   EXPECT_TRUE(vis.special_nets);
   EXPECT_TRUE(vis.pins);
+  EXPECT_TRUE(vis.pin_markers);
+  EXPECT_TRUE(vis.pin_names);
+  EXPECT_TRUE(vis.inst_pins);
+  EXPECT_TRUE(vis.inst_pin_names);
   EXPECT_TRUE(vis.blockages);
   EXPECT_TRUE(vis.net_signal);
   EXPECT_TRUE(vis.net_power);
@@ -326,6 +367,246 @@ TEST_F(TileGeneratorTest, TileVisibilityDefaultAllTrue)
   EXPECT_TRUE(vis.net_clock);
   EXPECT_TRUE(vis.phys_fill);
   EXPECT_TRUE(vis.phys_endcap);
+  EXPECT_FALSE(vis.has_visible_layers);
+}
+
+//------------------------------------------------------------------------------
+// BTerm / ITerm pin visibility tests
+//------------------------------------------------------------------------------
+
+TEST_F(TileGeneratorTest, BTermShapesGatedByPinsNotRouting)
+{
+  // BTerm shapes on tech layers should be controlled by vis.pins,
+  // independently of vis.routing.
+  makeBTermAtEdge("clk", "metal1", 0, 40000, 5000, 5000);
+  makeTileGen();
+  tile_gen_->eagerInit();
+
+  // pins=true, routing=false → BTerm shapes should appear.
+  TileVisibility vis_pins_on;
+  vis_pins_on.stdcells = false;
+  vis_pins_on.routing = false;
+  vis_pins_on.special_nets = false;
+  vis_pins_on.pins = true;
+  auto png_on = tile_gen_->generateTile("metal1", 0, 0, 0, vis_pins_on);
+  unsigned w = 0, h = 0;
+  auto pixels_on = decodePng(png_on, w, h);
+  EXPECT_TRUE(hasNonTransparentPixel(pixels_on))
+      << "BTerm shapes should appear when vis.pins is true";
+
+  // pins=false, routing=false → no BTerm shapes.
+  TileVisibility vis_pins_off;
+  vis_pins_off.stdcells = false;
+  vis_pins_off.routing = false;
+  vis_pins_off.special_nets = false;
+  vis_pins_off.pins = false;
+  auto png_off = tile_gen_->generateTile("metal1", 0, 0, 0, vis_pins_off);
+  auto pixels_off = decodePng(png_off, w, h);
+  EXPECT_FALSE(hasNonTransparentPixel(pixels_off))
+      << "BTerm shapes should be hidden when vis.pins is false";
+}
+
+TEST_F(TileGeneratorTest, VisibleLayersFiltersPinMarkers)
+{
+  // Pin markers on _pins layer should respect visible_layers filtering.
+  makeBTermAtEdge("pin_m1", "metal1", 0, 40000, 200, 200);
+  makeBTermAtEdge("pin_m3", "metal3", 0, 60000, 200, 200);
+  makeTileGen();
+  tile_gen_->eagerInit();
+
+  // Default (no visible_layers) → both pins rendered.
+  TileVisibility vis_default;
+  vis_default.stdcells = false;
+  auto png_default = tile_gen_->generateTile("_pins", 0, 0, 0, vis_default);
+  unsigned w = 0, h = 0;
+  auto pixels_default = decodePng(png_default, w, h);
+  EXPECT_TRUE(hasNonTransparentPixel(pixels_default))
+      << "Pin markers should render with default visibility";
+
+  // visible_layers = ["metal1"] → only metal1 pin rendered.
+  TileVisibility vis_m1;
+  vis_m1.stdcells = false;
+  vis_m1.parseFromJson(R"({"pins":1,"visible_layers":["metal1"]})");
+  auto png_m1 = tile_gen_->generateTile("_pins", 0, 0, 0, vis_m1);
+  auto pixels_m1 = decodePng(png_m1, w, h);
+  EXPECT_TRUE(hasNonTransparentPixel(pixels_m1))
+      << "metal1 pin should render when visible_layers includes metal1";
+  EXPECT_NE(pixels_default, pixels_m1)
+      << "Filtering to metal1 should differ from rendering both pins";
+
+  // visible_layers = ["metal5"] → neither pin rendered.
+  TileVisibility vis_m5;
+  vis_m5.stdcells = false;
+  vis_m5.parseFromJson(R"({"pins":1,"visible_layers":["metal5"]})");
+  auto png_m5 = tile_gen_->generateTile("_pins", 0, 0, 0, vis_m5);
+  auto pixels_m5 = decodePng(png_m5, w, h);
+  EXPECT_FALSE(hasNonTransparentPixel(pixels_m5))
+      << "No pins should render when visible_layers has no matching layers";
+
+  // visible_layers = [] (empty) → all layers hidden.
+  TileVisibility vis_empty;
+  vis_empty.stdcells = false;
+  vis_empty.parseFromJson(R"({"pins":1,"visible_layers":[]})");
+  auto png_empty = tile_gen_->generateTile("_pins", 0, 0, 0, vis_empty);
+  auto pixels_empty = decodePng(png_empty, w, h);
+  EXPECT_FALSE(hasNonTransparentPixel(pixels_empty))
+      << "Empty visible_layers should hide all pin markers";
+}
+
+TEST_F(TileGeneratorTest, PinMarkersRespectNetVisibility)
+{
+  // Pin markers on _pins layer should respect net type visibility.
+  odb::dbNet* pwr_net = odb::dbNet::create(block_, "VDD");
+  pwr_net->setSigType(odb::dbSigType::POWER);
+  makeBTermOnNet("vdd_pin", pwr_net, "metal1", 0, 40000, 200, 200);
+
+  odb::dbNet* sig_net = odb::dbNet::create(block_, "data");
+  sig_net->setSigType(odb::dbSigType::SIGNAL);
+  makeBTermOnNet("data_pin", sig_net, "metal1", 0, 60000, 200, 200);
+
+  makeTileGen();
+  tile_gen_->eagerInit();
+
+  // Default: both visible.
+  TileVisibility vis_all;
+  vis_all.stdcells = false;
+  auto png_all = tile_gen_->generateTile("_pins", 0, 0, 0, vis_all);
+  unsigned w = 0, h = 0;
+  auto pixels_all = decodePng(png_all, w, h);
+  EXPECT_TRUE(hasNonTransparentPixel(pixels_all));
+
+  // Hide power nets → only signal pin.
+  TileVisibility vis_no_pwr;
+  vis_no_pwr.stdcells = false;
+  vis_no_pwr.net_power = false;
+  auto png_no_pwr = tile_gen_->generateTile("_pins", 0, 0, 0, vis_no_pwr);
+  auto pixels_no_pwr = decodePng(png_no_pwr, w, h);
+  EXPECT_TRUE(hasNonTransparentPixel(pixels_no_pwr))
+      << "Signal pin should still be visible";
+  EXPECT_NE(pixels_all, pixels_no_pwr)
+      << "Hiding power net should change the output";
+
+  // Hide both power and signal → transparent.
+  TileVisibility vis_none;
+  vis_none.stdcells = false;
+  vis_none.net_power = false;
+  vis_none.net_signal = false;
+  auto png_none = tile_gen_->generateTile("_pins", 0, 0, 0, vis_none);
+  auto pixels_none = decodePng(png_none, w, h);
+  EXPECT_FALSE(hasNonTransparentPixel(pixels_none))
+      << "Both net types hidden → no pin markers";
+}
+
+TEST_F(TileGeneratorTest, PinNamesGatesBTermLabels)
+{
+  // Use a tiny die so that pin markers are large enough for labels.
+  // die_pin_size = max(0.02 * 100, 8) = 8; scale = 256/100 = 2.56;
+  // 8 * 2.56 = 20.48 >= kMinPinNameSizePixels (20) → labels render.
+  block_->setDieArea(odb::Rect(0, 0, 100, 100));
+  makeBTermAtEdge("label_test_pin", "metal1", 0, 40, 10, 10);
+  makeTileGen();
+  tile_gen_->eagerInit();
+
+  TileVisibility vis_names_on;
+  vis_names_on.stdcells = false;
+  vis_names_on.pin_names = true;
+  auto png_on = tile_gen_->generateTile("_pins", 0, 0, 0, vis_names_on);
+
+  TileVisibility vis_names_off;
+  vis_names_off.stdcells = false;
+  vis_names_off.pin_names = false;
+  auto png_off = tile_gen_->generateTile("_pins", 0, 0, 0, vis_names_off);
+
+  // The two should differ because labels are suppressed in the second.
+  EXPECT_NE(png_on, png_off)
+      << "pin_names=false should suppress BTerm name labels";
+}
+
+TEST_F(TileGeneratorTest, InstPinsGatesItermShapes)
+{
+  // ITerm (cell pin) shapes should be controlled by vis.inst_pins.
+  // Use a small die so that cell pin geometry occupies visible pixels.
+  block_->setDieArea(odb::Rect(0, 0, 2000, 2000));
+  placeInst("BUF_X16", "buf1", 0, 0);
+  makeTileGen();
+  tile_gen_->eagerInit();  // build search R-trees for tech-layer rendering
+
+  // inst_pins on, other shapes off → ITerm geometry visible on metal1.
+  // stdcells must be true so isInstVisible() allows the instance through.
+  TileVisibility vis_on;
+  vis_on.routing = false;
+  vis_on.special_nets = false;
+  vis_on.pins = false;
+
+  vis_on.blockages = false;
+  vis_on.inst_pins = true;
+  auto png_on = tile_gen_->generateTile("metal1", 0, 0, 0, vis_on);
+  unsigned w = 0, h = 0;
+  auto pixels_on = decodePng(png_on, w, h);
+  EXPECT_TRUE(hasNonTransparentPixel(pixels_on))
+      << "ITerm shapes should appear when vis.inst_pins is true";
+
+  // inst_pins off → no pin geometry, but instance still visible for other
+  // sub-shapes.  With blockages also off, metal1 should be transparent.
+  TileVisibility vis_off;
+  vis_off.routing = false;
+  vis_off.special_nets = false;
+  vis_off.pins = false;
+
+  vis_off.blockages = false;
+  vis_off.inst_pins = false;
+  auto png_off = tile_gen_->generateTile("metal1", 0, 0, 0, vis_off);
+  auto pixels_off = decodePng(png_off, w, h);
+  EXPECT_FALSE(hasNonTransparentPixel(pixels_off))
+      << "ITerm shapes should be hidden when vis.inst_pins is false";
+}
+
+TEST_F(TileGeneratorTest, InstPinNamesRendered)
+{
+  // Use a small die so cell pin geometry fills enough pixels for labels.
+  block_->setDieArea(odb::Rect(0, 0, 2000, 2000));
+  placeInst("BUF_X16", "buf1", 0, 0);
+  makeTileGen();
+  tile_gen_->eagerInit();
+
+  TileVisibility vis_on;
+  vis_on.routing = false;
+  vis_on.special_nets = false;
+  vis_on.pins = false;
+
+  vis_on.blockages = false;
+  vis_on.inst_pins = true;
+  vis_on.inst_pin_names = true;
+  auto png_on = tile_gen_->generateTile("metal1", 0, 0, 0, vis_on);
+
+  TileVisibility vis_off;
+  vis_off.routing = false;
+  vis_off.special_nets = false;
+  vis_off.pins = false;
+
+  vis_off.blockages = false;
+  vis_off.inst_pins = true;
+  vis_off.inst_pin_names = false;
+  auto png_off = tile_gen_->generateTile("metal1", 0, 0, 0, vis_off);
+
+  // Labels should make the two outputs differ.
+  EXPECT_NE(png_on, png_off)
+      << "inst_pin_names should add ITerm labels to tile output";
+
+  // With inst_pins=false, labels should not appear even if inst_pin_names=true.
+  TileVisibility vis_no_pins;
+  vis_no_pins.routing = false;
+  vis_no_pins.special_nets = false;
+  vis_no_pins.pins = false;
+
+  vis_no_pins.blockages = false;
+  vis_no_pins.inst_pins = false;
+  vis_no_pins.inst_pin_names = true;
+  auto png_no_pins = tile_gen_->generateTile("metal1", 0, 0, 0, vis_no_pins);
+  unsigned w = 0, h = 0;
+  auto pixels_no_pins = decodePng(png_no_pins, w, h);
+  EXPECT_FALSE(hasNonTransparentPixel(pixels_no_pins))
+      << "ITerm labels should not render when inst_pins is false";
 }
 
 TEST_F(TileGeneratorTest, InvalidLayerProducesValidPng)

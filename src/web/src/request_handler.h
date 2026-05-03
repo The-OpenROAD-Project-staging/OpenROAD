@@ -163,6 +163,7 @@ struct SessionState
 };
 
 // Minimal JSON field extraction (no JSON library dependency).
+bool has_key(const std::string& json, const std::string& key);
 std::string extract_string(const std::string& json, const std::string& key);
 int extract_int(const std::string& json, const std::string& key);
 int extract_int_or(const std::string& json,

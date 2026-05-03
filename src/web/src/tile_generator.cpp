@@ -48,6 +48,11 @@ constexpr float kPinMarkerSizeRatio = 0.02;
 constexpr int kMinPinMarkerSize = 8;
 constexpr int kMinPinNameSizePixels = 20;
 constexpr int kPinLabelFontHeight = 14;  // pre-baked atlas size for pin labels
+constexpr int kItermLabelFontHeight = 10;  // atlas size for ITerm pin labels
+constexpr int kMinItermLabelBoxPx = 10;    // min pin-box pixel dim for labels
+constexpr int kMinInstNameFontPx = 10;     // minimum readable font size
+constexpr int kMaxInstNameFontPx = 40;     // cap font size for large macros
+constexpr int kMinInstNameBoxPx = 20;      // min instance pixel dim for names
 
 }  // namespace
 
@@ -96,9 +101,17 @@ void TileVisibility::parseFromJson(const std::string& json)
     {"net_scan",           &TileVisibility::net_scan,           true},
     {"net_analog",         &TileVisibility::net_analog,         true},
     {"routing",            &TileVisibility::routing,            true},
+    {"routing_segments",   &TileVisibility::routing_segments,   true},
+    {"routing_vias",       &TileVisibility::routing_vias,       true},
     {"special_nets",       &TileVisibility::special_nets,       true},
+    {"srouting_segments",  &TileVisibility::srouting_segments,  true},
+    {"srouting_vias",      &TileVisibility::srouting_vias,      true},
     {"pins",               &TileVisibility::pins,               true},
     {"pin_markers",        &TileVisibility::pin_markers,        true},
+    {"pin_names",          &TileVisibility::pin_names,          true},
+    {"inst_names",         &TileVisibility::inst_names,         true},
+    {"inst_pins",          &TileVisibility::inst_pins,          true},
+    {"inst_pin_names",     &TileVisibility::inst_pin_names,     true},
     {"blockages",              &TileVisibility::blockages,              true},
     {"placement_blockages",    &TileVisibility::placement_blockages,    true},
     {"routing_obstructions",   &TileVisibility::routing_obstructions,   true},
@@ -116,6 +129,8 @@ void TileVisibility::parseFromJson(const std::string& json)
     this->*(f.field) = extract_int_or(json, f.key, f.default_val ? 1 : 0);
   }
   raw_json = json;
+  visible_layers = extract_string_array(json, "visible_layers");
+  has_visible_layers = has_key(json, "visible_layers");
 }
 
 bool TileVisibility::isSiteVisible(const std::string& site_name) const
@@ -664,10 +679,20 @@ std::vector<SelectionResult> TileGenerator::selectAt(
       continue;
     }
 
-    // Regular routing shapes (wires, vias, bterms)
-    if (vis.routing) {
+    // Regular routing shapes (wires, vias) and BTerm shapes
+    if (vis.routing || vis.pins) {
       for (const auto& shape :
            search_->searchBoxShapes(block, layer, x_lo, y_lo, x_hi, y_hi)) {
+        const auto type = std::get<1>(shape);
+        if (type == Search::kBterm && !vis.pins) {
+          continue;
+        }
+        if (type == Search::kWire && !(vis.routing && vis.routing_segments)) {
+          continue;
+        }
+        if (type == Search::kVia && !(vis.routing && vis.routing_vias)) {
+          continue;
+        }
         odb::dbNet* net = std::get<2>(shape);
         if (seen_nets.contains(net)) {
           continue;
@@ -680,8 +705,8 @@ std::vector<SelectionResult> TileGenerator::selectAt(
       }
     }
 
-    // Special net shapes (power/ground straps)
-    if (vis.special_nets) {
+    // Special net vias
+    if (vis.special_nets && vis.srouting_vias) {
       for (const auto& shape :
            search_->searchSNetViaShapes(block, layer, x_lo, y_lo, x_hi, y_hi)) {
         odb::dbNet* net = std::get<1>(shape);
@@ -694,7 +719,10 @@ std::vector<SelectionResult> TileGenerator::selectAt(
           results.push_back({net, net->getName(), "Net", net->getTermBBox()});
         }
       }
+    }
 
+    // Special net shapes (segments/straps)
+    if (vis.special_nets && vis.srouting_segments) {
       for (const auto& shape :
            search_->searchSNetShapes(block, layer, x_lo, y_lo, x_hi, y_hi)) {
         odb::dbNet* net = std::get<2>(shape);
@@ -879,7 +907,7 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
 
     // Special "_pins" layer: draw IO pin direction markers
     const bool pins_layer = (layer == "_pins");
-    if (pins_layer && vis.pin_markers) {
+    if (pins_layer && vis.pins) {
       const odb::Rect die_area = block->getDieArea();
       // Match GUI: scale markers to min(die, viewport) so they shrink
       // when zoomed in (GUI renderThread.cpp:1598-1602).
@@ -923,6 +951,10 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
 
       // Iterate per-box like the GUI (each dbBox gets its own marker).
       for (odb::dbBTerm* term : block->getBTerms()) {
+        // Respect net-type visibility (Power, Ground, etc.).
+        if (!vis.isNetVisible(term->getNet())) {
+          continue;
+        }
         for (odb::dbBPin* pin : term->getBPins()) {
           const odb::dbPlacementStatus status = pin->getPlacementStatus();
           if (status == odb::dbPlacementStatus::NONE
@@ -934,6 +966,16 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
             if (!box) {
               continue;
             }
+
+            // Skip pins on hidden tech layers.
+            if (vis.has_visible_layers) {
+              odb::dbTechLayer* box_layer = box->getTechLayer();
+              if (box_layer
+                  && !vis.visible_layers.contains(box_layer->getName())) {
+                continue;
+              }
+            }
+
             const odb::Rect box_rect = box->getBox();
 
             // Layer color for this box.
@@ -1018,7 +1060,7 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
             }
 
             // Draw pin name label when zoomed in enough.
-            if (draw_pin_names) {
+            if (draw_pin_names && vis.pin_names) {
               const std::string name = term->getName();
               const odb::Point anchor_pt = xfm.getOffset();
               const int text_w = getTextWidth(name, pin_label_font);
@@ -1082,6 +1124,9 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
     // "_modules" and "_pins" layers handle their own drawing above;
     // skip all other drawing (instances, routing, etc.)
     if (!modules_layer && !pins_layer) {
+      const auto iterm_font = fontAtlasGetFont(kItermLabelFontHeight);
+      const int iterm_font_h = getTextHeight(iterm_font);
+
       // Draw instances
       for (odb::dbInst* inst : search_->searchInsts(
                block, dbu_x_min, dbu_y_min, dbu_x_max, dbu_y_max)) {
@@ -1131,6 +1176,93 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
               setPixel(image_buffer, ix, draw_y, gray);
             }
           }
+
+          // Draw instance name label when zoomed in enough.
+          // Font scales to ~40% of the smaller box dimension, clamped
+          // to [kMinInstNameFontPx, kMaxInstNameFontPx].  Text is
+          // elided from the left ("...suffix") to fit 90% of the
+          // available dimension, matching the Qt GUI's behavior.
+          if (vis.inst_names) {
+            const int box_px_w = pixel_xh - pixel_xl;
+            const int box_px_h = pixel_yh - pixel_yl;
+            const int box_px_min = std::min(box_px_w, box_px_h);
+            if (std::max(box_px_w, box_px_h) >= kMinInstNameBoxPx) {
+              const int font_px = std::clamp(static_cast<int>(box_px_min * 0.4),
+                                             kMinInstNameFontPx,
+                                             kMaxInstNameFontPx);
+              const auto inst_font = fontAtlasGetFont(font_px);
+              const int font_h = getTextHeight(inst_font);
+
+              // Skip if font would dominate the cell (> 50% of cross
+              // dimension), matching GUI's kNonCoreScaleLimit = 2.0.
+              if (2 * font_h <= box_px_min) {
+                constexpr Color name_color{
+                    .r = 255, .g = 255, .b = 0, .a = 220};
+                const std::string full_name = inst->getName();
+                const int full_w = getTextWidth(full_name, inst_font);
+
+                // Rotate if taller than wide and text overflows (85%).
+                const bool rotate
+                    = (box_px_h > box_px_w) && (full_w > box_px_w * 85 / 100);
+
+                // Available width for text (90% of relevant dim).
+                const int avail
+                    = rotate ? (box_px_h * 9 / 10) : (box_px_w * 9 / 10);
+
+                // Elide from the left if text is too wide.  Maintain a
+                // running prefix width so each candidate "..." +
+                // name.substr(skip) is evaluated in O(1) using
+                //   textWidth(name.substr(skip))
+                //     = full_w - prefix_w - kern(name[skip-1], name[skip])
+                // giving O(N) total instead of O(N^2).
+                std::string name = full_name;
+                int text_w = full_w;
+                if (text_w > avail && name.size() > 4) {
+                  const int dots_w = getTextWidth("...", inst_font);
+                  const size_t n = name.size();
+                  int prefix_w = 0;
+                  for (size_t skip = 1; skip < n - 1; ++skip) {
+                    prefix_w += inst_font.glyph(name[skip - 1]).advance;
+                    if (skip >= 2) {
+                      prefix_w
+                          += inst_font.kern(name[skip - 2], name[skip - 1]);
+                    }
+                    const int suffix_w
+                        = full_w - prefix_w
+                          - inst_font.kern(name[skip - 1], name[skip]);
+                    const int w
+                        = dots_w + inst_font.kern('.', name[skip]) + suffix_w;
+                    if (w <= avail) {
+                      name = "..." + name.substr(skip);
+                      text_w = w;
+                      break;
+                    }
+                  }
+                }
+
+                // Center of instance bbox in pixel coords.
+                const int cx = (pixel_xl + pixel_xh) / 2;
+                const int cy = 255 - (pixel_yl + pixel_yh) / 2;
+
+                if (rotate) {
+                  const int px = cx - font_h / 2;
+                  const int py = cy - text_w / 2;
+                  if (px > -font_h && px < kTileSizeInPixel && py > -text_w
+                      && py < kTileSizeInPixel) {
+                    drawTextRotated(
+                        image_buffer, px, py, name, inst_font, name_color);
+                  }
+                } else {
+                  const int px = cx - text_w / 2;
+                  const int py = cy - font_h / 2;
+                  if (px > -text_w && px < kTileSizeInPixel && py > -font_h
+                      && py < kTileSizeInPixel) {
+                    drawText(image_buffer, px, py, name, inst_font, name_color);
+                  }
+                }
+              }
+            }
+          }
         } else {
           // Layer-specific: obstructions and pins
           if (vis.blockages) {
@@ -1158,7 +1290,7 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
             }
           }
 
-          if (vis.pins) {
+          if (vis.inst_pins) {
             for (odb::dbMTerm* mterm : master->getMTerms()) {
               for (odb::dbMPin* mpin : mterm->getMPins()) {
                 for (odb::dbPolygon* poly_geom : mpin->getPolygonGeometry()) {
@@ -1186,17 +1318,105 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
               }
             }
           }
+
+          // Draw ITerm name labels when zoomed in and pins are visible.
+          if (vis.inst_pins && vis.inst_pin_names) {
+            constexpr Color iterm_label_color{
+                .r = 255, .g = 255, .b = 0, .a = 220};
+            const odb::dbTransform xfm = inst->getTransform();
+
+            for (odb::dbMTerm* mterm : master->getMTerms()) {
+              bool drawn = false;
+              for (odb::dbMPin* mpin : mterm->getMPins()) {
+                for (odb::dbBox* geom : mpin->getGeometry(false)) {
+                  if (tech_layer && geom->getTechLayer() != tech_layer) {
+                    continue;
+                  }
+                  odb::Rect box = geom->getBox();
+                  xfm.apply(box);
+                  if (!box.overlaps(dbu_tile)) {
+                    continue;
+                  }
+
+                  // Skip if pin box is too small in pixels.
+                  const int box_px_w = static_cast<int>(box.dx() * scale);
+                  const int box_px_h = static_cast<int>(box.dy() * scale);
+                  if (box_px_w < kMinItermLabelBoxPx
+                      && box_px_h < kMinItermLabelBoxPx) {
+                    continue;
+                  }
+
+                  const std::string name(mterm->getName());
+                  const int text_w = getTextWidth(name, iterm_font);
+
+                  // Center of pin box in pixel coords.
+                  const odb::Point center = box.center();
+                  const int cx = static_cast<int>((center.x() - dbu_tile.xMin())
+                                                  * scale);
+                  const int cy = 255
+                                 - static_cast<int>(
+                                     (center.y() - dbu_tile.yMin()) * scale);
+
+                  // Rotate 90° if box is taller than wide and text overflows.
+                  const bool rotate
+                      = (box_px_h > box_px_w) && (text_w > box_px_w);
+
+                  if (rotate) {
+                    const int px = cx - iterm_font_h / 2;
+                    const int py = cy - text_w / 2;
+                    if (px > -iterm_font_h && px < kTileSizeInPixel
+                        && py > -text_w && py < kTileSizeInPixel) {
+                      drawTextRotated(image_buffer,
+                                      px,
+                                      py,
+                                      name,
+                                      iterm_font,
+                                      iterm_label_color);
+                    }
+                  } else {
+                    const int px = cx - text_w / 2;
+                    const int py = cy - iterm_font_h / 2;
+                    if (px > -text_w && px < kTileSizeInPixel
+                        && py > -iterm_font_h && py < kTileSizeInPixel) {
+                      drawText(image_buffer,
+                               px,
+                               py,
+                               name,
+                               iterm_font,
+                               iterm_label_color);
+                    }
+                  }
+
+                  drawn = true;
+                  break;  // only label first geometry per pin
+                }
+                if (drawn) {
+                  break;
+                }
+              }
+            }
+          }
         }
       }
 
-      // Draw routing shapes (wires, vias, bterms) on top of instances
-      if (!instances_only && tech_layer && vis.routing) {
+      // Draw routing shapes (wires, vias) and BTerm shapes on top of instances
+      if (!instances_only && tech_layer && (vis.routing || vis.pins)) {
         for (const auto& shape : search_->searchBoxShapes(block,
                                                           tech_layer,
                                                           dbu_x_min,
                                                           dbu_y_min,
                                                           dbu_x_max,
                                                           dbu_y_max)) {
+          const auto type = std::get<1>(shape);
+          if (type == Search::kBterm && !vis.pins) {
+            continue;
+          }
+          if (type == Search::kWire && !(vis.routing && vis.routing_segments)) {
+            continue;
+          }
+          if (type == Search::kVia && !(vis.routing && vis.routing_vias)) {
+            continue;
+          }
           odb::dbNet* net = std::get<2>(shape);
           if (!vis.isNetVisible(net)) {
             continue;
@@ -1217,7 +1437,8 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
       }
 
       // Draw special net shapes (power/ground straps) on top of instances
-      if (!instances_only && tech_layer && vis.special_nets) {
+      if (!instances_only && tech_layer && vis.special_nets
+          && vis.srouting_segments) {
         for (const auto& shape : search_->searchSNetShapes(block,
                                                            tech_layer,
                                                            dbu_x_min,
@@ -1242,7 +1463,8 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
       }
 
       // Draw special net vias — decompose into individual cut boxes
-      if (!instances_only && tech_layer && vis.special_nets) {
+      if (!instances_only && tech_layer && vis.special_nets
+          && vis.srouting_vias) {
         for (const auto& shape : search_->searchSNetViaShapes(block,
                                                               tech_layer,
                                                               dbu_x_min,
@@ -1290,7 +1512,7 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
       // rendering a routing layer we look up the cut layers immediately above
       // and below, search for vias there, and draw only the enclosure boxes
       // that belong to the current routing layer.
-      if (!instances_only && tech_layer && vis.special_nets
+      if (!instances_only && tech_layer && vis.special_nets && vis.srouting_vias
           && tech_layer->getType() == odb::dbTechLayerType::ROUTING) {
         odb::dbTechLayer* adj_cuts[2]
             = {tech_layer->getLowerLayer(), tech_layer->getUpperLayer()};
@@ -1784,7 +2006,7 @@ void TileGenerator::saveImage(const std::string& filename,
   for (const auto& name : getLayers()) {
     layers_to_render.push_back(name);
   }
-  if (vis.pin_markers) {
+  if (vis.pins) {
     layers_to_render.emplace_back("_pins");
   }
 
@@ -1941,9 +2163,16 @@ std::vector<unsigned char> TileGenerator::renderOverlayPng(
   vis.std_sequential = false;
   vis.std_combinational = false;
   vis.routing = false;
+  vis.routing_segments = false;
+  vis.routing_vias = false;
   vis.special_nets = false;
+  vis.srouting_segments = false;
+  vis.srouting_vias = false;
   vis.pins = false;
-  vis.pin_markers = false;
+  vis.pin_names = false;
+  vis.inst_names = false;
+  vis.inst_pins = false;
+  vis.inst_pin_names = false;
   vis.blockages = false;
   vis.placement_blockages = false;
   vis.routing_obstructions = false;
