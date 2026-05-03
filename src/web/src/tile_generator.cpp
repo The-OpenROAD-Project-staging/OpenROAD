@@ -1124,6 +1124,9 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
     // "_modules" and "_pins" layers handle their own drawing above;
     // skip all other drawing (instances, routing, etc.)
     if (!modules_layer && !pins_layer) {
+      const auto iterm_font = fontAtlasGetFont(kItermLabelFontHeight);
+      const int iterm_font_h = getTextHeight(iterm_font);
+
       // Draw instances
       for (odb::dbInst* inst : search_->searchInsts(
                block, dbu_x_min, dbu_y_min, dbu_x_max, dbu_y_max)) {
@@ -1318,8 +1321,6 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
 
           // Draw ITerm name labels when zoomed in and pins are visible.
           if (vis.inst_pins && vis.inst_pin_names) {
-            const auto iterm_font = fontAtlasGetFont(kItermLabelFontHeight);
-            const int font_h = getTextHeight(iterm_font);
             constexpr Color iterm_label_color{
                 .r = 255, .g = 255, .b = 0, .a = 220};
             const odb::dbTransform xfm = inst->getTransform();
@@ -1361,10 +1362,10 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
                       = (box_px_h > box_px_w) && (text_w > box_px_w);
 
                   if (rotate) {
-                    const int px = cx - font_h / 2;
+                    const int px = cx - iterm_font_h / 2;
                     const int py = cy - text_w / 2;
-                    if (px > -font_h && px < kTileSizeInPixel && py > -text_w
-                        && py < kTileSizeInPixel) {
+                    if (px > -iterm_font_h && px < kTileSizeInPixel
+                        && py > -text_w && py < kTileSizeInPixel) {
                       drawTextRotated(image_buffer,
                                       px,
                                       py,
@@ -1374,9 +1375,9 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
                     }
                   } else {
                     const int px = cx - text_w / 2;
-                    const int py = cy - font_h / 2;
-                    if (px > -text_w && px < kTileSizeInPixel && py > -font_h
-                        && py < kTileSizeInPixel) {
+                    const int py = cy - iterm_font_h / 2;
+                    if (px > -text_w && px < kTileSizeInPixel
+                        && py > -iterm_font_h && py < kTileSizeInPixel) {
                       drawText(image_buffer,
                                px,
                                py,
