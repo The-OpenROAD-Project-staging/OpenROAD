@@ -267,6 +267,7 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
             { key: 'inst_names', label: 'Names' },
             { key: 'inst_pins', label: 'Pins' },
             { key: 'inst_pin_names', label: 'Pin Names', disabledBy: 'inst_pins' },
+            { key: 'blockages', label: 'Blockages' },
         ]},
     ]});
     visTree.add({ label: 'Nets', children: [
@@ -284,7 +285,6 @@ export function populateDisplayControls(app, visibility, WebSocketTileLayer,
         { key: 'special_nets', label: 'Special Nets' },
         { key: 'pins', label: 'Pins' },
         { key: 'pin_names', label: 'Pin Names', disabledBy: 'pins' },
-        { key: 'blockages', label: 'Blockages' },
     ]});
     visTree.add({ label: 'Blockages', children: [
         { key: 'placement_blockages', label: 'Placement' },
