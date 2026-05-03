@@ -1459,7 +1459,14 @@ dbNet* dbNetwork::flatNet(const Pin* pin) const
   dbNet* db_net;
   odb::dbModNet* db_modnet;
   net(pin, db_net, db_modnet);
-  return db_net;
+  if (db_net) {
+    return db_net;
+  }
+  // moditerm-only pins have no direct flat net; derive it via the modnet.
+  if (db_modnet) {
+    return db_modnet->findRelatedNet();
+  }
+  return nullptr;
 }
 
 odb::dbModNet* dbNetwork::hierNet(const Pin* pin) const
@@ -1503,9 +1510,6 @@ void dbNetwork::net(const Pin* pin,
 
   if (moditerm) {
     db_modnet = moditerm->getModNet();
-    if (db_modnet) {
-      db_net = db_modnet->findRelatedNet();
-    }
   }
 }
 
@@ -4142,7 +4146,13 @@ void dbNetwork::reassociatePinConnection(Pin* pin)
   // after complex hierarchical edits.
   odb::dbModNet* mod_net = hierNet(pin);
   if (mod_net) {
-    dbNet* flat_net = this->flatNet(pin);
+    dbITerm* iterm = nullptr;
+    dbBTerm* bterm = nullptr;
+    dbModITerm* moditerm = nullptr;
+    staToDb(pin, iterm, bterm, moditerm);
+    // moditerm pins do not connect directly to a flat dbNet; only their
+    // associated modnet does. Skip the flat-net leg in that case.
+    dbNet* flat_net = (iterm || bterm) ? this->flatNet(pin) : nullptr;
     // Disconnect both flat and hierarchical nets before reconnecting
     // to ensure a clean state.
     disconnectPin(pin);

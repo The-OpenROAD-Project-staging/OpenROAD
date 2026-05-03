@@ -170,6 +170,41 @@ TEST_F(TestDbSta, FlatNet)
   EXPECT_EQ(db_network_->flatNet(modbterm_term), dbnet_net2);
 }
 
+// Reassociating a moditerm pin must not forward the modnet's related flat
+// dbNet into connectPin(Pin*, flat_net, hier_net): moditerms only attach to
+// modnets, so a non-null flat_net would trip ORD-2026. Regression for the
+// hierarchical repair_tie_fanout flow.
+TEST_F(TestDbSta, ReassociateModITermPin)
+{
+  std::string test_name = "TestDbSta_0";
+  readVerilogAndSetup(test_name + ".v");
+
+  Pin* moditerm_pin = db_network_->findPin("sub_inst/mod_in");
+  ASSERT_NE(moditerm_pin, nullptr);
+
+  odb::dbITerm* iterm = nullptr;
+  odb::dbBTerm* bterm = nullptr;
+  odb::dbModITerm* moditerm = nullptr;
+  db_network_->staToDb(moditerm_pin, iterm, bterm, moditerm);
+  ASSERT_EQ(iterm, nullptr);
+  ASSERT_EQ(bterm, nullptr);
+  ASSERT_NE(moditerm, nullptr);
+
+  odb::dbModNet* original_modnet = moditerm->getModNet();
+  ASSERT_NE(original_modnet, nullptr);
+  // Precondition for the regression: flatNet(moditerm) resolves through the
+  // modnet, so a buggy reassociate would feed a non-null flat net into
+  // connectPin and trigger ORD-2026.
+  ASSERT_NE(db_network_->flatNet(moditerm_pin), nullptr);
+
+  db_network_->reassociatePinConnection(moditerm_pin);
+
+  EXPECT_EQ(moditerm->getModNet(), original_modnet);
+  EXPECT_TRUE(db_network_->isConnected(db_network_->dbToSta(original_modnet),
+                                       moditerm_pin));
+  db_network_->checkAxioms();
+}
+
 // Regression for #10210 (stale Path* dereference in rsz).
 //
 // Topology (TestDbSta_StalePrevPath.v):
