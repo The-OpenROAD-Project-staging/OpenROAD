@@ -1459,14 +1459,7 @@ dbNet* dbNetwork::flatNet(const Pin* pin) const
   dbNet* db_net;
   odb::dbModNet* db_modnet;
   net(pin, db_net, db_modnet);
-  if (db_net) {
-    return db_net;
-  }
-  // moditerm-only pins have no direct flat net; derive it via the modnet.
-  if (db_modnet) {
-    return db_modnet->findRelatedNet();
-  }
-  return nullptr;
+  return db_net;
 }
 
 odb::dbModNet* dbNetwork::hierNet(const Pin* pin) const
@@ -2082,13 +2075,8 @@ dbNet* dbNetwork::flatNet(const Term* term) const
   staToDb(term, iterm, bterm, modbterm);
 
   if (bterm) {
-    return bterm->getNet();
-  }
-  if (modbterm) {
-    if (odb::dbModNet* modnet = modbterm->getModNet()) {
-      return modnet->findRelatedNet();
-    }
-    return nullptr;
+    dbNet* dnet = bterm->getNet();
+    return dnet;
   }
   logger_->error(
       ORD, 2029, "Illegal term for getting a flat net, must be bterm");
@@ -3019,9 +3007,6 @@ dbNet* dbNetwork::flatNet(const Net* net) const
     dbObjectType type = obj->getObjectType();
     if (type == odb::dbNetObj) {
       return static_cast<dbNet*>(obj);
-    }
-    if (type == odb::dbModNetObj) {
-      return static_cast<odb::dbModNet*>(obj)->findRelatedNet();
     }
   }
   return nullptr;
@@ -4146,13 +4131,7 @@ void dbNetwork::reassociatePinConnection(Pin* pin)
   // after complex hierarchical edits.
   odb::dbModNet* mod_net = hierNet(pin);
   if (mod_net) {
-    dbITerm* iterm = nullptr;
-    dbBTerm* bterm = nullptr;
-    dbModITerm* moditerm = nullptr;
-    staToDb(pin, iterm, bterm, moditerm);
-    // moditerm pins do not connect directly to a flat dbNet; only their
-    // associated modnet does. Skip the flat-net leg in that case.
-    dbNet* flat_net = (iterm || bterm) ? this->flatNet(pin) : nullptr;
+    dbNet* flat_net = this->flatNet(pin);
     // Disconnect both flat and hierarchical nets before reconnecting
     // to ensure a clean state.
     disconnectPin(pin);
