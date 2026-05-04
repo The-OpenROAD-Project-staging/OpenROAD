@@ -4,6 +4,7 @@
 #pragma once
 
 #include "BaseMove.hh"
+#include "sta/Path.hh"
 
 namespace rsz {
 

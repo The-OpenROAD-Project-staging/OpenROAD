@@ -21,6 +21,7 @@
 #include "sta/LibertyClass.hh"
 #include "sta/MinMax.hh"
 #include "sta/NetworkClass.hh"
+#include "sta/Path.hh"
 #include "utl/Logger.h"
 
 namespace sta {
@@ -104,20 +105,6 @@ class RepairSetup : public sta::dbStaState
                    bool skip_last_gasp,
                    bool skip_vt_swap,
                    bool skip_crit_vt_swap);
-  // Wire delay optimization
-  // bool repairSetupResAware(float setup_slack_margin,
-  //                          double repair_tns_end_percent,
-  //                          int max_passes,
-  //                          int max_iterations,
-  //                          int max_repairs_per_pass,
-  //                          bool verbose,
-  //                          bool skip_pin_swap,
-  //                          bool skip_gate_cloning,
-  //                          bool skip_buffering,
-  //                          bool skip_buffer_removal,
-  //                          bool skip_last_gasp,
-  //                          bool skip_vt_swap,
-  //                          bool skip_crit_vt_swap);
   // For testing.
   void repairSetup(const sta::Pin* end_pin);
   // For testing.

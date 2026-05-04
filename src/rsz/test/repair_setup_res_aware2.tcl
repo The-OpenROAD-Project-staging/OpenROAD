@@ -45,4 +45,3 @@ repair_timing -setup -phases "RESAWARE" -repair_tns 10
 
 report_worst_slack -max
 report_tns -digits 3
-

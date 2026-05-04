@@ -161,6 +161,9 @@ void RepairSetup::setupMoveSequence(const std::vector<MoveType>& sequence,
     if (!skip_buffer_removal) {
       move_sequence_.push_back(resizer_->unbuffer_move_.get());
     }
+    if (!skip_vt_swap && resizer_->lib_data_->sorted_vt_categories.size() > 1) {
+      move_sequence_.push_back(resizer_->vt_swap_speed_move_.get());
+    }
     // Always  have sizing
     move_sequence_.push_back(resizer_->size_up_move_.get());
     // Disabled by default for now
@@ -518,6 +521,7 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
   int unbuffer_moves_ = resizer_->unbuffer_move_->numCommittedMoves();
   int vt_swap_moves_ = resizer_->vt_swap_speed_move_->numCommittedMoves();
   int size_up_match_moves_ = resizer_->size_up_match_move_->numCommittedMoves();
+  int res_aware_moves_ = resizer_->res_aware_move_->numCommittedMoves();
 
   if (unbuffer_moves_ > 0) {
     repaired = true;
@@ -557,6 +561,11 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
   if (clone_moves_ > 0) {
     repaired = true;
     logger_->info(RSZ, 49, "Cloned {} instances.", clone_moves_);
+  }
+  if (res_aware_moves_ > 0) {
+    repaired = true;
+    logger_->info(
+        RSZ, 53, "Rerouted {} nets resistance-aware.", res_aware_moves_);
   }
   const sta::Slack worst_slack = sta_->worstSlack(max_);
   if (sta::fuzzyLess(worst_slack, setup_slack_margin)) {
@@ -1331,16 +1340,13 @@ void RepairSetup::printProgress(const int iteration,
 
   if (start && !end) {
     logger_->report(
-        "   Iter   | Removed | Resized | Inserted | Cloned |  Pin  | "
-        "ResAware |"
+        "   Iter   | Removed | Resized | Inserted | Cloned |  Pin  |"
         "   Area   |    WNS   |   StTNS    |   EnTNS    |  Viol  |  Worst  ");
     logger_->report(
-        "          | Buffers |  Gates  | Buffers  |  Gates | Swaps |   Nets  "
-        " |"
+        "          | Buffers |  Gates  | Buffers  |  Gates | Swaps |"
         "          |          |            |            | Endpts | St/EnPt ");
     logger_->report(
         "---------------------------------------------------------------"
-        "-----------"
         "---------------------------------------------------------------");
   }
 
@@ -1372,7 +1378,7 @@ void RepairSetup::printProgress(const int iteration,
     // This actually prints both committed and pending moves, so the moves
     // could could go down if a pass is rejected and restored by the ECO.
     logger_->report(
-        "{: >9s} | {: >7d} | {: >7d} | {: >8d} | {: >6d} | {: >5d} | {: >8d} "
+        "{: >9s} | {: >7d} | {: >7d} | {: >8d} | {: >6d} | {: >5d} "
         "| {: >+7.1f}% | {: >8s} | {: >10s} | {: >10s} | {: >6d} | {}",
         itr_field,
         resizer_->unbuffer_move_->numMoves(),
@@ -1384,7 +1390,6 @@ void RepairSetup::printProgress(const int iteration,
             + resizer_->split_load_move_->numMoves(),
         resizer_->clone_move_->numMoves(),
         resizer_->swap_pins_move_->numMoves(),
-        resizer_->res_aware_move_->numMoves(),
         area_growth_percent,
         delayAsString(wns, 3, sta_),
         delayAsString(st_tns, 1, sta_),

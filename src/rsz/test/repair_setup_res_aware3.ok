@@ -10,21 +10,22 @@
 [INFO ODB-0133]     Created 416 nets and 1216 connections.
 worst slack max -3597.44
 tns max -133188.516
-[INFO RSZ-0100] Repair move sequence: ResAwareMove UnbufferMove SizeUpMove SwapPinsMove BufferMove CloneMove SplitLoadMove 
+[INFO RSZ-0100] Repair move sequence: ResAwareMove UnbufferMove VTSwapSpeed SizeUpMove SwapPinsMove BufferMove CloneMove SplitLoadMove 
 [INFO RSZ-0094] Found 53 endpoints with setup violations.
 [INFO RSZ-0099] Repairing 5 out of 53 (10.00%) violating endpoints...
-   Iter   | Removed | Resized | Inserted | Cloned |  Pin  | ResAware |   Area   |    WNS   |   StTNS    |   EnTNS    |  Viol  |  Worst  
-          | Buffers |  Gates  | Buffers  |  Gates | Swaps |   Nets   |          |          |            |            | Endpts | St/EnPt 
------------------------------------------------------------------------------------------------------------------------------------------
-       0* |       0 |       0 |        0 |      0 |     0 |        0 |    +0.0% | -3597.437 |  -104190.9 |  -133188.5 |     53 | dpath.b_reg.out\[5\]$_DFFE_PP_/D
-     359* |       2 |      74 |      116 |      1 |    28 |       48 |   +37.8% | -1283.257 |   -48032.1 |   -52775.4 |     53 | dpath.b_reg.out\[5\]$_DFFE_PP_/D
-    final |       2 |     424 |      116 |      1 |    43 |       48 |   +40.5% | -1201.294 |   -43563.4 |   -46784.9 |     53 | dpath.b_reg.out\[12\]$_DFFE_PP_/D
+   Iter   | Removed | Resized | Inserted | Cloned |  Pin  |   Area   |    WNS   |   StTNS    |   EnTNS    |  Viol  |  Worst  
+          | Buffers |  Gates  | Buffers  |  Gates | Swaps |          |          |            |            | Endpts | St/EnPt 
+------------------------------------------------------------------------------------------------------------------------------
+       0* |       0 |       0 |        0 |      0 |     0 |    +0.0% | -3597.437 |  -104190.9 |  -133188.5 |     53 | dpath.b_reg.out\[5\]$_DFFE_PP_/D
+     337* |       2 |     112 |      116 |      2 |    33 |   +36.8% | -1191.273 |   -44995.1 |   -49191.4 |     53 | dpath.b_reg.out\[5\]$_DFFE_PP_/D
+    final |       2 |     411 |      116 |      2 |    45 |   +39.2% | -1189.220 |   -43040.9 |   -46668.2 |     53 | dpath.b_reg.out\[5\]$_DFFE_PP_/D
 ------------------------------------------------------------------------------------------------------------------------------
 [INFO RSZ-0059] Removed 2 buffers.
-[INFO RSZ-0045] Inserted 116 buffers, 1 to split loads.
-[INFO RSZ-0051] Resized 424 instances: 117 up, 0 up match, 0 down, 307 VT
-[INFO RSZ-0043] Swapped pins on 43 instances.
-[INFO RSZ-0049] Cloned 1 instances.
+[INFO RSZ-0040] Inserted 116 buffers.
+[INFO RSZ-0051] Resized 411 instances: 93 up, 0 up match, 0 down, 318 VT
+[INFO RSZ-0043] Swapped pins on 45 instances.
+[INFO RSZ-0049] Cloned 2 instances.
+[INFO RSZ-0053] Rerouted 57 nets resistance-aware.
 [WARNING RSZ-0062] Unable to repair all setup violations.
-worst slack max -1201.29
-tns max -46784.879
+worst slack max -1189.22
+tns max -46668.227

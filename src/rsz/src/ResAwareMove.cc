@@ -3,7 +3,10 @@
 
 #include "ResAwareMove.hh"
 
+#include "db_sta/dbSta.hh"
 #include "grt/GlobalRouter.h"
+#include "odb/db.h"
+#include "odb/dbTypes.h"
 #include "rsz/Resizer.hh"
 #include "sta/Path.hh"
 #include "utl/Logger.h"

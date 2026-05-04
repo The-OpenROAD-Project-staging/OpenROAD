@@ -44,4 +44,3 @@ repair_timing -setup -sequence "res_aware" -repair_tns 10
 
 report_worst_slack -max
 report_tns -digits 3
-

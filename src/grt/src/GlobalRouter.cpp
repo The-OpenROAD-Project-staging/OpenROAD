@@ -909,7 +909,8 @@ bool GlobalRouter::isNetResAware(odb::dbNet* db_net)
     return it->second->isResAware();
   }
 
-  logger_->warn(GRT, 100, "Net is not in the db_net_map_");
+  logger_->warn(
+      GRT, 100, "Net {} is not in the db_net_map_", db_net->getConstName());
 
   return false;
 }
