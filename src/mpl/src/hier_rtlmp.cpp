@@ -2801,15 +2801,14 @@ void Pusher::pushMacroClusterToCoreBoundaries(
   }
 
   std::vector<HardMacro*> hard_macros = macro_cluster->getHardMacros();
+  odb::Rect cluster_box = macro_cluster->getBBox();
 
   for (const auto& [boundary, distance] : boundaries_distance) {
     if (distance == 0) {
       continue;
     }
 
-    for (HardMacro* hard_macro : hard_macros) {
-      moveHardMacro(hard_macro, boundary, distance);
-    }
+    moveMacroClusterBox(cluster_box, boundary, distance);
 
     debugPrint(logger_,
                MPL,
@@ -2819,17 +2818,17 @@ void Pusher::pushMacroClusterToCoreBoundaries(
                macro_cluster->getName(),
                toString(boundary));
 
-    odb::Rect cluster_box = macro_cluster->getBBox();
-
-    moveMacroClusterBox(cluster_box, boundary, distance);
-
     // Check based on the shape of the macro cluster to avoid iterating each
     // of its HardMacros.
-    if (overlapsWithHardMacro(cluster_box, hard_macros)
+    if (overlapsWithHardMacro(cluster_box, macro_cluster->getId())
         || overlapsWithIOBlockage(cluster_box)) {
       // Move back to original position.
+      moveMacroClusterBox(cluster_box, boundary, -distance);
+    } else {
+      // Commit movement to hard macros if there are no overlaps with the
+      // cluster
       for (HardMacro* hard_macro : hard_macros) {
-        moveHardMacro(hard_macro, boundary, (-distance));
+        moveHardMacro(hard_macro, boundary, distance);
       }
     }
   }
@@ -2883,21 +2882,10 @@ void Pusher::moveHardMacro(HardMacro* hard_macro,
   }
 }
 
-bool Pusher::overlapsWithHardMacro(
-    const odb::Rect& cluster_box,
-    const std::vector<HardMacro*>& cluster_hard_macros)
+bool Pusher::overlapsWithHardMacro(const odb::Rect& cluster_box, int cluster_id)
 {
   for (const HardMacro* hard_macro : hard_macros_) {
-    bool hard_macro_belongs_to_cluster = false;
-
-    for (const HardMacro* cluster_hard_macro : cluster_hard_macros) {
-      if (hard_macro == cluster_hard_macro) {
-        hard_macro_belongs_to_cluster = true;
-        break;
-      }
-    }
-
-    if (hard_macro_belongs_to_cluster) {
+    if (hard_macro->getCluster()->getId() == cluster_id) {
       continue;
     }
 

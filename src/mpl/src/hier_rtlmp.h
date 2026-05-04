@@ -346,9 +346,7 @@ class Pusher
   void moveMacroClusterBox(odb::Rect& cluster_box,
                            Boundary boundary,
                            int distance);
-  bool overlapsWithHardMacro(
-      const odb::Rect& cluster_box,
-      const std::vector<HardMacro*>& cluster_hard_macros);
+  bool overlapsWithHardMacro(const odb::Rect& cluster_box, int cluster_id);
   bool overlapsWithIOBlockage(const odb::Rect& cluster_box) const;
 
   utl::Logger* logger_;
