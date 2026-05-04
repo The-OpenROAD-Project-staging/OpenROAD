@@ -21,7 +21,9 @@
 #include "boost/asio/error.hpp"
 #include "boost/asio/io_context.hpp"
 #include "boost/asio/ip/tcp.hpp"
+#include "boost/asio/post.hpp"
 #include "boost/asio/steady_timer.hpp"
+#include "boost/asio/strand.hpp"
 #include "boost/system/error_code.hpp"
 // NOLINTNEXTLINE(misc-include-cleaner)
 #include "boost/beast/core.hpp"
@@ -220,7 +222,15 @@ void WebServer::serve(int port)
 
     const std::string url = "http://localhost:" + std::to_string(handle.port);
 
-    log_drain_timer_ = std::make_unique<net::steady_timer>(*ioc_);
+    // Bind the timer to a strand so all timer operations (expires_after,
+    // async_wait, cancel) run serialized on a single io thread.  Without
+    // this, stop()'s cancel from the caller thread would race with the
+    // async_wait handler rescheduling on a worker thread — the same
+    // steady_timer cannot be safely mutated from multiple threads.  The
+    // initial scheduleLogDrain() below runs before io threads start, so
+    // it is single-threaded by construction.
+    log_drain_timer_ = std::make_unique<net::steady_timer>(
+        net::make_strand(ioc_->get_executor()));
     scheduleLogDrain();
 
     threads_.reserve(num_threads);
@@ -355,11 +365,15 @@ void WebServer::stop()
     shutdown_listener_();
     shutdown_listener_ = {};
   }
-  // Cancel the periodic log drain so its handler stops re-arming.  Any
-  // in-flight handler completes normally (it runs on an io thread we're
-  // about to join); a re-armed timer is then discarded by ioc_->stop().
+  // Cancel the periodic log drain so its handler stops re-arming.  The
+  // cancel is posted onto the timer's strand so it runs serialized with
+  // scheduleLogDrain — calling cancel() directly from the caller thread
+  // would race with the async_wait handler mutating the timer on an io
+  // thread.  Any in-flight handler completes normally; a re-armed timer
+  // is discarded by ioc_->stop() below.
   if (log_drain_timer_) {
-    log_drain_timer_->cancel();
+    auto* timer = log_drain_timer_.get();
+    net::post(timer->get_executor(), [timer] { timer->cancel(); });
   }
   stopAndJoinIoThreads();
   // Reset only after threads are joined so no handler can dereference
