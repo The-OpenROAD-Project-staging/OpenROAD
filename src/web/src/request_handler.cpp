@@ -1448,7 +1448,6 @@ WebSocketResponse TclHandler::handleTclEval(const WebSocketRequest& req)
     const bool is_exit = (result.result == kExitResultMsg);
     JsonBuilder builder;
     builder.beginObject();
-    builder.field("output", result.output);
     if (is_exit) {
       tcl_eval_->logger->info(
           utl::WEB, 40, "Exit requested from web GUI; shutting down.");
