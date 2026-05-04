@@ -24,9 +24,10 @@
 #include "boost/beast/core.hpp"
 // NOLINTNEXTLINE(misc-include-cleaner)
 #include "boost/beast/websocket.hpp"
+#include "boost/json/object.hpp"
+#include "boost/json/serialize.hpp"
 #include "clock_tree_report.h"
 #include "gui/gui.h"
-#include "json_builder.h"
 #include "odb/geom.h"
 #include "request_handler.h"
 #include "spdlog/sinks/base_sink.h"
@@ -103,8 +104,10 @@ class WebLogSink : public spdlog::sinks::base_sink<std::mutex>
     if (pending_.empty()) {
       return;
     }
-    hook_->sessions().broadcast(R"({"type":"log","text":")"
-                                + json_escape(pending_) + R"("})");
+    boost::json::object msg;
+    msg["type"] = "log";
+    msg["text"] = pending_;
+    hook_->sessions().broadcast(boost::json::serialize(msg));
     pending_.clear();
   }
 
