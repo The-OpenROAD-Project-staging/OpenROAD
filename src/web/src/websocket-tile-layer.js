@@ -37,7 +37,7 @@ export function createWebSocketTileLayer(visibility, visibleLayers) {
 
             const vf = {};
             for (const [k, v] of Object.entries(visibility)) {
-                vf[k] = v ? 1 : 0;
+                vf[k] = !!v;
             }
             // Store the request ID so _removeTile() can cancel it
             // when the tile is discarded (e.g. during zoom).
@@ -71,7 +71,7 @@ export function createWebSocketTileLayer(visibility, visibleLayers) {
 
             const vf = {};
             for (const [k, v] of Object.entries(visibility)) {
-                vf[k] = v ? 1 : 0;
+                vf[k] = !!v;
             }
 
             for (const key in this._tiles) {

@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright (c) 2026, The OpenROAD Authors
 
+#include <boost/json/object.hpp>
+#include <boost/json/parse.hpp>
+#include <boost/json/serialize.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "color.h"
 #include "gtest/gtest.h"
-#include "json_builder.h"
 #include "odb/db.h"
 #include "odb/dbTypes.h"
 #include "odb/geom.h"
@@ -20,6 +23,12 @@
 
 namespace web {
 namespace {
+
+// Helper: parse a JSON literal into a boost::json::object for tests.
+boost::json::object parseObj(std::string_view json)
+{
+  return boost::json::parse(json).as_object();
+}
 
 class TileGeneratorTest : public tst::Nangate45Fixture
 {
@@ -255,15 +264,14 @@ TEST_F(TileGeneratorTest, EagerInitClearsLayerColorCache)
 TEST_F(TileGeneratorTest, SerializeTechResponseIncludesLayerColors)
 {
   makeTileGen();
-  JsonBuilder b;
-  serializeTechResponse(b, *tile_gen_);
-  const std::string json = b.str();
+  const std::string json
+      = boost::json::serialize(serializeTechResponse(*tile_gen_));
 
   EXPECT_NE(json.find("\"layer_colors\""), std::string::npos)
       << "tech response missing layer_colors key; got: " << json;
-  // The metal1 color [0, 0, 254] should appear since metal1 is layers[0].
-  EXPECT_NE(json.find("[0, 0, 254]"), std::string::npos)
-      << "tech response missing metal1 color [0, 0, 254]; got: " << json;
+  // The metal1 color [0,0,254] should appear since metal1 is layers[0].
+  EXPECT_NE(json.find("[0,0,254]"), std::string::npos)
+      << "tech response missing metal1 color [0,0,254]; got: " << json;
 }
 
 TEST_F(TileGeneratorTest, GenerateTileReturnsValidPng)
@@ -426,7 +434,8 @@ TEST_F(TileGeneratorTest, VisibleLayersFiltersPinMarkers)
   // visible_layers = ["metal1"] → only metal1 pin rendered.
   TileVisibility vis_m1;
   vis_m1.stdcells = false;
-  vis_m1.parseFromJson(R"({"pins":1,"visible_layers":["metal1"]})");
+  vis_m1.parseFromJson(
+      parseObj(R"({"pins":true,"visible_layers":["metal1"]})"));
   auto png_m1 = tile_gen_->generateTile("_pins", 0, 0, 0, vis_m1);
   auto pixels_m1 = decodePng(png_m1, w, h);
   EXPECT_TRUE(hasNonTransparentPixel(pixels_m1))
@@ -437,7 +446,8 @@ TEST_F(TileGeneratorTest, VisibleLayersFiltersPinMarkers)
   // visible_layers = ["metal5"] → neither pin rendered.
   TileVisibility vis_m5;
   vis_m5.stdcells = false;
-  vis_m5.parseFromJson(R"({"pins":1,"visible_layers":["metal5"]})");
+  vis_m5.parseFromJson(
+      parseObj(R"({"pins":true,"visible_layers":["metal5"]})"));
   auto png_m5 = tile_gen_->generateTile("_pins", 0, 0, 0, vis_m5);
   auto pixels_m5 = decodePng(png_m5, w, h);
   EXPECT_FALSE(hasNonTransparentPixel(pixels_m5))
@@ -446,7 +456,7 @@ TEST_F(TileGeneratorTest, VisibleLayersFiltersPinMarkers)
   // visible_layers = [] (empty) → all layers hidden.
   TileVisibility vis_empty;
   vis_empty.stdcells = false;
-  vis_empty.parseFromJson(R"({"pins":1,"visible_layers":[]})");
+  vis_empty.parseFromJson(parseObj(R"({"pins":true,"visible_layers":[]})"));
   auto png_empty = tile_gen_->generateTile("_pins", 0, 0, 0, vis_empty);
   auto pixels_empty = decodePng(png_empty, w, h);
   EXPECT_FALSE(hasNonTransparentPixel(pixels_empty))
@@ -866,9 +876,8 @@ TEST_F(RowRenderingTest, RowOutlineDrawnWhenVisible)
   vis.rows = true;
   vis.stdcells = false;
   // Enable site visibility via raw JSON.
-  vis.parseFromJson(
-      "{\"rows\":1,\"stdcells\":0,"
-      "\"site_FreePDK45_38x28_10R_NP_162NW_34O\":1}");
+  vis.parseFromJson(parseObj(
+      R"({"rows":true,"stdcells":false,"site_FreePDK45_38x28_10R_NP_162NW_34O":true})"));
 
   auto png = tile_gen_->generateTile("_instances", 0, 0, 0, vis);
   unsigned w = 0, h = 0;
@@ -885,7 +894,7 @@ TEST_F(RowRenderingTest, RowHiddenWhenSiteNotVisible)
   vis.rows = true;
   vis.stdcells = false;
   // Rows enabled but this specific site is not visible.
-  vis.parseFromJson("{\"rows\":1,\"stdcells\":0}");
+  vis.parseFromJson(parseObj(R"({"rows":true,"stdcells":false})"));
 
   auto png = tile_gen_->generateTile("_instances", 0, 0, 0, vis);
   unsigned w = 0, h = 0;
@@ -899,9 +908,8 @@ TEST_F(RowRenderingTest, IndividualSitesDrawnWhenZoomedIn)
   makeTileGen();
 
   TileVisibility vis;
-  vis.parseFromJson(
-      "{\"rows\":1,\"stdcells\":0,"
-      "\"site_FreePDK45_38x28_10R_NP_162NW_34O\":1}");
+  vis.parseFromJson(parseObj(
+      R"({"rows":true,"stdcells":false,"site_FreePDK45_38x28_10R_NP_162NW_34O":true})"));
 
   // At zoom 0, tile covers the full design. Site is 380 DBU wide.
   // site_px = 380 * (256 / ~104000) ≈ 0.9 → no individual sites.
@@ -959,9 +967,8 @@ TEST_F(TileGeneratorTest, SerializeTechResponseContainsBlockName)
 {
   // Nangate45Fixture creates the block with name "top".
   makeTileGen();
-  JsonBuilder b;
-  serializeTechResponse(b, *tile_gen_);
-  const std::string json = b.str();
+  const std::string json
+      = boost::json::serialize(serializeTechResponse(*tile_gen_));
   // Field name and value should both appear.  Looser than a full JSON
   // parse but sufficient: this is the contract main.js consumes.
   EXPECT_NE(json.find("\"block_name\""), std::string::npos)
