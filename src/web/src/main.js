@@ -942,9 +942,9 @@ app.websocketManager.readyPromise.then(async () => {
 
             const vf = {};
             for (const [k, v] of Object.entries(visibility)) {
-                vf[k] = v ? 1 : 0;
+                vf[k] = !!v;
             }
-            app.websocketManager.request({ type: 'select', dbu_x, dbu_y, zoom: app.map.getZoom(), visible_layers: [...app.visibleLayers], ...vf })
+            app.websocketManager.request({ type: 'select', dbu_x, dbu_y, zoom: Math.round(app.map.getZoom()), visible_layers: [...app.visibleLayers], ...vf })
                 .then(data => {
                     console.log('Select response:', data, 'at dbu', dbu_x, dbu_y);
                     app.map.closePopup();

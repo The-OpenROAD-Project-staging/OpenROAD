@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <boost/json/array.hpp>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -26,7 +27,6 @@
 #include "glyph_cache.h"
 #include "gui/gui.h"
 #include "gui/heatMap.h"
-#include "json_builder.h"
 #include "odb/db.h"
 #include "odb/dbSet.h"
 #include "odb/dbShape.h"
@@ -56,7 +56,7 @@ constexpr int kMinInstNameBoxPx = 20;      // min instance pixel dim for names
 
 }  // namespace
 
-void TileVisibility::parseFromJson(const std::string& json)
+void TileVisibility::parseFromJson(const boost::json::object& json)
 {
   struct BoolField
   {
@@ -125,12 +125,35 @@ void TileVisibility::parseFromJson(const std::string& json)
   // NOLINTEND(modernize-use-designated-initializers)
   // clang-format on
 
+  // Visibility flags are nominally always sent by the web frontend, but
+  // tests and the saveImage Tcl entry point can pass partial payloads;
+  // fall back to the per-field default when a flag is omitted.
   for (const auto& f : kFields) {
-    this->*(f.field) = extract_int_or(json, f.key, f.default_val ? 1 : 0);
+    this->*(f.field) = jsonOr<bool>(json, f.key, f.default_val);
   }
-  raw_json = json;
-  visible_layers = extract_string_array(json, "visible_layers");
-  has_visible_layers = has_key(json, "visible_layers");
+
+  visible_layers.clear();
+  has_visible_layers = false;
+  if (auto it = json.find("visible_layers"); it != json.end()) {
+    has_visible_layers = true;
+    for (const auto& v : it->value().as_array()) {
+      visible_layers.emplace(v.as_string());
+    }
+  }
+
+  // Per-site flags are only consulted when rows are visible; skip the
+  // full-object scan otherwise.
+  sites.clear();
+  if (rows) {
+    constexpr std::string_view kPrefix = "site_";
+    for (const auto& [key, value] : json) {
+      const std::string_view k(key.data(), key.size());
+      if (!k.starts_with(kPrefix)) {
+        continue;
+      }
+      sites.emplace(std::string(k.substr(kPrefix.size())), value.as_bool());
+    }
+  }
 }
 
 bool TileVisibility::isSiteVisible(const std::string& site_name) const
@@ -138,8 +161,8 @@ bool TileVisibility::isSiteVisible(const std::string& site_name) const
   if (!rows) {
     return false;
   }
-  const std::string key = "site_" + site_name;
-  return extract_int_or(raw_json, key, 0);
+  auto it = sites.find(site_name);
+  return it != sites.end() && it->second;
 }
 
 bool TileVisibility::isNetVisible(odb::dbNet* net) const
@@ -3019,17 +3042,19 @@ void collectTimingPathShapes(odb::dbBlock* block,
   process_nodes(path.capture_nodes, kCaptureClkColor, kCaptureClkColor);
 }
 
-void serializeTechResponse(JsonBuilder& b, const TileGenerator& gen)
+boost::json::object serializeTechResponse(const TileGenerator& gen)
 {
-  b.beginObject();
+  boost::json::object out;
   const auto& layer_colors = gen.getLayerColorMap();
   odb::dbTech* tech = gen.getTech();
-  b.beginArray("layers");
+
+  boost::json::array layers;
   for (const auto& name : gen.getLayers()) {
-    b.value(name);
+    layers.emplace_back(name);
   }
-  b.endArray();
-  b.beginArray("layer_colors");
+  out["layers"] = std::move(layers);
+
+  boost::json::array layer_color_arr;
   for (const auto& name : gen.getLayers()) {
     Color c{.r = 200, .g = 200, .b = 200, .a = 180};
     if (tech) {
@@ -3040,47 +3065,38 @@ void serializeTechResponse(JsonBuilder& b, const TileGenerator& gen)
         }
       }
     }
-    b.beginArray();
-    b.value(static_cast<int>(c.r));
-    b.value(static_cast<int>(c.g));
-    b.value(static_cast<int>(c.b));
-    b.endArray();
+    layer_color_arr.emplace_back(boost::json::array{
+        static_cast<int>(c.r), static_cast<int>(c.g), static_cast<int>(c.b)});
   }
-  b.endArray();
-  b.beginArray("sites");
+  out["layer_colors"] = std::move(layer_color_arr);
+
+  boost::json::array sites;
   for (const auto& name : gen.getSites()) {
-    b.value(name);
+    sites.emplace_back(name);
   }
-  b.endArray();
-  b.field("has_liberty", gen.hasSta());
+  out["sites"] = std::move(sites);
+
+  out["has_liberty"] = gen.hasSta();
   if (gen.getBlock()) {
-    b.field("dbu_per_micron", gen.getBlock()->getDbUnitsPerMicron());
-    b.field("block_name", gen.getBlock()->getName());
+    out["dbu_per_micron"] = gen.getBlock()->getDbUnitsPerMicron();
+    out["block_name"] = gen.getBlock()->getName();
   } else {
-    b.field("block_name", std::string());
+    out["block_name"] = "";
   }
-  b.endObject();
+  return out;
 }
 
-void serializeBoundsResponse(JsonBuilder& b,
-                             const TileGenerator& gen,
-                             bool shapes_ready)
+boost::json::object serializeBoundsResponse(const TileGenerator& gen,
+                                            bool shapes_ready)
 {
   const odb::Rect bounds = gen.getBounds();
-  b.beginObject();
-  b.beginArray("bounds");
-  b.beginArray();
-  b.value(bounds.yMin());
-  b.value(bounds.xMin());
-  b.endArray();
-  b.beginArray();
-  b.value(bounds.yMax());
-  b.value(bounds.xMax());
-  b.endArray();
-  b.endArray();
-  b.field("shapes_ready", shapes_ready);
-  b.field("pin_max_size", gen.getPinMaxSize());
-  b.endObject();
+  boost::json::object out;
+  out["bounds"]
+      = boost::json::array{boost::json::array{bounds.yMin(), bounds.xMin()},
+                           boost::json::array{bounds.yMax(), bounds.xMax()}};
+  out["shapes_ready"] = shapes_ready;
+  out["pin_max_size"] = gen.getPinMaxSize();
+  return out;
 }
 
 }  // namespace web
