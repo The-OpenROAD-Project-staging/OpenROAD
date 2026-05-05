@@ -22,12 +22,12 @@ foreach e $locs {
 
 create_clock -name clk -period 1000 [get_ports clk1]
 
-proc report_modules {tag} {
+proc report_modules { tag } {
   set block [ord::get_db_block]
   puts "===== $tag ====="
   foreach mod [list [$block getTopModule] \
-                    [$block findModule sub_a] \
-                    [$block findModule sub_b]] {
+    [$block findModule sub_a] \
+    [$block findModule sub_b]] {
     set names [list]
     foreach inst [$mod getInsts] { lappend names [$inst getName] }
     puts "[$mod getName]: [llength $names] inst(s): [lsort $names]"
@@ -37,6 +37,6 @@ proc report_modules {tag} {
 report_modules "BEFORE cluster_flops"
 
 cluster_flops -tray_weight 40.0 -timing_weight 0.0 \
-              -max_split_size -1 -num_paths 0
+  -max_split_size -1 -num_paths 0
 
 report_modules "AFTER cluster_flops"
