@@ -213,12 +213,15 @@ void UnfoldedModel::unfoldAlignmentMarkers(UnfoldedChip& uf_chip)
     if (!inst->getMaster()->isAlignmentMarker()) {
       continue;
     }
-    Point p = inst->getLocation();
-    uf_chip.transform.apply(p);
+    Rect bbox = inst->getBBox()->getBox();
+    uf_chip.transform.apply(bbox);
+    dbTransform global_transform(inst->getOrient());
+    global_transform.concat(uf_chip.transform);
     uf_chip.alignment_markers.push_back(
         {.inst = inst,
          .parent_chip = nullptr,  // set later in registerUnfoldedChip
-         .global_position = p});
+         .global_bbox = bbox,
+         .global_orient = global_transform.getOrient()});
   }
 }
 

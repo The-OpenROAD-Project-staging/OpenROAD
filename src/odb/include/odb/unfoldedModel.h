@@ -46,7 +46,8 @@ struct UnfoldedAlignmentMarker
 {
   dbInst* inst = nullptr;
   UnfoldedChip* parent_chip = nullptr;
-  Point global_position;
+  Rect global_bbox;
+  dbOrientType global_orient;
 };
 
 struct UnfoldedRegion

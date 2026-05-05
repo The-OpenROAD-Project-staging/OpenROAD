@@ -103,15 +103,18 @@ std::vector<AlignmentMarkerIndex::Value> collectMarkersInRect(
 {
   std::vector<AlignmentMarkerIndex::Value> out;
   for (const auto& m : markers) {
-    if (rect.intersects(m.global_position)) {
-      out.emplace_back(m.global_position, &m);
+    const Point center = m.global_bbox.center();
+    if (rect.intersects(center)) {
+      out.emplace_back(center, &m);
     }
   }
   return out;
 }
 
 using AlignmentViolationReporter
-    = std::function<void(const UnfoldedAlignmentMarker&, const std::string&)>;
+    = std::function<void(const UnfoldedAlignmentMarker*,
+                         const UnfoldedAlignmentMarker*,
+                         const std::string&)>;
 
 void matchMarkersBetweenChips(
     const std::vector<AlignmentMarkerIndex::Value>& list_a,
@@ -138,14 +141,16 @@ void matchMarkersBetweenChips(
 
     if (candidates.empty()) {
       report(
-          *a_marker,
+          a_marker,
+          nullptr,
           fmt::format("Alignment marker on {} has no counterpart on {} within "
                       "tolerance",
                       a_marker->parent_chip->name,
                       c_b->name));
     } else if (candidates.size() > 1) {
       report(
-          *a_marker,
+          a_marker,
+          nullptr,
           fmt::format("Alignment marker on {} has {} candidates on {} within "
                       "tolerance (ambiguous)",
                       a_marker->parent_chip->name,
@@ -155,11 +160,23 @@ void matchMarkersBetweenChips(
         index_b.remove(candidate);
       }
     } else {
+      const auto* b_marker = candidates.front().second;
+      if (a_marker->global_orient != b_marker->global_orient) {
+        report(a_marker,
+               b_marker,
+               fmt::format("Alignment marker on {} ({}) has mismatched "
+                           "orientation with counterpart on {} ({})",
+                           a_marker->parent_chip->name,
+                           a_marker->global_orient.getString(),
+                           b_marker->parent_chip->name,
+                           b_marker->global_orient.getString()));
+      }
       index_b.remove(candidates.front());
     }
   }
   for (const auto& [pt, m] : index_b) {
-    report(*m,
+    report(m,
+           nullptr,
            fmt::format("Alignment marker on {} has no counterpart on {} within "
                        "tolerance",
                        m->parent_chip->name,
@@ -415,15 +432,18 @@ void Checker::checkAlignmentMarkers(dbMarkerCategory* top_cat,
 
   dbMarkerCategory* cat = nullptr;
   int violation_count = 0;
-  auto report = [&](const UnfoldedAlignmentMarker& m, const std::string& msg) {
+  auto report = [&](const UnfoldedAlignmentMarker* m,
+                    const UnfoldedAlignmentMarker* other,
+                    const std::string& msg) {
     if (!cat) {
       cat = dbMarkerCategory::createOrReplace(top_cat, "Alignment Markers");
     }
     auto* marker = dbMarker::create(cat);
     // TODO: Add sources correctly
-    Rect bbox = m.inst->getBBox()->getBox();
-    m.parent_chip->transform.apply(bbox);
-    marker->addShape(bbox);
+    marker->addShape(m->global_bbox);
+    if (other) {
+      marker->addShape(other->global_bbox);
+    }
     marker->setComment(msg);
     violation_count++;
   };
