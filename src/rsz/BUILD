@@ -40,6 +40,8 @@ cc_library(
         "src/RepairHold.hh",
         "src/RepairSetup.cc",
         "src/RepairSetup.hh",
+        "src/ResAwareMove.cc",     
+        "src/ResAwareMove.hh",
         "src/Resizer.cc",
         "src/ResizerObserver.hh",
         "src/SizeDownMove.cc",
