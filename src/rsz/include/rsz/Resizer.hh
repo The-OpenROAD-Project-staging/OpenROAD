@@ -108,7 +108,7 @@ enum class MoveType
   SPLIT,
   VTSWAP_SPEED,  // VT swap for timing (need VT swap for power also)
   SIZEUP_MATCH,  // sizeup to match drive strength vs. prev stage
-  RES_AWARE      // resistance aware reroute
+  REROUTE        // resistance aware reroute
 };
 
 // Voltage Threshold (VT) category identifier

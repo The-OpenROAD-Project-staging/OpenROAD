@@ -144,7 +144,7 @@ void RepairSetup::setupMoveSequence(const std::vector<MoveType>& sequence,
         case MoveType::SIZEUP_MATCH:
           move_sequence_.push_back(resizer_->size_up_match_move_.get());
           break;
-        case MoveType::RES_AWARE:
+        case MoveType::REROUTE:
           if (resizer_->global_router_
               && resizer_->global_router_->haveRoutes()) {
             move_sequence_.push_back(resizer_->reroute_move_.get());

@@ -4579,7 +4579,7 @@ void Resizer::journalEnd()
              "opt_moves",
              2,
              "COMMIT {} moves: up {} up_match {} down {} buffer {} clone {} "
-             "swap {} vt_swap {} unbuf {} resaware {}",
+             "swap {} vt_swap {} unbuf {} reroute {}",
              move_count_,
              size_up_move_->numPendingMoves(),
              size_up_match_move_->numPendingMoves(),
@@ -4609,7 +4609,7 @@ void Resizer::journalEnd()
              "opt_moves",
              1,
              "TOTAL {} moves (acc {} rej {}): up {} up_match {} down {} buffer "
-             "{} clone {} swap {} vt_swap {} unbuf {} resaware {}",
+             "{} clone {} swap {} vt_swap {} unbuf {} reroute {}",
              accepted_move_count_ + rejected_move_count_,
              accepted_move_count_,
              rejected_move_count_,
@@ -4665,7 +4665,7 @@ void Resizer::journalRestore()
              "journal",
              1,
              "Undid {} up {} up_match {} down {} buffer {} clone {} swap {} "
-             "vt_swap {} unbuf {} resaware",
+             "vt_swap {} unbuf {} reroute",
              size_up_move_->numPendingMoves(),
              size_up_match_move_->numPendingMoves(),
              size_down_move_->numPendingMoves(),
@@ -4692,7 +4692,7 @@ void Resizer::journalRestore()
              "opt_moves",
              2,
              "UNDO {} moves: up {} up_match {} down {} buffer {} clone {} swap "
-             "{} vt_swap {} unbuf {} resaware {}",
+             "{} vt_swap {} unbuf {} reroute {}",
              move_count_,
              size_up_move_->numPendingMoves(),
              size_up_match_move_->numPendingMoves(),
@@ -4722,7 +4722,7 @@ void Resizer::journalRestore()
              "opt_moves",
              1,
              "TOTAL {} moves (acc {} rej {}): up {} up_match {} down {} buffer "
-             "{} clone {} swap {} vt_swap {} unbuf {} resaware {}",
+             "{} clone {} swap {} vt_swap {} unbuf {} reroute {}",
              accepted_move_count_ + rejected_move_count_,
              accepted_move_count_,
              rejected_move_count_,
@@ -5511,7 +5511,7 @@ MoveType Resizer::parseMove(const std::string& s)
     return rsz::MoveType::VTSWAP_SPEED;
   }
   if (lower == "reroute") {
-    return rsz::MoveType::RES_AWARE;
+    return rsz::MoveType::REROUTE;
   }
   throw std::invalid_argument("Invalid move type: " + s);
 }
