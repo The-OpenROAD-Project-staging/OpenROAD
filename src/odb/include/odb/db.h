@@ -7269,9 +7269,11 @@ class dbChip : public dbObject
 
   bool isTsv() const;
 
-  void setAlignmentMarkerTolerance(uint32_t alignment_marker_tolerance);
+  void setAlignmentMarkerTolerance(int alignment_marker_tolerance);
 
-  uint32_t getAlignmentMarkerTolerance() const;
+  // Max misalignment (DBU) between paired alignment markers on stacked chips;
+  // -1 disables the check.
+  int getAlignmentMarkerTolerance() const;
 
   dbSet<dbChipRegion> getChipRegions() const;
 

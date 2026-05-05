@@ -28,7 +28,7 @@ class SpatialIndex
       = boost::geometry::index::rtree<Value,
                                       boost::geometry::index::quadratic<16>>;
 
-  explicit SpatialIndex(std::vector<Value> values)
+  explicit SpatialIndex(const std::vector<Value>& values)
       : tree_(values.begin(), values.end())
   {
   }

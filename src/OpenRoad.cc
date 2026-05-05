@@ -527,42 +527,6 @@ void OpenRoad::check3DBlox()
   checker.check();
 }
 
-void OpenRoad::setAlignmentMarkers(const std::vector<std::string>& master_names,
-                                   double tolerance_um)
-{
-  odb::dbChip* chip = db_->getChip();
-  if (chip == nullptr) {
-    logger_->error(utl::ORD, 77, "No design loaded.");
-    return;
-  }
-  for (odb::dbLib* lib : db_->getLibs()) {
-    for (odb::dbMaster* master : lib->getMasters()) {
-      master->setAlignmentMarker(false);
-    }
-  }
-
-  for (const std::string& name : master_names) {
-    bool found = false;
-    for (odb::dbLib* lib : db_->getLibs()) {
-      if (odb::dbMaster* m = lib->findMaster(name.c_str())) {
-        m->setAlignmentMarker(true);
-        found = true;
-      }
-    }
-    if (!found) {
-      logger_->warn(utl::ODB,
-                    405,
-                    "Alignment marker master '{}' not found in any library",
-                    name);
-      continue;
-    }
-  }
-
-  const uint32_t tol_dbu
-      = static_cast<uint32_t>(tolerance_um * db_->getDbuPerMicron());
-  chip->setAlignmentMarkerTolerance(tol_dbu);
-}
-
 void OpenRoad::write3Dbv(const std::string& filename)
 {
   odb::ThreeDBlox writer(logger_, db_, sta_);

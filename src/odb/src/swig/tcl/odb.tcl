@@ -1163,6 +1163,48 @@ proc all_pins_placed { args } {
   return 1
 }
 
+sta::define_cmd_args "set_3dblox_alignment_markers" \
+  {-masters masters [-tolerance tolerance_um]}
+
+proc set_3dblox_alignment_markers { args } {
+  sta::parse_key_args "set_3dblox_alignment_markers" args \
+    keys {-masters -tolerance} flags {}
+  sta::check_argc_eq0 "set_3dblox_alignment_markers" $args
+  if { ![info exists keys(-masters)] } {
+    utl::error ODB 406 "-masters is required"
+  }
+  set tol 0.0
+  if { [info exists keys(-tolerance)] } {
+    set tol $keys(-tolerance)
+    sta::check_positive_float "-tolerance" $tol
+  }
+  set db [ord::get_db]
+  set chip [$db getChip]
+  if { $chip == "NULL" } {
+    utl::error ODB 407 "No design loaded."
+  }
+  foreach lib [$db getLibs] {
+    foreach master [$lib getMasters] {
+      $master setAlignmentMarker 0
+    }
+  }
+  foreach name $keys(-masters) {
+    set found 0
+    foreach lib [$db getLibs] {
+      set m [$lib findMaster $name]
+      if { $m != "NULL" } {
+        $m setAlignmentMarker 1
+        set found 1
+      }
+    }
+    if { !$found } {
+      utl::warn ODB 405 "Alignment marker master '$name' not found in any library"
+    }
+  }
+  set tol_dbu [expr { int($tol * [$db getDbuPerMicron]) }]
+  $chip setAlignmentMarkerTolerance $tol_dbu
+}
+
 namespace eval odb {
 proc add_direction_constraint { dir edge begin end } {
   set block [get_block]

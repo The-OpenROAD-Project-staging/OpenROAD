@@ -172,7 +172,7 @@ _dbChip::_dbChip(_dbDatabase* db)
   scribe_line_north_ = 0;
   scribe_line_south_ = 0;
   tsv_ = false;
-  alignment_marker_tolerance_ = 0;
+  alignment_marker_tolerance_ = -1;
   prop_tbl_ = new dbTable<_dbProperty>(
       db, this, (GetObjTbl_t) &_dbChip::getObjectTable, dbPropertyObj);
   chip_region_tbl_ = new dbTable<_dbChipRegion>(
@@ -585,14 +585,14 @@ bool dbChip::isTsv() const
   return obj->tsv_;
 }
 
-void dbChip::setAlignmentMarkerTolerance(uint32_t alignment_marker_tolerance)
+void dbChip::setAlignmentMarkerTolerance(int alignment_marker_tolerance)
 {
   _dbChip* obj = (_dbChip*) this;
 
   obj->alignment_marker_tolerance_ = alignment_marker_tolerance;
 }
 
-uint32_t dbChip::getAlignmentMarkerTolerance() const
+int dbChip::getAlignmentMarkerTolerance() const
 {
   _dbChip* obj = (_dbChip*) this;
   return obj->alignment_marker_tolerance_;

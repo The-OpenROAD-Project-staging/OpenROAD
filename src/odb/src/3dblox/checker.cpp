@@ -115,14 +115,14 @@ using AlignmentViolationReporter
 
 void matchMarkersBetweenChips(
     const std::vector<AlignmentMarkerIndex::Value>& list_a,
-    std::vector<AlignmentMarkerIndex::Value> list_b,
+    const std::vector<AlignmentMarkerIndex::Value>& list_b,
     const UnfoldedChip* c_a,
     const UnfoldedChip* c_b,
-    uint32_t tolerance_dbu,
+    const int tolerance_dbu,
     const AlignmentViolationReporter& report)
 {
   const int64_t tol_sq = static_cast<int64_t>(tolerance_dbu) * tolerance_dbu;
-  AlignmentMarkerIndex index_b(std::move(list_b));
+  AlignmentMarkerIndex index_b(list_b);
 
   for (const auto& [pa, a_marker] : list_a) {
     const Rect qbox(pa.x() - tolerance_dbu,
@@ -408,14 +408,10 @@ void Checker::checkNetConnectivity(dbMarkerCategory* top_cat,
 void Checker::checkAlignmentMarkers(dbMarkerCategory* top_cat,
                                     const UnfoldedModel* model)
 {
-  const auto& chips = model->getChips();
-  if (std::ranges::none_of(chips, [](const UnfoldedChip& c) {
-        return !c.alignment_markers.empty();
-      })) {
+  const int tolerance_dbu = db_->getChip()->getAlignmentMarkerTolerance();
+  if (tolerance_dbu < 0) {
     return;
   }
-
-  const uint32_t tolerance_dbu = db_->getChip()->getAlignmentMarkerTolerance();
 
   dbMarkerCategory* cat = nullptr;
   int violation_count = 0;
@@ -455,8 +451,7 @@ void Checker::checkAlignmentMarkers(dbMarkerCategory* top_cat,
       continue;
     }
 
-    matchMarkersBetweenChips(
-        list_a, std::move(list_b), c_a, c_b, tolerance_dbu, report);
+    matchMarkersBetweenChips(list_a, list_b, c_a, c_b, tolerance_dbu, report);
   }
 
   if (violation_count > 0) {
