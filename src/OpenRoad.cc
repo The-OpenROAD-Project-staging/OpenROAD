@@ -3,7 +3,6 @@
 
 #include "ord/OpenRoad.hh"
 
-#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
