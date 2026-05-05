@@ -18,11 +18,8 @@ bool RerouteMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
 {
   sta::Pin* drvr_pin = drvr_path->pin(this);
   if (!drvr_pin) {
-    debugPrint(logger_,
-               RSZ,
-               "reroute_move",
-               2,
-               "REJECT RerouteMove: No driver pin");
+    debugPrint(
+        logger_, RSZ, "reroute_move", 2, "REJECT RerouteMove: No driver pin");
     return false;
   }
 
