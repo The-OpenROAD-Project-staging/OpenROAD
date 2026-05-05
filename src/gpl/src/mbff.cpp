@@ -60,6 +60,7 @@ namespace gpl {
 using odb::dbInst;
 using odb::dbITerm;
 using odb::dbMaster;
+using odb::dbModule;
 using odb::dbMTerm;
 using odb::dbNet;
 using utl::GPL;
@@ -793,8 +794,14 @@ void MBFF::ModifyPinConnections(const std::vector<Flop>& flops,
                              + "_" + std::to_string(unused_.back());
       unused_.pop_back();
       const int bit_idx = GetBitIdx(trays[tray_idx].slots.size());
-      auto new_tray = dbInst::create(
-          block_, best_master_[array_mask][bit_idx], new_name.c_str());
+      // SeparateFlops partitions by (parent module, mask), so flops in this
+      // cluster share one parent module; place the new tray there.
+      dbModule* parent = insts_[flops[i].idx]->getModule();
+      auto new_tray = dbInst::create(block_,
+                                     best_master_[array_mask][bit_idx],
+                                     new_name.c_str(),
+                                     /*physical_only=*/false,
+                                     parent);
       const Point tray_center = GetTrayCenter(array_mask, bit_idx);
       new_tray->setLocation(
           multiplier_ * (trays[tray_idx].pt.x - tray_center.x),
@@ -2373,22 +2380,27 @@ void MBFF::SeparateFlops(std::vector<std::vector<Flop>>& ffs)
   }
 
   for (const auto& [clk_net, indices] : clk_terms) {
-    ArrayMaskVector<Flop> flops_by_mask;
+    // Partition by (parent module, mask) so flops in different
+    // hierarchical modules are never clustered into the same tray.
+    std::map<std::pair<dbModule*, Mask>, std::vector<Flop>> flops_by_mod_mask;
     for (const int idx : indices) {
       const Mask vec_mask = GetArrayMask(insts_[idx], false);
-      flops_by_mask[vec_mask].push_back(flops_[idx]);
+      flops_by_mod_mask[{insts_[idx]->getModule(), vec_mask}].push_back(
+          flops_[idx]);
     }
 
-    for (const auto& [mask, flops] : flops_by_mask) {
+    for (const auto& [key, flops] : flops_by_mod_mask) {
       if (!flops.empty()) {
         ffs.push_back(flops);
         debugPrint(log_,
                    GPL,
                    "mbff",
                    1,
-                   "Flop cluster for net {} with mask {} of size {}",
+                   "Flop cluster for net {} in module {} with mask {} of "
+                   "size {}",
                    clk_net->getName(),
-                   mask.to_string(),
+                   key.first ? key.first->getHierarchicalName() : "<top>",
+                   key.second.to_string(),
                    flops.size());
       }
     }
