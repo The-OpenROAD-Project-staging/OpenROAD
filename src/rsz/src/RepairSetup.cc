@@ -440,14 +440,14 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
       }
     } else if (phase_name == "REROUTE") {
       repairSetup_Reroute(setup_slack_margin,
-                           max_passes,
-                           max_iterations,
-                           max_repairs_per_pass,
-                           verbose,
-                           opto_iteration,
-                           initial_tns,
-                           prev_tns,
-                           marker);  // phase marker
+                          max_passes,
+                          max_iterations,
+                          max_repairs_per_pass,
+                          verbose,
+                          opto_iteration,
+                          initial_tns,
+                          prev_tns,
+                          marker);  // phase marker
 
       if (move_tracker_) {
         move_tracker_->printMoveSummary("REROUTE Phase Summary");
@@ -1238,8 +1238,8 @@ bool RepairSetup::repairEndpoints(const int max_end_count,
 }
 
 bool RepairSetup::repairPathReroute(sta::Path* path,
-                                     sta::Slack path_slack,
-                                     const float setup_slack_margin)
+                                    sta::Slack path_slack,
+                                    const float setup_slack_margin)
 {
   sta::PathExpanded expanded(path, sta_);
 
@@ -1803,14 +1803,14 @@ void RepairSetup::repairSetup_Legacy(const float setup_slack_margin,
 
 // Reroute repair setup phase - applies RerouteMove to worst net delays
 void RepairSetup::repairSetup_Reroute(const float setup_slack_margin,
-                                       const int max_passes,
-                                       const int max_iterations,
-                                       const int max_repairs_per_pass,
-                                       const bool verbose,
-                                       int& opto_iteration,
-                                       const float initial_tns,
-                                       float& prev_tns,
-                                       const char phase_marker)
+                                      const int max_passes,
+                                      const int max_iterations,
+                                      const int max_repairs_per_pass,
+                                      const bool verbose,
+                                      int& opto_iteration,
+                                      const float initial_tns,
+                                      float& prev_tns,
+                                      const char phase_marker)
 {
   const utl::DebugScopedTimer timer(
       logger_,
