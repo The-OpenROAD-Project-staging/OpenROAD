@@ -622,19 +622,15 @@ void FastRouteCore::resetWorstMetrics()
 
 float FastRouteCore::getNetResistance(odb::dbNet* db_net)
 {
-  int net_id;
-  bool exists;
-  getNetId(db_net, net_id, exists);
-  if (!exists) {
-    return 0.0f;
-  }
-  return getNetResistance(nets_[net_id]);
+  return getNetResistanceOnLayer(db_net, -1);
 }
 
-// Estimate net resistance assuming all wires are routed on a given layer.
-// Uses the existing Steiner tree topology without triggering a reroute.
-// Via resistances use the actual layer transition from the existing route,
-// matching the behaviour of getNetResistance(FrNet*, assume_layer=false).
+// Calculate net resistance using the existing Steiner tree topology.
+// layer >= 0: all wire segments are costed on that layer (used to estimate
+//             what resistance would be if the net were rerouted on a higher
+//             layer, e.g. the minimum clock layer).
+// layer == -1: each wire segment uses its actual routed layer.
+// Via resistance always uses the actual layer transitions from the route.
 float FastRouteCore::getNetResistanceOnLayer(odb::dbNet* db_net, int layer)
 {
   int net_id;
@@ -656,49 +652,14 @@ float FastRouteCore::getNetResistanceOnLayer(odb::dbNet* db_net, int layer)
       if (grids[i].layer == grids[i + 1].layer) {
         const int seg_len = std::abs(grids[i].x - grids[i + 1].x)
                             + std::abs(grids[i].y - grids[i + 1].y);
-        total_resistance += getWireResistance(layer, seg_len * tile_size_, net);
+        const int wire_layer = (layer >= 0) ? layer : grids[i].layer;
+        total_resistance += getWireResistance(wire_layer, seg_len * tile_size_, net);
       } else {
         total_resistance
             += getViaResistance(grids[i].layer, grids[i + 1].layer);
       }
     }
   }
-  return total_resistance;
-}
-
-// Calculate entire net resistance considering wire and via resistance
-// If assume_layer is true, it will assume the net is routed on the min layer
-float FastRouteCore::getNetResistance(FrNet* net, bool assume_layer)
-{
-  float total_resistance = 0;
-  int netID = db_net_id_map_[net->getDbNet()];
-  const auto& treeedges = sttrees_[netID].edges;
-
-  for (const auto& edge : treeedges) {
-    if (edge.len == 0 && edge.route.routelen == 0) {
-      continue;
-    }
-
-    const std::vector<GPoint3D>& grids = edge.route.grids;
-    int routeLen = edge.route.routelen;
-
-    for (int i = 0; i < routeLen; i++) {
-      if (grids[i].layer == grids[i + 1].layer) {
-        int length = std::abs(grids[i].x - grids[i + 1].x)
-                     + std::abs(grids[i].y - grids[i + 1].y);
-        total_resistance += getWireResistance(
-            assume_layer ? net->getMinLayer() : grids[i].layer,
-            length * tile_size_,
-            net);
-      } else {
-        if (!assume_layer) {
-          total_resistance
-              += getViaResistance(grids[i].layer, grids[i + 1].layer);
-        }
-      }
-    }
-  }
-
   return total_resistance;
 }
 
@@ -751,7 +712,8 @@ void FastRouteCore::updateSlacks(float percentage)
     }
 
     const float net_resistance
-        = is_3d_step_ ? getNetResistance(net) : getNetResistance(net, true);
+        = getNetResistanceOnLayer(net->getDbNet(),
+                                  is_3d_step_ ? -1 : net->getMinLayer());
     net->setResistance(net_resistance);
 
     updateWorstMetrics(net);
