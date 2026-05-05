@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright (c) 2025, The OpenROAD Authors
 
-#include "ResAwareMove.hh"
+#include "RerouteMove.hh"
 
 #include "db_sta/dbSta.hh"
 #include "grt/GlobalRouter.h"
@@ -14,15 +14,15 @@ namespace rsz {
 
 using utl::RSZ;
 
-bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
+bool RerouteMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
 {
   sta::Pin* drvr_pin = drvr_path->pin(this);
   if (!drvr_pin) {
     debugPrint(logger_,
                RSZ,
-               "res_aware_move",
+               "reroute_move",
                2,
-               "REJECT ResAwareMove: No driver pin");
+               "REJECT RerouteMove: No driver pin");
     return false;
   }
 
@@ -30,9 +30,9 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
   if (resizer_->dontTouch(drvr_inst)) {
     debugPrint(logger_,
                RSZ,
-               "res_aware_move",
+               "reroute_move",
                2,
-               "REJECT ResAwareMove {}: {} is \"don't touch\"",
+               "REJECT RerouteMove {}: {} is \"don't touch\"",
                network_->pathName(drvr_pin),
                network_->pathName(drvr_inst));
     return false;
@@ -42,9 +42,9 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
   if (!net) {
     debugPrint(logger_,
                RSZ,
-               "res_aware_move",
+               "reroute_move",
                2,
-               "REJECT ResAwareMove {}: No net found for driver pin",
+               "REJECT RerouteMove {}: No net found for driver pin",
                network_->pathName(drvr_pin));
     return false;
   }
@@ -53,9 +53,9 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
   if (!db_net) {
     debugPrint(logger_,
                RSZ,
-               "res_aware_move",
+               "reroute_move",
                2,
-               "REJECT ResAwareMove {}: No db net found",
+               "REJECT RerouteMove {}: No db net found",
                network_->pathName(drvr_pin));
     return false;
   }
@@ -63,9 +63,9 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
   if (db_net->isSpecial()) {
     debugPrint(logger_,
                RSZ,
-               "res_aware_move",
+               "reroute_move",
                2,
-               "REJECT ResAwareMove {}: Net is special",
+               "REJECT RerouteMove {}: Net is special",
                network_->pathName(drvr_pin));
     return false;
   }
@@ -74,9 +74,9 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
   if (resizer_->global_router_->isNetResAware(db_net)) {
     debugPrint(logger_,
                RSZ,
-               "res_aware_move",
+               "reroute_move",
                2,
-               "REJECT ResAwareMove {}: Net is already resistance-aware routed",
+               "REJECT RerouteMove {}: Net is already resistance-aware routed",
                network_->pathName(drvr_pin));
     return false;
   }
@@ -95,9 +95,9 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
   if (reduction_ratio < kMinResistanceReduction) {
     debugPrint(logger_,
                RSZ,
-               "res_aware_move",
+               "reroute_move",
                2,
-               "REJECT ResAwareMove {}: Expected resistance reduction {:.1f}% "
+               "REJECT RerouteMove {}: Expected resistance reduction {:.1f}% "
                "below threshold {:.1f}% ({} -> {} estimated)",
                network_->pathName(drvr_pin),
                100.0f * reduction_ratio,
@@ -114,9 +114,9 @@ bool ResAwareMove::doMove(const sta::Path* drvr_path, float setup_slack_margin)
 
   debugPrint(logger_,
              RSZ,
-             "res_aware_move",
+             "reroute_move",
              1,
-             "ACCEPT ResAwareMove {}: Rerouted net {} (resistance {} -> {} "
+             "ACCEPT RerouteMove {}: Rerouted net {} (resistance {} -> {} "
              "estimated)",
              network_->pathName(drvr_pin),
              db_net->getName(),

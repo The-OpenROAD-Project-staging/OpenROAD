@@ -124,11 +124,11 @@ class RepairSetup : public sta::dbStaState
       = nullptr,
       std::vector<std::pair<const sta::Pin*, BaseMove*>>* chosen_moves
       = nullptr);
-  bool repairPathResAware(sta::Path* path,
-                          sta::Slack path_slack,
-                          float setup_slack_margin);
+  bool repairPathReroute(sta::Path* path,
+                         sta::Slack path_slack,
+                         float setup_slack_margin);
 
-  // Shared endpoint optimization loop used by repairSetupResAware.
+  // Shared endpoint optimization loop used by repairSetupReroute.
   bool repairEndpoints(int max_end_count,
                        int max_passes,
                        int max_iterations,
@@ -175,7 +175,7 @@ class RepairSetup : public sta::dbStaState
                           float initial_tns,
                           float& prev_tns,
                           char phase_marker = 'L');
-  void repairSetup_ResAware(float setup_slack_margin,
+  void repairSetup_Reroute(float setup_slack_margin,
                             int max_passes,
                             int max_iterations,
                             int max_repairs_per_pass,

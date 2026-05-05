@@ -1,6 +1,5 @@
-# repair_timing -setup with the RESAWARE phase on ASAP7 GCD.
-# The RESAWARE phase uses repairSetup_ResAware -> repairPathResAware,
-# which applies ResAwareMove to high-wire-delay nets on violating paths.
+# repair_timing -setup with the -resistance_aware flag on ASAP7 GCD.
+# Includes RerouteMove in the default sequence;
 # Requires global routing to be present (haveRoutes).
 source "helpers.tcl"
 
@@ -41,7 +40,7 @@ estimate_parasitics -global_routing
 report_worst_slack -max
 report_tns -digits 3
 
-repair_timing -setup -phases "RESAWARE" -repair_tns 10
+repair_timing -setup -resistance_aware -repair_tns 10
 
 report_worst_slack -max
 report_tns -digits 3

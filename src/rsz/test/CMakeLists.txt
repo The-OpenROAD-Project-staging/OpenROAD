@@ -89,9 +89,9 @@ or_integration_tests(
     repair_setup_max_iter
     repair_setup_sizedown
     repair_setup_sizeup_match
-    repair_setup_res_aware1
-    repair_setup_res_aware2
-    repair_setup_res_aware3
+    repair_setup_reroute1
+    repair_setup_reroute2
+    repair_setup_reroute3
     repair_setup1
     repair_setup2
     repair_setup3

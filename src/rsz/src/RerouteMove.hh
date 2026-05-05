@@ -6,14 +6,14 @@
 
 namespace rsz {
 
-class ResAwareMove : public BaseMove
+class RerouteMove : public BaseMove
 {
  public:
   using BaseMove::BaseMove;
 
   bool doMove(const sta::Path* drvr_path, float setup_slack_margin) override;
 
-  const char* name() override { return "ResAwareMove"; }
+  const char* name() override { return "RerouteMove"; }
 };
 
 }  // namespace rsz

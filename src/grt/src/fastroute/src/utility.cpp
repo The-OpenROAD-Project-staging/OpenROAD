@@ -653,7 +653,8 @@ float FastRouteCore::getNetResistanceOnLayer(odb::dbNet* db_net, int layer)
         const int seg_len = std::abs(grids[i].x - grids[i + 1].x)
                             + std::abs(grids[i].y - grids[i + 1].y);
         const int wire_layer = (layer >= 0) ? layer : grids[i].layer;
-        total_resistance += getWireResistance(wire_layer, seg_len * tile_size_, net);
+        total_resistance
+            += getWireResistance(wire_layer, seg_len * tile_size_, net);
       } else {
         total_resistance
             += getViaResistance(grids[i].layer, grids[i + 1].layer);
@@ -711,9 +712,8 @@ void FastRouteCore::updateSlacks(float percentage)
       continue;
     }
 
-    const float net_resistance
-        = getNetResistanceOnLayer(net->getDbNet(),
-                                  is_3d_step_ ? -1 : net->getMinLayer());
+    const float net_resistance = getNetResistanceOnLayer(
+        net->getDbNet(), is_3d_step_ ? -1 : net->getMinLayer());
     net->setResistance(net_resistance);
 
     updateWorstMetrics(net);

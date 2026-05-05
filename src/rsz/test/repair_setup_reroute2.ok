@@ -13,7 +13,7 @@ tns max -133188.516
 [INFO RSZ-0100] Repair move sequence: UnbufferMove VTSwapSpeed SizeUpMove SwapPinsMove BufferMove CloneMove SplitLoadMove 
 [INFO RSZ-0094] Found 53 endpoints with setup violations.
 [INFO RSZ-0099] Repairing 5 out of 53 (10.00%) violating endpoints...
-[INFO RSZ-0221] Using custom phase sequence: RESAWARE
+[INFO RSZ-0221] Using custom phase sequence: REROUTE
    Iter   | Removed | Resized | Inserted | Cloned |  Pin  |   Area   |    WNS   |   StTNS    |   EnTNS    |  Viol  |  Worst  
           | Buffers |  Gates  | Buffers  |  Gates | Swaps |          |          |            |            | Endpts | St/EnPt 
 ------------------------------------------------------------------------------------------------------------------------------

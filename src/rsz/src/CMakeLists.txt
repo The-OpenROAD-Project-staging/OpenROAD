@@ -22,7 +22,7 @@ add_library(rsz_lib
     RepairHold.cc
     RepairSetup.cc
     Rebuffer.cc
-    ResAwareMove.cc
+    RerouteMove.cc
     SizeDownMove.cc
     SizeUpMove.cc
     SplitLoadMove.cc

@@ -35,7 +35,7 @@
 #include "RepairDesign.hh"
 #include "RepairHold.hh"
 #include "RepairSetup.hh"
-#include "ResAwareMove.hh"
+#include "RerouteMove.hh"
 #include "ResizerObserver.hh"
 #include "SizeDownMove.hh"
 #include "SizeUpMove.hh"
@@ -148,7 +148,7 @@ Resizer::Resizer(utl::Logger* logger,
   vt_swap_speed_move_ = std::make_unique<VTSwapSpeedMove>(this);
   unbuffer_move_ = std::make_unique<UnbufferMove>(this);
   split_load_move_ = std::make_unique<SplitLoadMove>(this);
-  res_aware_move_ = std::make_unique<ResAwareMove>(this);
+  reroute_move_ = std::make_unique<RerouteMove>(this);
 
   recover_power_ = std::make_unique<RecoverPower>(this);
   repair_design_ = std::make_unique<RepairDesign>(this);
@@ -4551,7 +4551,7 @@ void Resizer::journalBegin()
   vt_swap_speed_move_->undoMoves();
   unbuffer_move_->undoMoves();
   split_load_move_->undoMoves();
-  res_aware_move_->undoMoves();
+  reroute_move_->undoMoves();
 }
 
 void Resizer::journalEnd()
@@ -4572,7 +4572,7 @@ void Resizer::journalEnd()
   move_count_ += swap_pins_move_->numPendingMoves();
   move_count_ += vt_swap_speed_move_->numPendingMoves();
   move_count_ += unbuffer_move_->numPendingMoves();
-  move_count_ += res_aware_move_->numPendingMoves();
+  move_count_ += reroute_move_->numPendingMoves();
 
   debugPrint(logger_,
              RSZ,
@@ -4589,7 +4589,7 @@ void Resizer::journalEnd()
              swap_pins_move_->numPendingMoves(),
              vt_swap_speed_move_->numPendingMoves(),
              unbuffer_move_->numPendingMoves(),
-             res_aware_move_->numPendingMoves());
+             reroute_move_->numPendingMoves());
 
   accepted_move_count_ += move_count_;
 
@@ -4602,7 +4602,7 @@ void Resizer::journalEnd()
   vt_swap_speed_move_->commitMoves();
   unbuffer_move_->commitMoves();
   split_load_move_->commitMoves();
-  res_aware_move_->commitMoves();
+  reroute_move_->commitMoves();
 
   debugPrint(logger_,
              RSZ,
@@ -4621,7 +4621,7 @@ void Resizer::journalEnd()
              swap_pins_move_->numCommittedMoves(),
              vt_swap_speed_move_->numCommittedMoves(),
              unbuffer_move_->numCommittedMoves(),
-             res_aware_move_->numCommittedMoves());
+             reroute_move_->numCommittedMoves());
 }
 
 void Resizer::journalMakeBuffer(sta::Instance* buffer)
@@ -4674,7 +4674,7 @@ void Resizer::journalRestore()
              swap_pins_move_->numPendingMoves(),
              vt_swap_speed_move_->numPendingMoves(),
              unbuffer_move_->numPendingMoves(),
-             res_aware_move_->numPendingMoves());
+             reroute_move_->numPendingMoves());
 
   int move_count_ = 0;
   move_count_ += size_up_move_->numPendingMoves();
@@ -4685,7 +4685,7 @@ void Resizer::journalRestore()
   move_count_ += swap_pins_move_->numPendingMoves();
   move_count_ += vt_swap_speed_move_->numPendingMoves();
   move_count_ += unbuffer_move_->numPendingMoves();
-  move_count_ += res_aware_move_->numPendingMoves();
+  move_count_ += reroute_move_->numPendingMoves();
 
   debugPrint(logger_,
              RSZ,
@@ -4702,7 +4702,7 @@ void Resizer::journalRestore()
              swap_pins_move_->numPendingMoves(),
              vt_swap_speed_move_->numPendingMoves(),
              unbuffer_move_->numPendingMoves(),
-             res_aware_move_->numPendingMoves());
+             reroute_move_->numPendingMoves());
 
   rejected_move_count_ += move_count_;
 
@@ -4714,7 +4714,7 @@ void Resizer::journalRestore()
   swap_pins_move_->undoMoves();
   vt_swap_speed_move_->undoMoves();
   unbuffer_move_->undoMoves();
-  res_aware_move_->undoMoves();
+  reroute_move_->undoMoves();
   split_load_move_->undoMoves();
 
   debugPrint(logger_,
@@ -4734,7 +4734,7 @@ void Resizer::journalRestore()
              swap_pins_move_->numCommittedMoves(),
              vt_swap_speed_move_->numCommittedMoves(),
              unbuffer_move_->numCommittedMoves(),
-             res_aware_move_->numCommittedMoves());
+             reroute_move_->numCommittedMoves());
 
   debugPrint(logger_, RSZ, "journal", 1, "journal restore ends <<<");
 }
@@ -5510,7 +5510,7 @@ MoveType Resizer::parseMove(const std::string& s)
   if (lower == "vt_swap") {
     return rsz::MoveType::VTSWAP_SPEED;
   }
-  if (lower == "res_aware") {
+  if (lower == "reroute") {
     return rsz::MoveType::RES_AWARE;
   }
   throw std::invalid_argument("Invalid move type: " + s);

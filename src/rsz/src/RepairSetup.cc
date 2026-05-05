@@ -23,7 +23,7 @@
 #include "CloneMove.hh"
 #include "MoveTracker.hh"
 #include "Rebuffer.hh"
-#include "ResAwareMove.hh"
+#include "RerouteMove.hh"
 #include "SizeDownMove.hh"
 #include "db_sta/dbSta.hh"
 #include "est/EstimateParasitics.h"
@@ -147,7 +147,7 @@ void RepairSetup::setupMoveSequence(const std::vector<MoveType>& sequence,
         case MoveType::RES_AWARE:
           if (resizer_->global_router_
               && resizer_->global_router_->haveRoutes()) {
-            move_sequence_.push_back(resizer_->res_aware_move_.get());
+            move_sequence_.push_back(resizer_->reroute_move_.get());
           }
           break;
       }
@@ -156,7 +156,7 @@ void RepairSetup::setupMoveSequence(const std::vector<MoveType>& sequence,
     move_sequence_.clear();
     if (resizer_->global_router_ && resizer_->global_router_->haveRoutes()
         && resizer_->resistanceAware()) {
-      move_sequence_.push_back(resizer_->res_aware_move_.get());
+      move_sequence_.push_back(resizer_->reroute_move_.get());
     }
     if (!skip_buffer_removal) {
       move_sequence_.push_back(resizer_->unbuffer_move_.get());
@@ -438,8 +438,8 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
           move_tracker_->clear();
         }
       }
-    } else if (phase_name == "RESAWARE") {
-      repairSetup_ResAware(setup_slack_margin,
+    } else if (phase_name == "REROUTE") {
+      repairSetup_Reroute(setup_slack_margin,
                            max_passes,
                            max_iterations,
                            max_repairs_per_pass,
@@ -450,8 +450,8 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
                            marker);  // phase marker
 
       if (move_tracker_) {
-        move_tracker_->printMoveSummary("RESAWARE Phase Summary");
-        move_tracker_->printEndpointSummary("RESAWARE Phase Endpoint Profiler");
+        move_tracker_->printMoveSummary("REROUTE Phase Summary");
+        move_tracker_->printEndpointSummary("REROUTE Phase Endpoint Profiler");
         move_tracker_->clear();
       }
     } else {
@@ -459,7 +459,7 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
                      217,
                      "Unknown phase name '{}'. Valid phase names are: LEGACY, "
                      "WNS, TNS, ENDPOINT_FANIN, STARTPOINT_FANOUT, LAST_GASP, "
-                     "RESAWARE",
+                     "REROUTE",
                      phase_name);
     }
     // Update marker for next phase
@@ -521,7 +521,7 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
   int unbuffer_moves_ = resizer_->unbuffer_move_->numCommittedMoves();
   int vt_swap_moves_ = resizer_->vt_swap_speed_move_->numCommittedMoves();
   int size_up_match_moves_ = resizer_->size_up_match_move_->numCommittedMoves();
-  int res_aware_moves_ = resizer_->res_aware_move_->numCommittedMoves();
+  int reroute_moves_ = resizer_->reroute_move_->numCommittedMoves();
 
   if (unbuffer_moves_ > 0) {
     repaired = true;
@@ -562,10 +562,10 @@ bool RepairSetup::repairSetup(const float setup_slack_margin,
     repaired = true;
     logger_->info(RSZ, 49, "Cloned {} instances.", clone_moves_);
   }
-  if (res_aware_moves_ > 0) {
+  if (reroute_moves_ > 0) {
     repaired = true;
     logger_->info(
-        RSZ, 53, "Rerouted {} nets resistance-aware.", res_aware_moves_);
+        RSZ, 53, "Rerouted {} nets resistance-aware.", reroute_moves_);
   }
   const sta::Slack worst_slack = sta_->worstSlack(max_);
   if (sta::fuzzyLess(worst_slack, setup_slack_margin)) {
@@ -920,8 +920,8 @@ bool RepairSetup::repairEndpoint(sta::Pin* end_pin,
   return changed > 0;
 }
 
-// Shared endpoint optimization loop for repairSetupResAware.
-// Iterates over violating endpoints and calls repairPathResAware for each.
+// Shared endpoint optimization loop for repairSetupReroute.
+// Iterates over violating endpoints and calls repairPathReroute for each.
 bool RepairSetup::repairEndpoints(const int max_end_count,
                                   const int max_passes,
                                   const int max_iterations,
@@ -1065,7 +1065,7 @@ bool RepairSetup::repairEndpoints(const int max_end_count,
       sta::Path* end_path = sta_->vertexWorstSlackPath(end, max_);
 
       const bool changed
-          = repairPathResAware(end_path, end_slack, setup_slack_margin);
+          = repairPathReroute(end_path, end_slack, setup_slack_margin);
 
       if (!changed) {
         if (pass != 1) {
@@ -1237,7 +1237,7 @@ bool RepairSetup::repairEndpoints(const int max_end_count,
   return any_changed;
 }
 
-bool RepairSetup::repairPathResAware(sta::Path* path,
+bool RepairSetup::repairPathReroute(sta::Path* path,
                                      sta::Slack path_slack,
                                      const float setup_slack_margin)
 {
@@ -1296,15 +1296,15 @@ bool RepairSetup::repairPathResAware(sta::Path* path,
              RSZ,
              "repair_setup",
              3,
-             "ResAware wire pass: delays: {}, path slack: {}",
+             "Reroute wire pass: delays: {}, path slack: {}",
              delays.size(),
              delayAsString(path_slack, 3, sta_));
 
-  // Try ResAwareMove on each driver sorted by descending wire delay.
+  // Try RerouteMove on each driver sorted by descending wire delay.
   // Return immediately after a successful move because topology-changing
   // moves invalidate the PathExpanded; the caller's loop will re-invoke
   // with a fresh path.
-  BaseMove* move = resizer_->res_aware_move_.get();
+  BaseMove* move = resizer_->reroute_move_.get();
   for (const auto& [drvr_index, ignored] : delays) {
     const sta::Path* drvr_path = expanded.path(drvr_index);
     const sta::Pin* drvr_pin = drvr_path->vertex(sta_)->pin();
@@ -1801,8 +1801,8 @@ void RepairSetup::repairSetup_Legacy(const float setup_slack_margin,
              delayAsString(final_tns, 1, sta_));
 }
 
-// ResAware repair setup phase - applies ResAwareMove to worst net delays
-void RepairSetup::repairSetup_ResAware(const float setup_slack_margin,
+// Reroute repair setup phase - applies RerouteMove to worst net delays
+void RepairSetup::repairSetup_Reroute(const float setup_slack_margin,
                                        const int max_passes,
                                        const int max_iterations,
                                        const int max_repairs_per_pass,
@@ -1817,7 +1817,7 @@ void RepairSetup::repairSetup_ResAware(const float setup_slack_margin,
       RSZ,
       "repair_setup",
       1,
-      fmt::format("RESAWARE{} Phase Time: {{}}", phase_marker));
+      fmt::format("REROUTE{} Phase Time: {{}}", phase_marker));
   constexpr int digits = 3;
 
   violator_collector_->init(setup_slack_margin);
@@ -1828,7 +1828,7 @@ void RepairSetup::repairSetup_ResAware(const float setup_slack_margin,
                RSZ,
                "repair_setup",
                1,
-               "RESAWARE{} Phase: No violating endpoints, exiting",
+               "REROUTE{} Phase: No violating endpoints, exiting",
                phase_marker);
     return;
   }
@@ -1836,7 +1836,7 @@ void RepairSetup::repairSetup_ResAware(const float setup_slack_margin,
              RSZ,
              "repair_setup",
              1,
-             "RESAWARE{} Phase: {} violating endpoints found",
+             "REROUTE{} Phase: {} violating endpoints found",
              phase_marker,
              max_endpoint_count);
 
@@ -1852,7 +1852,7 @@ void RepairSetup::repairSetup_ResAware(const float setup_slack_margin,
                   initial_tns,
                   opto_iteration,
                   num_viols,
-                  "RESAWARE",
+                  "REROUTE",
                   phase_marker);
 
   printProgress(opto_iteration, true, false, phase_marker);
@@ -1866,7 +1866,7 @@ void RepairSetup::repairSetup_ResAware(const float setup_slack_margin,
              RSZ,
              "repair_setup",
              1,
-             "RESAWARE{} Phase complete. WNS: {}, TNS: {}",
+             "REROUTE{} Phase complete. WNS: {}, TNS: {}",
              phase_marker,
              delayAsString(final_wns, digits, sta_),
              delayAsString(final_tns, 1, sta_));

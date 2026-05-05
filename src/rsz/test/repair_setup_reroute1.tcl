@@ -1,5 +1,5 @@
-# repair_timing -setup with res_aware in the move sequence on ASAP7 GCD.
-# ResAwareMove is included as a move in the LEGACY repair loop (default);
+# repair_timing -setup with reroute in the move sequence on ASAP7 GCD.
+# RerouteMove is included as a move in the LEGACY repair loop (default);
 # it requires global routing to be present (haveRoutes).
 source "helpers.tcl"
 
@@ -40,7 +40,7 @@ estimate_parasitics -global_routing
 report_worst_slack -max
 report_tns -digits 3
 
-repair_timing -setup -sequence "res_aware" -repair_tns 10
+repair_timing -setup -sequence "reroute" -repair_tns 10
 
 report_worst_slack -max
 report_tns -digits 3

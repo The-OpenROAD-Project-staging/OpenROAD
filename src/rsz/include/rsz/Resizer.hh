@@ -84,7 +84,7 @@ class SwapPinsMove;
 class UnbufferMove;
 class VTSwapSpeedMove;
 class SizeUpMatchMove;
-class ResAwareMove;
+class RerouteMove;
 class RegisterOdbCallbackGuard;
 
 class NetHash
@@ -962,7 +962,7 @@ class Resizer : public sta::dbStaState, public sta::dbNetworkObserver
   std::unique_ptr<UnbufferMove> unbuffer_move_;
   std::unique_ptr<VTSwapSpeedMove> vt_swap_speed_move_;
   std::unique_ptr<SizeUpMatchMove> size_up_match_move_;
-  std::unique_ptr<ResAwareMove> res_aware_move_;
+  std::unique_ptr<RerouteMove> reroute_move_;
   int accepted_move_count_ = 0;
   int rejected_move_count_ = 0;
 
@@ -982,7 +982,7 @@ class Resizer : public sta::dbStaState, public sta::dbNetworkObserver
   friend class SwapPinsMove;
   friend class UnbufferMove;
   friend class SizeUpMatchMove;
-  friend class ResAwareMove;
+  friend class RerouteMove;
   friend class VTSwapSpeedMove;
   friend class SwapArithModules;
   friend class ConcreteSwapArithModules;

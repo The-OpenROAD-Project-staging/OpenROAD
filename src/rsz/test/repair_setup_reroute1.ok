@@ -10,7 +10,7 @@
 [INFO ODB-0133]     Created 416 nets and 1216 connections.
 worst slack max -3597.44
 tns max -133188.516
-[INFO RSZ-0100] Repair move sequence: ResAwareMove 
+[INFO RSZ-0100] Repair move sequence: RerouteMove 
 [INFO RSZ-0094] Found 53 endpoints with setup violations.
 [INFO RSZ-0099] Repairing 5 out of 53 (10.00%) violating endpoints...
    Iter   | Removed | Resized | Inserted | Cloned |  Pin  |   Area   |    WNS   |   StTNS    |   EnTNS    |  Viol  |  Worst  
