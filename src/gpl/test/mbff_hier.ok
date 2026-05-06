@@ -3,6 +3,7 @@
 [INFO ODB-0227] LEF file: ./2BitTrayH2/asap7sc7p5t_DFFHQNV2X.lef, created 9 library cells
 [INFO ODB-0394] Duplicate site asap7sc7p5t_pg in asap7sc7p5t_DFFHQNV4X already seen in asap7sc7p5t_DFFHQNV2X
 [INFO ODB-0227] LEF file: ./4BitTrayH4/asap7sc7p5t_DFFHQNV4X.lef, created 9 library cells
+[WARNING ORD-0011] Hierarchical flow (-hier) is currently in development and may cause multiple issues. Do not use in production environments.
 ===== BEFORE cluster_flops =====
 mbff_hier: 0 inst(s): 
 sub_a: 2 inst(s): a/ff_a1 a/ff_a2

@@ -9,7 +9,7 @@ read_lef ./4BitTrayH4/asap7sc7p5t_DFFHQNV4X.lef
 read_lib ./4BitTrayH4/asap7sc7p5t_DFFHQNV4X_LVT_TT_nldm_FAKE.lib
 
 read_verilog ./mbff_hier.v
-link_design mbff_hier
+link_design -hier mbff_hier
 
 set block [ord::get_db_block]
 set locs {{a/ff_a1 6000 6000} {a/ff_a2 4000 6000}
