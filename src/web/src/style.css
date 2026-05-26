@@ -445,9 +445,13 @@ html, body {
     cursor: grabbing !important;
 }
 
-/* Leaflet tiles */
+/* Leaflet tiles.  `pixelated` keeps tile content crisp when the user
+ * holds a fractional zoom (zoomSnap: 0) -- the alternative `auto`
+ * bilinear filter reintroduces Moiré on regular bump arrays even
+ * after the server-side tile generator collapses sub-pixel shapes
+ * (#10463). */
 .leaflet-tile {
-    image-rendering: auto;
+    image-rendering: pixelated;
 }
 
 .layout-viewer {

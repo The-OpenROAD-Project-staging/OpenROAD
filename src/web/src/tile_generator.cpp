@@ -1439,6 +1439,17 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
         dbu_x_min_world, dbu_y_min_world, dbu_x_max_world, dbu_y_max_world);
     const double scale = kTileSizeInPixel / tile_dbu_size;
 
+    // Sub-pixel LOD thresholds, mirroring LayoutViewer::fineViewableResolution
+    // and nominalViewableResolution in the Qt GUI.  An instance whose master
+    // is smaller than fine_res_dbu in both dimensions collapses to a single
+    // pixel at its origin instead of an outline; one shorter than
+    // nominal_res_dbu skips its per-shape detail.  Without these, dense
+    // regular arrays (microbumps, flip-chip bump rings) generate a Moiré
+    // beat pattern at zoom-out because the truncation error in each
+    // sub-pixel rectangle phase-shifts gradually across the tile (#10463).
+    const int fine_res_dbu = std::max(1, static_cast<int>(1.0 / scale));
+    const int nominal_res_dbu = std::max(1, static_cast<int>(5.0 / scale));
+
     // Per-chiplet rendering loop.  Mirrors RenderThread::drawChips() in
     // the Qt GUI: walks dbChip → dbChipInst → masterChip and draws each
     // chiplet's block in its own frame, accumulating into the same tile
@@ -1847,6 +1858,32 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
           if (!vis.isInstVisible(inst, sta_)) {
             continue;
           }
+
+          // Sub-pixel LOD: when the master is smaller than one pixel in
+          // both dimensions, collapse the instance to a single point at
+          // its origin instead of drawing four outline edges.  This is
+          // the same trick the Qt GUI uses in
+          // RenderThread::drawInstanceOutlines and is what prevents
+          // dense bump arrays from producing diagonal Moiré stripes at
+          // zoom-out (#10463).
+          if (master->getWidth() < fine_res_dbu
+              && master->getHeight() < fine_res_dbu) {
+            const odb::Point origin = inst->getOrigin();
+            const int64_t px
+                = static_cast<int64_t>((origin.x() - dbu_x_min) * scale);
+            const int64_t py
+                = static_cast<int64_t>((origin.y() - dbu_y_min) * scale);
+            if (px >= 0 && px < kTileSizeInPixel && py >= 0
+                && py < kTileSizeInPixel) {
+              constexpr Color lod_point{.r = 128, .g = 128, .b = 128, .a = 255};
+              setPixel(image_buffer,
+                       static_cast<int>(px),
+                       255 - static_cast<int>(py),
+                       lod_point);
+            }
+            continue;
+          }
+
           const int xl = inst_bbox.xMin();
           const int yl = inst_bbox.yMin();
           const int xh = inst_bbox.xMax();
@@ -1864,37 +1901,67 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
           const int loop_xh = std::clamp<int64_t>(pixel_xh, 0, 256);
           const int loop_yh = std::clamp<int64_t>(pixel_yh, 0, 256);
 
-          const int draw_xl = std::clamp<int64_t>(pixel_xl, 0, 255);
-          const int draw_yl = std::clamp<int64_t>(pixel_yl, 0, 255);
-          const int draw_xh = std::clamp<int64_t>(pixel_xh, 0, 255);
-          const int draw_yh = std::clamp<int64_t>(pixel_yh, 0, 255);
-
           if (instances_only) {
-            // Draw the rectangle border (instances-only layer)
-            const Color gray{.r = 128, .g = 128, .b = 128, .a = 255};
-            if (dbu_x_min <= xl && xl <= dbu_x_max) {
+            // Draw the rectangle border with sub-pixel coverage
+            // anti-aliasing.  The edge's floating-point position is
+            // split across two adjacent pixel columns/rows in
+            // proportion to its fractional part; this prevents the
+            // accumulated truncation error that produces diagonal
+            // Moiré stripes on dense bump arrays (#10463).  The same
+            // blendPixel "over" composite that fillPolygon uses is
+            // applied here so the outline still respects underlying
+            // chiplet fills.
+            constexpr Color gray{.r = 128, .g = 128, .b = 128, .a = 255};
+            const double xl_f = (xl - dbu_x_min) * scale;
+            const double yl_f = (yl - dbu_y_min) * scale;
+            const double xh_f = (xh - dbu_x_min) * scale;
+            const double yh_f = (yh - dbu_y_min) * scale;
+
+            auto coverage = [](const double v) {
+              const double frac = v - std::floor(v);
+              return std::make_pair(
+                  static_cast<int>(std::floor(v)),
+                  static_cast<unsigned char>(std::lround(frac * 255.0)));
+            };
+
+            auto draw_v_edge = [&](const double xf) {
+              const auto [xi, frac_a] = coverage(xf);
+              Color near_col = gray;
+              Color far_col = gray;
+              near_col.a = static_cast<unsigned char>(gray.a - frac_a);
+              far_col.a = static_cast<unsigned char>(frac_a);
               for (int iy = loop_yl; iy < loop_yh; ++iy) {
                 const int draw_y = (255 - iy);
-                setPixel(image_buffer, draw_xl, draw_y, gray);
+                blendPixel(image_buffer, xi, draw_y, near_col);
+                blendPixel(image_buffer, xi + 1, draw_y, far_col);
               }
+            };
+
+            auto draw_h_edge = [&](const double yf) {
+              const auto [yi, frac_a] = coverage(yf);
+              Color near_col = gray;
+              Color far_col = gray;
+              near_col.a = static_cast<unsigned char>(gray.a - frac_a);
+              far_col.a = static_cast<unsigned char>(frac_a);
+              for (int ix = loop_xl; ix < loop_xh; ++ix) {
+                // Cartesian y -> screen y flip happens here; the "far"
+                // pixel (yi + 1 in cartesian) is one screen row above.
+                blendPixel(image_buffer, ix, 255 - yi, near_col);
+                blendPixel(image_buffer, ix, 255 - (yi + 1), far_col);
+              }
+            };
+
+            if (dbu_x_min <= xl && xl <= dbu_x_max) {
+              draw_v_edge(xl_f);
             }
             if (dbu_x_min <= xh && xh <= dbu_x_max) {
-              for (int iy = loop_yl; iy < loop_yh; ++iy) {
-                const int draw_y = (255 - iy);
-                setPixel(image_buffer, draw_xh, draw_y, gray);
-              }
+              draw_v_edge(xh_f);
             }
             if (dbu_y_min <= yl && yl <= dbu_y_max) {
-              for (int ix = loop_xl; ix < loop_xh; ++ix) {
-                const int draw_y = (255 - draw_yl);
-                setPixel(image_buffer, ix, draw_y, gray);
-              }
+              draw_h_edge(yl_f);
             }
             if (dbu_y_min <= yh && yh <= dbu_y_max) {
-              for (int ix = loop_xl; ix < loop_xh; ++ix) {
-                const int draw_y = (255 - draw_yh);
-                setPixel(image_buffer, ix, draw_y, gray);
-              }
+              draw_h_edge(yh_f);
             }
 
             // Draw instance name label when zoomed in enough.
@@ -1994,7 +2061,15 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
               }
             }
           } else {
-            // Layer-specific: obstructions and pins
+            // Layer-specific: obstructions and pins.  Skip detail for
+            // instances whose master is shorter than the nominal
+            // viewable resolution -- the per-shape rectangles become
+            // sub-pixel and contribute only aliasing/Moiré at this
+            // scale.  Mirrors RenderThread::drawInstanceShapes in the
+            // Qt GUI (#10463).
+            if (master->getHeight() < nominal_res_dbu) {
+              continue;
+            }
             if (vis.blockages) {
               for (odb::dbPolygon* poly_obs :
                    master->getPolygonObstructions()) {
