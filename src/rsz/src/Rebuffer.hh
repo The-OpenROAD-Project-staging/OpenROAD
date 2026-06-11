@@ -104,6 +104,7 @@ class Rebuffer : public sta::dbStaState
                                 int level,
                                 int next_segment_wl = 0);
   void pruneFrontier(BufferedNetSeq& opts);
+  void pruneFrontierKeepingBufferOnly(BufferedNetSeq& opts);
   void insertInverterOptions(BufferedNetSeq& p0,
                              BufferedNetSeq& p1,
                              int level,

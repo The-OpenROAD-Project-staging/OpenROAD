@@ -190,6 +190,11 @@ class BufferedNet
   // Inverter count to loads, mod 2 (0 = polarity preserved).
   int parity() const { return parity_; }
 
+  // True if any inverter exists in the tree at or below this node. Parity
+  // alone cannot tell: an inverter pair has parity 0 but still constrains
+  // topology rewriting and frontier pruning.
+  bool hasInverter() const { return has_inverter_; }
+
   // Rebuffer
   const sta::RiseFallBoth* slackTransition() const
   {
@@ -301,6 +306,7 @@ class BufferedNet
   FixedDelay arrival_delay_ = FixedDelay::ZERO;
 
   int8_t parity_ = 0;
+  bool has_inverter_ = false;
 
   const sta::Scene* corner_ = nullptr;
 };

@@ -155,6 +155,7 @@ BufferedNet::BufferedNet(const BufferedNetType type,
   area_ = ref->area() + ref2->area();
 
   parity_ = ref->parity();
+  has_inverter_ = ref->hasInverter() || ref2->hasInverter();
 }
 
 // wire
@@ -185,6 +186,7 @@ BufferedNet::BufferedNet(const BufferedNetType type,
   area_ = ref->area();
 
   parity_ = ref->parity();
+  has_inverter_ = ref->hasInverter();
 }
 
 // via
@@ -214,6 +216,7 @@ BufferedNet::BufferedNet(const BufferedNetType type,
   area_ = ref->area();
 
   parity_ = ref->parity();
+  has_inverter_ = ref->hasInverter();
 }
 
 // buffer
@@ -245,6 +248,7 @@ BufferedNet::BufferedNet(const BufferedNetType type,
   area_ = ref->area() + buffer_cell_->area();
 
   parity_ = buffer_cell->isInverter() ? (ref->parity() ^ 1) : ref->parity();
+  has_inverter_ = ref->hasInverter() || buffer_cell->isInverter();
 }
 
 void BufferedNet::reportTree(const Resizer* resizer) const

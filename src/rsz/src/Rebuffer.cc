@@ -816,9 +816,15 @@ BnetPtr Rebuffer::bufferForTiming(const BnetPtr& tree,
                 bool rewrote = false;
                 BnetPtr junc;
 
-                // Rewrite is parity-unaware: only on pure-buf subtrees.
+                // Rewrite is parity-unaware, so it is only safe when neither
+                // subtree contains an inverter (then it is exactly the
+                // flag-off situation). Gating per pair instead of disabling
+                // rewriting globally keeps the flag-off QoR on buffer-only
+                // regions when inverter-pair is enabled.
                 const bool rewrite_safe
-                    = allow_topology_rewrite && !invPairActive();
+                    = allow_topology_rewrite
+                      && (!invPairActive()
+                          || (!(*li)->hasInverter() && !(*ri)->hasInverter()));
                 if (rewrite_safe) {
                   junc = attemptTopologyRewrite(node, *li, *ri, best_cap);
                   if (junc) {
@@ -924,7 +930,13 @@ BnetPtr Rebuffer::bufferForTiming(const BnetPtr& tree,
 
     if (best_option == nullptr
         || p->slackTransition() == nullptr /* buffer tree unconstrained */
-        || slack.value() > best_slack) {
+        || slack.value() > best_slack
+        // Conservative tie-break: slack is a model estimate, so on equal
+        // slack prefer a buffer-only tree over an inverter-bearing one.
+        // (The previous disjunct already handled strictly-greater, so >=
+        // here means equality.)
+        || (slack.value() >= best_slack && best_option->hasInverter()
+            && !p->hasInverter())) {
       best_slack = slack.value();
       best_option = p;
       best_index = i;
@@ -1013,10 +1025,13 @@ void Rebuffer::insertInverterOptions(BnetSeq& p0,
     return;
   }
   insertInverterCandidates(p0, p1, level, next_segment_wl);
-  // Only the odd-parity list can shadow across parities; prune both lists only
-  // when inverter options exist (a buffer-only frontier is already pruned).
+  // Prune only when inverter options exist (a buffer-only frontier is already
+  // pruned by insertBufferOptions). The even-parity prune must never evict
+  // buffer-only options: slack here is a model estimate, and estimate-
+  // optimistic inverter-bearing options otherwise shadow buffer options that
+  // are better after STA correction (measured QoR loss on ibex).
   if (!p1.empty()) {
-    pruneFrontier(p0);
+    pruneFrontierKeepingBufferOnly(p0);
     pruneFrontier(p1);
   }
 }
@@ -1109,6 +1124,56 @@ void Rebuffer::pruneFrontier(BnetSeq& opts)
     if (o->slack() > best_slack) {
       best_slack = o->slack();
       kept.push_back(std::move(o));
+    }
+  }
+  opts.swap(kept);
+}
+
+// Prune an even-parity frontier without ever evicting buffer-only options.
+// Buffer-only options were already pruned to a clean frontier by
+// insertBufferOptions and their slack model matches plain buffering;
+// inverter-bearing options carry extra estimate optimism, so they must beat
+// the combined running frontier (ties lose to the buffer) to survive.
+void Rebuffer::pruneFrontierKeepingBufferOnly(BnetSeq& opts)
+{
+  BnetSeq buf, inv;
+  buf.reserve(opts.size());
+  inv.reserve(opts.size());
+  for (BnetPtr& o : opts) {
+    (o->hasInverter() ? inv : buf).push_back(std::move(o));
+  }
+  if (inv.empty()) {
+    opts.swap(buf);
+    return;
+  }
+  // `buf` is a cap-ascending subsequence of the pre-append list; only the
+  // inverter-bearing side needs sorting (appends land at the end).
+  std::ranges::sort(inv, [](const BnetPtr& a, const BnetPtr& b) {
+    if (a->cap() != b->cap()) {
+      return a->cap() < b->cap();
+    }
+    return a->slack() > b->slack();
+  });
+
+  BnetSeq kept;
+  kept.reserve(buf.size() + inv.size());
+  FixedDelay best_slack = -FixedDelay::INF;
+  auto bi = buf.begin();
+  auto ii = inv.begin();
+  while (bi != buf.end() || ii != inv.end()) {
+    // On cap ties take the buffer first so the inverter must strictly beat it.
+    const bool take_buf
+        = ii == inv.end() || (bi != buf.end() && (*bi)->cap() <= (*ii)->cap());
+    if (take_buf) {
+      best_slack = std::max(best_slack, (*bi)->slack());
+      kept.push_back(std::move(*bi));
+      ++bi;
+    } else {
+      if ((*ii)->slack() > best_slack) {
+        best_slack = (*ii)->slack();
+        kept.push_back(std::move(*ii));
+      }
+      ++ii;
     }
   }
   opts.swap(kept);
@@ -1488,8 +1553,14 @@ void Rebuffer::insertBufferOptions(
                       : BnetMetrics{};
   bool assured_satisfied = !area_oriented;
 
-  static constexpr int kNumBuckets = 2;
-  auto bucket_of = [](const BnetPtr& o) { return o->parity(); };
+  // Frontier buckets: parity x has-inverter. Separating inverter-bearing
+  // options keeps them from Pareto-shadowing buffer-only options on estimated
+  // slack (the estimate is optimistic for inverters; measured QoR loss).
+  // With inverter-pair off every option lands in bucket 0.
+  static constexpr int kNumBuckets = 4;
+  auto bucket_of = [](const BnetPtr& o) {
+    return (o->parity() << 1) | (o->hasInverter() ? 1 : 0);
+  };
   float best_area[kNumBuckets];
   FixedDelay best_slack[kNumBuckets];
   std::fill_n(best_area, kNumBuckets, sta::INF);
