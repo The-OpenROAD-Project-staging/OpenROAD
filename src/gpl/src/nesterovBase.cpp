@@ -2603,13 +2603,22 @@ void NesterovBase::initIoPinGCells()
 
   // Keep fixed ports as anchors, as in the sequential flow.
   std::vector<odb::dbBTerm*> movable_bterms;
+  std::vector<odb::dbBTerm*> unmodeled_bterms;
   int already_placed = 0;
   for (odb::dbBTerm* bterm : block->getBTerms()) {
-    // Exclude ports without a GPin; they have no wirelength gradient.
-    if (nbc_->dbToNb(bterm) == nullptr) {
+    if (bterm->getFirstPinPlacementStatus().isFixed()) {
       continue;
     }
-    if (bterm->getFirstPinPlacementStatus().isFixed()) {
+    // A port without a GPin has no wirelength gradient, so the solve cannot
+    // move it. It still needs a position: the routability loop routes the
+    // design mid-solve and grt rejects an unplaced pin (GRT-11). Power and
+    // ground stay out of it, their shapes belong to pdn.
+    if (nbc_->dbToNb(bterm) == nullptr) {
+      odb::dbNet* net = bterm->getNet();
+      if (net != nullptr && !net->isSpecial() && !net->getSigType().isSupply()
+          && !bterm->getFirstPinPlacementStatus().isPlaced()) {
+        unmodeled_bterms.push_back(bterm);
+      }
       continue;
     }
     if (bterm->getFirstPinPlacementStatus().isPlaced()) {
@@ -2699,6 +2708,8 @@ void NesterovBase::initIoPinGCells()
   // Initialize constraints before seeding.
   initIoConstraints();
 
+  seedUnmodeledIoPins(unmodeled_bterms);
+
   // Followers are derived after their masters are placed.
   for (size_t i = 0; i < ioPinStor_.size(); ++i) {
     if (!isMirrorFollower(i)) {
@@ -2721,6 +2732,52 @@ void NesterovBase::initIoPinGCells()
              "({} mirror pairs).",
              ioPinStor_.size(),
              io_mirror_pairs_.size());
+}
+
+// Spread the ports the solve does not model evenly over the free perimeter.
+// They stay there for the whole solve; place_pins assigns their final slot the
+// same way it does for the solved ones.
+void NesterovBase::seedUnmodeledIoPins(const std::vector<odb::dbBTerm*>& bterms)
+{
+  if (bterms.empty() || io_free_segments_.empty()) {
+    return;
+  }
+  float perimeter = 0;
+  for (const PerimSegment& seg : io_free_segments_) {
+    perimeter += seg.hi - seg.lo;
+  }
+
+  for (size_t i = 0; i < bterms.size(); ++i) {
+    float offset = perimeter * (i + 0.5f) / bterms.size();
+    const PerimSegment* seg = &io_free_segments_.back();
+    for (const PerimSegment& candidate : io_free_segments_) {
+      const float length = candidate.hi - candidate.lo;
+      if (offset <= length) {
+        seg = &candidate;
+        break;
+      }
+      offset -= length;
+    }
+    // projectOntoSegment keeps the coordinate along the edge and pins the
+    // other one to the die boundary, so both arguments carry the offset.
+    const FloatPoint p
+        = projectOntoSegment(*seg, seg->lo + offset, seg->lo + offset);
+    odb::dbTechLayer* layer
+        = isHorizontalEdge(seg->edge) ? io_ver_layer_ : io_hor_layer_;
+    const int half = static_cast<int>(layer->getWidth()) / 2;
+    writeIoPinShape(bterms[i],
+                    static_cast<int>(p.x),
+                    static_cast<int>(p.y),
+                    layer,
+                    half,
+                    half);
+  }
+
+  log_->info(GPL,
+             179,
+             "Concurrent IO placement: {} ports carry no wirelength gradient "
+             "and were spread over the free perimeter.",
+             bterms.size());
 }
 
 void NesterovBase::seedIoPinGCell(size_t io_index)
@@ -3103,22 +3160,32 @@ void NesterovBase::updateDbIoPins()
       half_w = io.dx() / 2;
       half_h = io.dy() / 2;
     }
-    const int min_half = static_cast<int>(layer->getWidth()) / 2;
-    half_w = std::max(half_w, min_half);
-    half_h = std::max(half_h, min_half);
-
-    // place_pins re-legalizes the pin, so only the center location
-    odb::dbSet<odb::dbBPin> bpins = bterm->getBPins();
-    for (auto it = bpins.begin(); it != bpins.end();) {
-      it = odb::dbBPin::destroy(it);
-    }
-
-    odb::dbBPin* bpin = odb::dbBPin::create(bterm);
-    odb::dbBox::create(
-        bpin, layer, cx - half_w, cy - half_h, cx + half_w, cy + half_h);
-    bpin->setPlacementStatus(odb::dbPlacementStatus::PLACED);
+    writeIoPinShape(bterm, cx, cy, layer, half_w, half_h);
     io_last_written_pos_[i] = odb::Point(cx, cy);
   }
+}
+
+void NesterovBase::writeIoPinShape(odb::dbBTerm* bterm,
+                                   int cx,
+                                   int cy,
+                                   odb::dbTechLayer* layer,
+                                   int half_w,
+                                   int half_h) const
+{
+  const int min_half = static_cast<int>(layer->getWidth()) / 2;
+  half_w = std::max(half_w, min_half);
+  half_h = std::max(half_h, min_half);
+
+  // place_pins re-legalizes the pin, so only the center location
+  odb::dbSet<odb::dbBPin> bpins = bterm->getBPins();
+  for (auto it = bpins.begin(); it != bpins.end();) {
+    it = odb::dbBPin::destroy(it);
+  }
+
+  odb::dbBPin* bpin = odb::dbBPin::create(bterm);
+  odb::dbBox::create(
+      bpin, layer, cx - half_w, cy - half_h, cx + half_w, cy + half_h);
+  bpin->setPlacementStatus(odb::dbPlacementStatus::PLACED);
 }
 
 NesterovBase::~NesterovBase() = default;

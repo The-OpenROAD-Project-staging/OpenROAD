@@ -1509,6 +1509,13 @@ class NesterovBase
       const std::vector<PerimSegment>& a,
       const std::vector<PerimSegment>& b);
   bool rectToPerimSegment(const odb::Rect& r, PerimSegment& seg) const;
+  void seedUnmodeledIoPins(const std::vector<odb::dbBTerm*>& bterms);
+  void writeIoPinShape(odb::dbBTerm* bterm,
+                       int cx,
+                       int cy,
+                       odb::dbTechLayer* layer,
+                       int half_w,
+                       int half_h) const;
   void seedIoPinGCell(size_t io_index);
   size_t ioIndexOf(const GCellHandle& handle) const;
   FloatPoint projectOntoSegment(const PerimSegment& seg,

@@ -94,12 +94,6 @@ proc global_placement { args } {
     if { [info exists flags(-skip_nesterov_place)] } {
       utl::error GPL 182 "-place_ios cannot be used with -skip_nesterov_place placement."
     }
-    if { [info exists flags(-timing_driven)] } {
-      utl::error GPL 179 "-place_ios cannot be used with -timing_driven placement."
-    }
-    if { [info exists flags(-routability_driven)] } {
-      utl::error GPL 181 "-place_ios cannot be used with -routability_driven placement."
-    }
   }
 
   if { [info exists flags(-incremental)] } {
