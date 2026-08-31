@@ -301,10 +301,20 @@ void RouteBase::init()
   nbc_->resizeMinRcCellSize();
 }
 
+void RouteBase::updateDbForRoute()
+{
+  nbc_->updateDbGCells();
+  // -place_ios keeps the IO pins in the solve, so the router must see the
+  // positions of this iteration, not the ones NesterovPlace last wrote.
+  for (auto& nb : nbVec_) {
+    nb->updateDbIoPins();
+  }
+}
+
 void RouteBase::getGrtResult()
 {
   // update gCells' location to DB for GR
-  nbc_->updateDbGCells();
+  updateDbForRoute();
 
   // these two options must be on
   grouter_->setAllowCongestion(true);
@@ -388,7 +398,7 @@ static float getUsageCapacityRatio(Tile* tile,
 
 void RouteBase::calculateRudyTiles()
 {
-  nbc_->updateDbGCells();
+  updateDbForRoute();
   grt::Rudy* rudy = grouter_->getRudy();
   rudy->calculateRudy();
   tg_->setNumRoutingLayers(0);

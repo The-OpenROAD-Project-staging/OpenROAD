@@ -786,6 +786,12 @@ struct NesterovBaseVars
   const bool isSetBinCnt;
   const bool useUniformTargetDensity;
   bool placeIosMode = false;
+  // Resolved from the pin placer's own configuration, so the solve models the
+  // grid the pins will really be assigned on.
+  int placeIosMinDistanceTracks = 2;
+  int placeIosCornerAvoidance = -1;
+  odb::dbTechLayer* placeIosHorLayer = nullptr;
+  odb::dbTechLayer* placeIosVerLayer = nullptr;
   bool isMaxPhiCoefChanged = false;  // not user config
   const float targetDensity;
   const int binCntX;
@@ -822,6 +828,7 @@ struct NesterovPlaceVars
   bool timingDrivenRepairTiming;
   float timingDrivenRepairTnsEndPercent;
   int timingDrivenIterCounter = 0;
+  int placeIosLegalizeEvery;
   const bool routability_driven_mode;
   const bool disableRevertIfDiverge;
 
@@ -1271,6 +1278,14 @@ class NesterovBase
 
   void updateDbIoPins();
 
+  // -place_ios: take ppl's legalized pin positions as the solve's own.
+  void adoptIoPinsFromDb();
+  void separateIoPins(std::vector<FloatPoint>& coordi);
+  void reportIoDiagnostics(int iter);
+  bool hasIoPins() const { return !ioPinStor_.empty(); }
+  odb::dbTechLayer* getIoHorLayer() const { return io_hor_layer_; }
+  odb::dbTechLayer* getIoVerLayer() const { return io_ver_layer_; }
+
  private:
   NesterovBaseVars nbVars_;
   std::shared_ptr<PlacerBase> pb_;
@@ -1453,6 +1468,19 @@ class NesterovBase
 
   // concurrent IO pin placement (-place_ios)
   std::vector<GCell> ioPinStor_;
+  // The slot grid each die edge offers, as the spacing two pins have to keep
+  // and the first and last position they may take.
+  struct EdgeSlots
+  {
+    float pitch = 0;
+    float lo = 0;
+    float hi = 0;
+  };
+  std::array<EdgeSlots, 4> io_edge_slots_;
+  // Scratch for separateIoPins, kept alive so a projection allocates nothing.
+  std::array<std::vector<std::pair<float, size_t>>, 4> io_edge_pins_;
+  std::vector<float> io_edge_fit_;
+  std::vector<std::pair<double, int>> io_edge_blocks_;
   std::vector<odb::Point> io_last_written_pos_;
   odb::dbTechLayer* io_hor_layer_ = nullptr;
   odb::dbTechLayer* io_ver_layer_ = nullptr;
@@ -1499,6 +1527,7 @@ class NesterovBase
   // interval, so these pins are clamped to the box instead of projected.
   std::vector<std::optional<odb::Rect>> io_box_constraints_;
 
+  void initIoSlotPitch();
   void initIoPinGCells();
   void pickIoPinDummyLayers();
   void pickIoPinTopLayerGrid();
@@ -1509,6 +1538,13 @@ class NesterovBase
       const std::vector<PerimSegment>& a,
       const std::vector<PerimSegment>& b);
   bool rectToPerimSegment(const odb::Rect& r, PerimSegment& seg) const;
+  void seedUnmodeledIoPins(const std::vector<odb::dbBTerm*>& bterms);
+  void writeIoPinShape(odb::dbBTerm* bterm,
+                       int cx,
+                       int cy,
+                       odb::dbTechLayer* layer,
+                       int half_w,
+                       int half_h) const;
   void seedIoPinGCell(size_t io_index);
   size_t ioIndexOf(const GCellHandle& handle) const;
   FloatPoint projectOntoSegment(const PerimSegment& seg,

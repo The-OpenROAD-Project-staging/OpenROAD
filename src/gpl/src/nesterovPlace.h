@@ -23,6 +23,10 @@ namespace odb {
 class dbInst;
 }
 
+namespace ppl {
+class IOPlacer;
+}
+
 namespace gpl {
 
 class PlacerBase;
@@ -45,6 +49,7 @@ class NesterovPlace
                 std::shared_ptr<TimingBase> tb,
                 std::shared_ptr<ClockBase> cb,
                 std::unique_ptr<AbstractGraphics> graphics,
+                ppl::IOPlacer* pin_placer,
                 utl::Logger* log);
   ~NesterovPlace();
 
@@ -56,6 +61,11 @@ class NesterovPlace
   void updateNextIter(int iter);
 
   void updateDb();
+
+  // -place_ios: run the pin placer and take its assignment as the solve's own.
+  bool legalizeIoPins(int iter);
+  void runIoProjection(int iter);
+  void reportDbHpwl(const char* tag, int iter);
 
   void checkInvalidValues(float wireLengthGradSum, float densityGradSum);
 
@@ -128,6 +138,7 @@ class NesterovPlace
   std::shared_ptr<NesterovBaseCommon> nbc_;
   std::vector<std::shared_ptr<PlacerBase>> pbVec_;
   std::vector<std::shared_ptr<NesterovBase>> nbVec_;
+  ppl::IOPlacer* pin_placer_ = nullptr;
   utl::Logger* log_ = nullptr;
   std::shared_ptr<RouteBase> rb_;
   std::shared_ptr<TimingBase> tb_;

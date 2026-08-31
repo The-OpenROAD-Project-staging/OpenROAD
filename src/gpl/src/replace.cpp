@@ -21,6 +21,8 @@
 #include "odb/db.h"
 #include "odb/util.h"
 #include "placerBase.h"
+#include "ppl/IOPlacer.h"
+#include "ppl/Parameters.h"
 #include "routeBase.h"
 #include "rsz/Resizer.hh"
 #include "sta/Graph.hh"
@@ -40,8 +42,14 @@ Replace::Replace(odb::dbDatabase* odb,
                  sta::dbSta* sta,
                  rsz::Resizer* resizer,
                  grt::GlobalRouter* router,
+                 ppl::IOPlacer* pin_placer,
                  utl::Logger* logger)
-    : db_(odb), sta_(sta), rs_(resizer), fr_(router), log_(logger)
+    : db_(odb),
+      sta_(sta),
+      rs_(resizer),
+      fr_(router),
+      pin_placer_(pin_placer),
+      log_(logger)
 {
   graphics_ = std::make_unique<GraphicsNone>();
 
@@ -284,6 +292,59 @@ void Replace::runMBFF(const int max_sz,
   pntset.Run(max_sz, alpha, beta, clock_power_weight);
 }
 
+// place_pins and the solve have to agree on the slot grid, so read it off the
+// pin placer rather than accepting a second copy of its switches.
+void Replace::resolveIoPinPlacement(NesterovBaseVars& nbVars) const
+{
+  if (pin_placer_ == nullptr) {
+    return;
+  }
+  odb::dbTech* tech = db_->getTech();
+  const auto lowest = [tech](const std::set<int>& levels) -> odb::dbTechLayer* {
+    if (levels.empty() || tech == nullptr) {
+      return nullptr;
+    }
+    return tech->findRoutingLayer(*levels.begin());
+  };
+  nbVars.placeIosHorLayer = lowest(pin_placer_->getHorLayers());
+  nbVars.placeIosVerLayer = lowest(pin_placer_->getVerLayers());
+  // Unconfigured, the solve still has to give a pin a shape, and the lowest
+  // routing layer of each direction serves. It will not run the pin placer
+  // mid-solve on that guess: the grid would not be the one place_pins uses.
+  if (tech != nullptr
+      && (nbVars.placeIosHorLayer == nullptr
+          || nbVars.placeIosVerLayer == nullptr)) {
+    for (odb::dbTechLayer* layer : tech->getLayers()) {
+      if (layer->getRoutingLevel() == 0) {
+        continue;
+      }
+      const odb::dbTechLayerDir dir = layer->getDirection();
+      if (dir == odb::dbTechLayerDir::HORIZONTAL
+          && nbVars.placeIosHorLayer == nullptr) {
+        nbVars.placeIosHorLayer = layer;
+      } else if (dir == odb::dbTechLayerDir::VERTICAL
+                 && nbVars.placeIosVerLayer == nullptr) {
+        nbVars.placeIosVerLayer = layer;
+      }
+    }
+  }
+  if (nbVars.placeIosHorLayer == nullptr
+      || nbVars.placeIosVerLayer == nullptr) {
+    log_->error(GPL,
+                174,
+                "-place_ios: the design has no horizontal and vertical routing "
+                "layers, so there is nowhere to write the solved IO pin "
+                "locations.");
+  }
+
+  const ppl::Parameters* parms = pin_placer_->getParameters();
+  // ppl reads a min distance of 0 as "use my default of two tracks".
+  const int min_dist = parms->getMinDistance();
+  nbVars.placeIosMinDistanceTracks
+      = (min_dist > 0 && parms->getMinDistanceInTracks()) ? min_dist : 2;
+  nbVars.placeIosCornerAvoidance = parms->getCornerAvoidance();
+}
+
 bool Replace::initNesterovPlace(const PlaceOptions& options,
                                 const int threads,
                                 bool check_density)
@@ -313,7 +374,10 @@ bool Replace::initNesterovPlace(const PlaceOptions& options,
   }
 
   if (!nbc_) {
-    const NesterovBaseVars nbVars(options);
+    NesterovBaseVars nbVars(options);
+    if (options.placeIosMode) {
+      resolveIoPinPlacement(nbVars);
+    }
 
     nbc_ = std::make_shared<NesterovBaseCommon>(
         nbVars, pbc_, log_, threads, clusters_);
@@ -380,6 +444,7 @@ bool Replace::initNesterovPlace(const PlaceOptions& options,
                                           tb_,
                                           cb_,
                                           graphics_->MakeNew(log_),
+                                          pin_placer_,
                                           log_);
   }
   // Ensure these get set even if np_ already exists.
@@ -526,6 +591,9 @@ void PlaceOptions::validate(utl::Logger* logger)
                   424);
   val.check_range(
       "keep_resize_below_overflow", keepResizeBelowOverflow, 0.0f, 1.0f, 425);
+
+  val.check_non_negative(
+      "place_ios_legalize_every", placeIosLegalizeEvery, 427);
 }
 
 void PlaceOptions::skipIo()

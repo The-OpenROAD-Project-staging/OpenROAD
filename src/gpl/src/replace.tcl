@@ -12,6 +12,7 @@ sta::define_cmd_args "global_placement" {\
     [-incremental]\
     [-skip_io]\
     [-place_ios]\
+    [-place_ios_legalize_every place_ios_legalize_every]\
     [-bin_grid_count grid_count]\
     [-density target_density]\
     [-init_density_penalty init_density_penalty]\
@@ -66,6 +67,7 @@ proc global_placement { args } {
       -virtual_cts_max_skew_fraction \
       -random_seed \
       -perturb_dist \
+      -place_ios_legalize_every \
       -pad_left -pad_right} \
     flags {-skip_initial_place \
       -force_center_initial_place \
@@ -93,12 +95,6 @@ proc global_placement { args } {
     }
     if { [info exists flags(-skip_nesterov_place)] } {
       utl::error GPL 182 "-place_ios cannot be used with -skip_nesterov_place placement."
-    }
-    if { [info exists flags(-timing_driven)] } {
-      utl::error GPL 179 "-place_ios cannot be used with -timing_driven placement."
-    }
-    if { [info exists flags(-routability_driven)] } {
-      utl::error GPL 181 "-place_ios cannot be used with -routability_driven placement."
     }
   }
 

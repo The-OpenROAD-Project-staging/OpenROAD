@@ -77,6 +77,7 @@ global_placement
     [-incremental]\
     [-skip_io]\
     [-place_ios]\
+    [-place_ios_legalize_every place_ios_legalize_every]\
     [-bin_grid_count grid_count]\
     [-density target_density]\
     [-init_density_penalty init_density_penalty]\
@@ -133,7 +134,8 @@ global_placement
 | `-pad_left` | Set left padding in terms of number of sites. The default value is `0`, and the allowed values are integers `[0, MAX_INT]` |
 | `-pad_right` | Set right padding in terms of number of sites. The default value is `0`, and the allowed values are integers `[0, MAX_INT]` |
 | `-skip_io` | Flag to ignore the IO ports when computing wirelength during placement. The default value is False, allowed values are boolean. |
-| `-place_ios` | Flag to co-optimize movable IO pins with cells in the same placement solve. Pins move along the die perimeter, or in 2D inside their region when `set_io_pin_constraint -region up:` puts them on a `define_pin_shape_pattern` grid. The resulting pin locations are written to the database but are not legalized to routing tracks or grid positions; `place_pins` must be run afterwards. Not supported on a rectilinear die. Cannot be combined with `-timing_driven`, `-routability_driven`, `-incremental`, `-skip_io`, or `-skip_nesterov_place`. The default value is False, allowed values are boolean. |
+| `-place_ios` | Flag to co-optimize movable IO pins with cells in the same placement solve. Pins move along the die perimeter, or in 2D inside their region when `set_io_pin_constraint -region up:` puts them on a `define_pin_shape_pattern` grid. The pins are held a slot pitch apart after every step, and the placement `place_pins` would give is taken periodically, before each timing-driven pass, and once at the end, so no `place_pins` call is needed afterwards. How the pins are placed comes from `set_io_pin_placement`; without it the solve falls back to the lowest routing layer of each direction to give a pin a shape and does not run the pin placer mid-solve. Not supported on a rectilinear die. Cannot be combined with `-incremental`, `-skip_io`, or `-skip_nesterov_place`. The default value is False, allowed values are boolean. |
+| `-place_ios_legalize_every` | Run the pin placer every this many iterations and adopt the assignment, so the cells only ever settle against pin locations it can reproduce. It is also what reorders pins, which the spacing projection cannot. `0` disables it. The default value is `50`, allowed values are non-negative integers. |
 | `-disable_revert_if_diverge` | Flag to make gpl store the placement state along iterations, if a divergence is detected, gpl reverts to the snapshot state. The default value is disabled. |
 | `-disable_pin_density_adjust` | Flag to disable instance pin density area adjustment. The pin density area adjustment is enabled by default. |
 | `-enable_routing_congestion` | Flag to run global routing after global placement, enabling the Routing Congestion Heatmap.|

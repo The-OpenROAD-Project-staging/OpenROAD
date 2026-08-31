@@ -176,6 +176,8 @@ class RouteBase
   int getRevertCount() const;
 
  private:
+  void updateDbForRoute();
+
   RouteBaseVars rbVars_;
   odb::dbDatabase* db_ = nullptr;
   grt::GlobalRouter* grouter_ = nullptr;

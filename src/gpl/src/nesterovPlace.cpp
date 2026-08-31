@@ -20,7 +20,10 @@
 #include "clockBase.h"
 #include "nesterovBase.h"
 #include "odb/db.h"
+#include "odb/util.h"
 #include "placerBase.h"
+#include "ppl/IOPlacer.h"
+#include "ppl/Parameters.h"
 #include "routeBase.h"
 #include "timingBase.h"
 #include "utl/Logger.h"
@@ -37,6 +40,7 @@ NesterovPlace::NesterovPlace(const NesterovPlaceVars& npVars,
                              std::shared_ptr<TimingBase> tb,
                              std::shared_ptr<ClockBase> cb,
                              std::unique_ptr<gpl::AbstractGraphics> graphics,
+                             ppl::IOPlacer* pin_placer,
                              utl::Logger* log)
     : npVars_(npVars)
 {
@@ -47,6 +51,7 @@ NesterovPlace::NesterovPlace(const NesterovPlaceVars& npVars,
   rb_ = std::move(rb);
   tb_ = std::move(tb);
   cb_ = std::move(cb);
+  pin_placer_ = pin_placer;
   log_ = log;
 
   db_cbk_ = std::make_unique<nesterovDbCbk>(this);
@@ -387,6 +392,7 @@ void NesterovPlace::runTimingDriven(int iter,
       && (!is_routability_gpl_iter || !npVars_.routability_driven_mode)) {
     // update db's instance location from current density coordinates
     updateDb();
+    legalizeIoPins(iter);
 
     if (cb_ && cb_->executeVirtualCts()) {
       log_->info(GPL,
@@ -720,6 +726,84 @@ void NesterovPlace::routabilitySnapshot(
                       timing_driven_count));
     }
   }
+}
+
+// Real bounding-box wirelength straight off the database, split into the nets
+// that reach an IO pin and the rest. The solve's own figure is a smooth
+// approximation over its own coordinates, so this is what says whether a
+// projection cost anything and whether the pins bought the cells anything.
+void NesterovPlace::reportDbHpwl(const char* tag, int iter)
+{
+  if (!log_->debugCheck(GPL, "place_ios_diag", 1)) {
+    return;
+  }
+  odb::dbBlock* block = pbc_->db()->getChip()->getBlock();
+  const odb::WireLengthEvaluator eval(block);
+  int64_t io = 0;
+  int64_t internal = 0;
+  for (odb::dbNet* net : block->getNets()) {
+    int64_t x = 0;
+    int64_t y = 0;
+    const int64_t wl = eval.hpwl(net, x, y);
+    if (net->getBTerms().empty()) {
+      internal += wl;
+    } else {
+      io += wl;
+    }
+  }
+  debugPrint(log_,
+             GPL,
+             "place_ios_diag",
+             1,
+             "db hpwl iter {} {}: total {:.1f} io {:.1f} internal {:.1f}",
+             iter,
+             tag,
+             block->dbuToMicrons(io + internal),
+             block->dbuToMicrons(io),
+             block->dbuToMicrons(internal));
+}
+
+// Hand the pins to the pin placer and take the assignment as the solve's own,
+// so what the cells settle against, what the resizer sizes against and what the
+// flow finally gets are the same positions. set_io_pin_placement holds what
+// they are to be placed with, so none of it is stated here a second time. The
+// caller pushes the solve's coordinates to the database first: ppl reads the
+// cells from there, and re-pushing them walks every instance.
+bool NesterovPlace::legalizeIoPins(int iter)
+{
+  if (!nbVec_[0]->hasIoPins() || pin_placer_ == nullptr
+      || pin_placer_->getHorLayers().empty()
+      || pin_placer_->getVerLayers().empty()) {
+    return false;
+  }
+  if (pin_placer_->getParameters()->getAnnealing()) {
+    pin_placer_->runAnnealing();
+  } else {
+    pin_placer_->runHungarianMatching();
+  }
+  reportDbHpwl("ppl", iter);
+  for (auto& nb : nbVec_) {
+    nb->adoptIoPinsFromDb();
+  }
+  return true;
+}
+
+// The wirelength gradient alone lets pins overlap, and the cells then settle
+// against positions place_pins cannot honour. Project onto ppl's slot grid
+// often enough that the cells only ever see legal pin locations.
+void NesterovPlace::runIoProjection(int iter)
+{
+  // Not at iteration 0: the cells are still where the initial place left them,
+  // so ppl would assign the pins against a placement that says nothing yet, and
+  // adopting that is a large enough jolt to cost a small design its step length
+  // (sky130hd/gcd diverged with GPL-0305).
+  if (npVars_.placeIosLegalizeEvery <= 0 || iter <= 0
+      || iter % npVars_.placeIosLegalizeEvery != 0) {
+    return;
+  }
+  updateDb();
+  reportDbHpwl("solve", iter);
+  legalizeIoPins(iter);
 }
 
 void NesterovPlace::runRoutability(int iter,
@@ -1129,6 +1213,8 @@ int NesterovPlace::doNesterovPlace(int start_iter)
       ++npVars_.maxNesterovIter;
     }
 
+    runIoProjection(nesterov_iter);
+
     runTimingDriven(nesterov_iter,
                     timing_driven_dir,
                     routability_driven_revert_count,
@@ -1183,6 +1269,13 @@ int NesterovPlace::doNesterovPlace(int start_iter)
   // In all case, including divergence, the db should be updated.
   updateDb();
 
+  // The pins the cells last settled against are the ones the flow gets: assign
+  // them here rather than leaving the caller to run place_pins afterwards.
+  // Skipped on divergence, where the placement is being abandoned anyway.
+  if (num_region_diverged_ == 0) {
+    legalizeIoPins(nesterov_iter);
+  }
+
   if (num_region_diverged_ > 0) {
     log_->error(GPL, divergeCode_, divergeMsg_);
   }
@@ -1233,6 +1326,7 @@ void NesterovPlace::updateNextIter(int iter)
 
   for (auto& nb : nbVec_) {
     nb->updateNextIter(iter);
+    nb->reportIoDiagnostics(iter);
     total_sum_overflow_ += nb->getSumOverflow();
     total_sum_overflow_unscaled_ += nb->getSumOverflowUnscaled();
   }

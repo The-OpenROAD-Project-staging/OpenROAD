@@ -67,7 +67,7 @@ static int64_t getOverlapArea(const Bin* bin,
 
 static float getDistance(const std::vector<FloatPoint>& a,
                          const std::vector<FloatPoint>& b,
-                         const std::vector<size_t>& skip_indices);
+                         const std::vector<GCellHandle>& gcells);
 
 static float getSecondNorm(const std::vector<FloatPoint>& a);
 
@@ -1192,6 +1192,7 @@ NesterovPlaceVars::NesterovPlaceVars(const PlaceOptions& options)
       routability_end_overflow(options.routabilityCheckOverflow),
       routability_snapshot_overflow(options.routabilitySnapshotOverflow),
       keepResizeBelowOverflow(options.keepResizeBelowOverflow),
+      placeIosLegalizeEvery(options.placeIosLegalizeEvery),
       timingDrivenMode(options.timingDrivenMode),
       timingDrivenRepairTiming(options.timingDrivenRepairTiming),
       timingDrivenRepairTnsEndPercent(options.timingDrivenRepairTnsEndPercent),
@@ -2534,36 +2535,15 @@ void NesterovBase::initFillerGCells()
 
 // A pin's location lives in its bpin box and dbBox::create() needs a layer.
 // place_pins will rebuild every bpin on the layer of the slot it assigns.
+//
+// The caller can name the layers place_pins will use. That matters beyond the
+// shape: the mid-solve legalization builds ppl's slot grid on these layers and
+// initIoSlotPitch() reads their track pitch, so guessing the lowest routing
+// layer models a slot grid the pins will never sit on.
 void NesterovBase::pickIoPinDummyLayers()
 {
-  io_hor_layer_ = nullptr;
-  io_ver_layer_ = nullptr;
-  odb::dbTech* tech = pb_->db()->getTech();
-  if (tech != nullptr) {
-    for (odb::dbTechLayer* layer : tech->getLayers()) {
-      if (layer->getRoutingLevel() == 0) {
-        continue;  // not a routing layer
-      }
-      const odb::dbTechLayerDir dir = layer->getDirection();
-      if (dir == odb::dbTechLayerDir::HORIZONTAL && io_hor_layer_ == nullptr) {
-        io_hor_layer_ = layer;
-      } else if (dir == odb::dbTechLayerDir::VERTICAL
-                 && io_ver_layer_ == nullptr) {
-        io_ver_layer_ = layer;
-      }
-    }
-  }
-  if (io_hor_layer_ != nullptr && io_ver_layer_ != nullptr) {
-    return;
-  }
-
-  log_->error(
-      GPL,
-      174,
-      "Concurrent IO placement: the design has no horizontal and "
-      "vertical routing layers, so there is nowhere to write the solved "
-      "IO pin locations. Read a technology with routing layers, or drop "
-      "-place_ios.");
+  io_hor_layer_ = nbVars_.placeIosHorLayer;
+  io_ver_layer_ = nbVars_.placeIosVerLayer;
 }
 
 // A 2D up: region names a position on the define_pin_shape_pattern grid, so
@@ -2603,13 +2583,22 @@ void NesterovBase::initIoPinGCells()
 
   // Keep fixed ports as anchors, as in the sequential flow.
   std::vector<odb::dbBTerm*> movable_bterms;
+  std::vector<odb::dbBTerm*> unmodeled_bterms;
   int already_placed = 0;
   for (odb::dbBTerm* bterm : block->getBTerms()) {
-    // Exclude ports without a GPin; they have no wirelength gradient.
-    if (nbc_->dbToNb(bterm) == nullptr) {
+    if (bterm->getFirstPinPlacementStatus().isFixed()) {
       continue;
     }
-    if (bterm->getFirstPinPlacementStatus().isFixed()) {
+    // A port without a GPin has no wirelength gradient, so the solve cannot
+    // move it. It still needs a position: the routability loop routes the
+    // design mid-solve and grt rejects an unplaced pin (GRT-11). Power and
+    // ground stay out of it, their shapes belong to pdn.
+    if (nbc_->dbToNb(bterm) == nullptr) {
+      odb::dbNet* net = bterm->getNet();
+      if (net != nullptr && !net->isSpecial() && !net->getSigType().isSupply()
+          && !bterm->getFirstPinPlacementStatus().isPlaced()) {
+        unmodeled_bterms.push_back(bterm);
+      }
       continue;
     }
     if (bterm->getFirstPinPlacementStatus().isPlaced()) {
@@ -2699,6 +2688,8 @@ void NesterovBase::initIoPinGCells()
   // Initialize constraints before seeding.
   initIoConstraints();
 
+  seedUnmodeledIoPins(unmodeled_bterms);
+
   // Followers are derived after their masters are placed.
   for (size_t i = 0; i < ioPinStor_.size(); ++i) {
     if (!isMirrorFollower(i)) {
@@ -2715,12 +2706,60 @@ void NesterovBase::initIoPinGCells()
     follower->setDensityCenterLocation(fpos.x, fpos.y);
   }
 
+  initIoSlotPitch();
+
   log_->info(GPL,
              171,
              "Concurrent IO placement: {} movable IO pins seeded "
              "({} mirror pairs).",
              ioPinStor_.size(),
              io_mirror_pairs_.size());
+}
+
+// Spread the ports the solve does not model evenly over the free perimeter.
+// They stay there for the whole solve; place_pins assigns their final slot the
+// same way it does for the solved ones.
+void NesterovBase::seedUnmodeledIoPins(const std::vector<odb::dbBTerm*>& bterms)
+{
+  if (bterms.empty() || io_free_segments_.empty()) {
+    return;
+  }
+  float perimeter = 0;
+  for (const PerimSegment& seg : io_free_segments_) {
+    perimeter += seg.hi - seg.lo;
+  }
+
+  for (size_t i = 0; i < bterms.size(); ++i) {
+    float offset = perimeter * (i + 0.5f) / bterms.size();
+    const PerimSegment* seg = &io_free_segments_.back();
+    for (const PerimSegment& candidate : io_free_segments_) {
+      const float length = candidate.hi - candidate.lo;
+      if (offset <= length) {
+        seg = &candidate;
+        break;
+      }
+      offset -= length;
+    }
+    // projectOntoSegment keeps the coordinate along the edge and pins the
+    // other one to the die boundary, so both arguments carry the offset.
+    const FloatPoint p
+        = projectOntoSegment(*seg, seg->lo + offset, seg->lo + offset);
+    odb::dbTechLayer* layer
+        = isHorizontalEdge(seg->edge) ? io_ver_layer_ : io_hor_layer_;
+    const int half = static_cast<int>(layer->getWidth()) / 2;
+    writeIoPinShape(bterms[i],
+                    static_cast<int>(p.x),
+                    static_cast<int>(p.y),
+                    layer,
+                    half,
+                    half);
+  }
+
+  log_->info(GPL,
+             186,
+             "Concurrent IO placement: {} ports carry no wirelength gradient "
+             "and were spread over the free perimeter.",
+             bterms.size());
 }
 
 void NesterovBase::seedIoPinGCell(size_t io_index)
@@ -3074,6 +3113,284 @@ void NesterovBase::applyMirrorConstraints(std::vector<FloatPoint>& coordi) const
   }
 }
 
+// The slot grid ppl will place the pins on: tracks of the pin layer, thinned
+// by the spacing place_pins will be run with, clear of the corners.
+void NesterovBase::initIoSlotPitch()
+{
+  io_edge_slots_ = {};
+  if (ioPinStor_.empty()) {
+    return;
+  }
+  odb::dbBlock* block = pb_->db()->getChip()->getBlock();
+  const Die& die = pb_->getDie();
+  const int kTracksPerPin = std::max(1, nbVars_.placeIosMinDistanceTracks);
+
+  // The track grid gives the pitch and the origin straight out, averaged over
+  // multiple track patterns; walking an expanded coordinate list instead reads
+  // the first pattern's step and then strides across all of them.
+  auto edge_slots
+      = [&](odb::dbTechLayer* layer, bool horizontal_edge) -> EdgeSlots {
+    EdgeSlots out;
+    if (layer == nullptr) {
+      return out;
+    }
+    odb::dbTrackGrid* grid = block->findTrackGrid(layer);
+    if (grid == nullptr
+        || (horizontal_edge ? grid->getNumGridPatternsX()
+                            : grid->getNumGridPatternsY())
+               == 0) {
+      return out;
+    }
+    int step = 0;
+    int origin = 0;
+    int count = 0;
+    grid->getAverageTrackSpacing(step, origin, count);
+    if (step <= 0 || count < 2) {
+      return out;
+    }
+    const float die_lo = horizontal_edge ? die.dieLx() : die.dieLy();
+    const float die_hi = horizontal_edge ? die.dieUx() : die.dieUy();
+    // ppl keeps 15 tracks clear of each corner, capped at a micron, unless it
+    // was told otherwise.
+    const float corner
+        = nbVars_.placeIosCornerAvoidance >= 0
+              ? static_cast<float>(nbVars_.placeIosCornerAvoidance)
+              : std::min<float>(15.0f * step,
+                                static_cast<float>(block->micronsToDbu(1.0)));
+    out.pitch = static_cast<float>(step) * kTracksPerPin;
+    const int64_t first = std::max<int64_t>(
+        0,
+        static_cast<int64_t>(
+            std::ceil((die_lo + corner - origin) / out.pitch)));
+    const int64_t last = std::min<int64_t>(
+        static_cast<int64_t>(
+            std::floor((die_hi - corner - origin) / out.pitch)),
+        (count - 1) / kTracksPerPin);
+    if (last < first) {
+      return {};
+    }
+    out.lo = origin + first * out.pitch;
+    out.hi = origin + last * out.pitch;
+    return out;
+  };
+
+  // ppl's convention: a horizontal die edge carries vertical-layer pins.
+  const EdgeSlots along_x = edge_slots(io_ver_layer_, true);
+  const EdgeSlots along_y = edge_slots(io_hor_layer_, false);
+  io_edge_slots_[static_cast<size_t>(DieEdge::kLeft)] = along_y;
+  io_edge_slots_[static_cast<size_t>(DieEdge::kRight)] = along_y;
+  io_edge_slots_[static_cast<size_t>(DieEdge::kBottom)] = along_x;
+  io_edge_slots_[static_cast<size_t>(DieEdge::kTop)] = along_x;
+
+  // A pin the projection never separates is a pin that can stack, and the only
+  // sign of it would be place_pins moving it at the end.
+  if (along_x.pitch <= 0 || along_y.pitch <= 0) {
+    log_->warn(GPL,
+               190,
+               "Concurrent IO placement: no usable slot grid on {}; the pins "
+               "on those edges are not held apart.",
+               along_x.pitch <= 0 ? "the horizontal die edges"
+                                  : "the vertical die edges");
+  }
+}
+
+// Move pins[i..j] to the nearest arrangement that keeps every neighbour a slot
+// pitch apart and stays inside [lo, hi]. Substituting z_r = y_r - r * pitch
+// turns the spacing constraint into z non-decreasing, which is isotonic
+// regression: pool adjacent violators, in one pass, exactly.
+static void poolAdjacentViolators(std::vector<float>& z,
+                                  std::vector<std::pair<double, int>>& blocks,
+                                  float lo,
+                                  float hi)
+{
+  // Blocks of pooled entries, each held as (mean, count). Bounds are applied
+  // to the fit, not to its input: with the same bound on every entry the
+  // projection is the clamped isotonic fit, and clamping first would pull a
+  // pin's neighbours toward a value the fit never had.
+  blocks.clear();
+  blocks.reserve(z.size());
+  for (const float v : z) {
+    blocks.emplace_back(v, 1);
+    while (blocks.size() > 1) {
+      auto& last = blocks[blocks.size() - 1];
+      auto& prev = blocks[blocks.size() - 2];
+      if (prev.first <= last.first) {
+        break;
+      }
+      const int count = prev.second + last.second;
+      prev = {(prev.first * prev.second + last.first * last.second) / count,
+              count};
+      blocks.pop_back();
+    }
+  }
+  size_t r = 0;
+  for (const auto& [mean, count] : blocks) {
+    const float fit = std::clamp(static_cast<float>(mean), lo, hi);
+    for (int k = 0; k < count; ++k) {
+      z[r++] = fit;
+    }
+  }
+}
+
+// A pin position the solve reaches by a gradient step can put two pins in one
+// slot, and the cells then optimize against an arrangement place_pins cannot
+// reproduce. Project the step back onto the legal set instead of penalizing it:
+// the pins keep their order, so the closest legal arrangement is exact and
+// costs one pass over each edge.
+void NesterovBase::separateIoPins(std::vector<FloatPoint>& coordi)
+{
+  if (ioPinStor_.empty()) {
+    return;
+  }
+  for (auto& edge_pins : io_edge_pins_) {
+    edge_pins.clear();
+  }
+  for (size_t i = 0; i < ioPinStor_.size(); ++i) {
+    if (isMirrorFollower(i) || isIoBoxConstrained(i)) {
+      continue;
+    }
+    const size_t k = ioNbPos(i);
+    const DieEdge edge = ioEdgeOnLocus(i, coordi[k].x, coordi[k].y);
+    const size_t e = static_cast<size_t>(edge);
+    if (io_edge_slots_[e].pitch <= 0) {
+      continue;
+    }
+    io_edge_pins_[e].emplace_back(
+        isHorizontalEdge(edge) ? coordi[k].x : coordi[k].y, i);
+  }
+
+  for (size_t e = 0; e < 4; ++e) {
+    std::vector<std::pair<float, size_t>>& pins = io_edge_pins_[e];
+    if (pins.size() < 2) {
+      continue;
+    }
+    const EdgeSlots& edge_slots = io_edge_slots_[e];
+    const float pitch = edge_slots.pitch;
+    const float span = (pins.size() - 1) * pitch;
+    if (edge_slots.hi - edge_slots.lo < span) {
+      // More pins than the edge can hold: ppl will error on this design, so
+      // leave the positions alone rather than pile them at one end.
+      continue;
+    }
+    std::ranges::sort(pins);
+    std::vector<float>& z = io_edge_fit_;
+    z.resize(pins.size());
+    for (size_t r = 0; r < pins.size(); ++r) {
+      z[r] = pins[r].first - r * pitch;
+    }
+    poolAdjacentViolators(
+        z, io_edge_blocks_, edge_slots.lo, edge_slots.hi - span);
+    const bool horizontal = isHorizontalEdge(static_cast<DieEdge>(e));
+    for (size_t r = 0; r < pins.size(); ++r) {
+      const size_t io_i = pins[r].second;
+      const size_t k = ioNbPos(io_i);
+      const float pos = z[r] + r * pitch;
+      FloatPoint p = coordi[k];
+      if (horizontal) {
+        p.x = pos;
+      } else {
+        p.y = pos;
+      }
+      // Spacing is a preference; the pin's own locus is not. A constrained pin
+      // whose region is narrower than its share of the edge goes back on the
+      // locus and lets ppl settle the overlap.
+      coordi[k] = projectIoPin(io_i, p.x, p.y);
+    }
+  }
+}
+
+// One line per iteration under "place_ios_diag": what separates a run that
+// converges from one that does not shows up as a ratio between how far the
+// cells and the pins travel, and between the gradients that moved them. The
+// step length and the penalty multiplier are already printed by the
+// "getStepLength" group and the iteration table.
+void NesterovBase::reportIoDiagnostics(int iter)
+{
+  if (!log_->debugCheck(GPL, "place_ios_diag", 1) || ioPinStor_.empty()) {
+    return;
+  }
+  double cell_dgrad = 0, cell_sgrad = 0, cell_disp = 0, cell_disp_max = 0;
+  size_t cell_n = 0;
+  double pin_sgrad = 0, pin_disp = 0, pin_disp_max = 0;
+  size_t pin_n = 0;
+  for (size_t i = 0; i < nb_gcells_.size(); ++i) {
+    const float dx = curSLPCoordi_[i].x - prevSLPCoordi_[i].x;
+    const float dy = curSLPCoordi_[i].y - prevSLPCoordi_[i].y;
+    const double disp = std::hypot(dx, dy);
+    const double sgrad = std::hypot(curSLPSumGrads_[i].x, curSLPSumGrads_[i].y);
+    if (nb_gcells_[i]->isIOPin()) {
+      pin_sgrad += sgrad;
+      pin_disp += disp;
+      pin_disp_max = std::max(pin_disp_max, disp);
+      ++pin_n;
+    } else {
+      cell_dgrad
+          += std::hypot(curSLPDensityGrads_[i].x, curSLPDensityGrads_[i].y);
+      cell_sgrad += sgrad;
+      cell_disp += disp;
+      cell_disp_max = std::max(cell_disp_max, disp);
+      ++cell_n;
+    }
+  }
+  const auto mean = [](double sum, size_t n) { return n ? sum / n : 0.0; };
+  debugPrint(log_,
+             GPL,
+             "place_ios_diag",
+             1,
+             "iter {} | cell dgrad {:.3e} sgrad {:.3e} disp {:.3e}/{:.3e} | "
+             "pin sgrad {:.3e} disp {:.3e}/{:.3e}",
+             iter,
+             mean(cell_dgrad, cell_n),
+             mean(cell_sgrad, cell_n),
+             mean(cell_disp, cell_n),
+             cell_disp_max,
+             mean(pin_sgrad, pin_n),
+             mean(pin_disp, pin_n),
+             pin_disp_max);
+}
+
+// Take ppl's legalized positions as the solve's own. The pins stay variables,
+// so this is a projection onto the slot grid: the wirelength gradient moves
+// them freely, and this pulls them back to positions ppl can honour, which is
+// what the cells are optimized against.
+void NesterovBase::adoptIoPinsFromDb()
+{
+  if (ioPinStor_.empty()) {
+    return;
+  }
+  const bool trace = log_->debugCheck(GPL, "place_ios_diag", 1);
+  double jump = 0, jump_max = 0;
+  size_t jump_n = 0;
+  for (size_t i = 0; i < ioPinStor_.size(); ++i) {
+    GCell& io = ioPinStor_[i];
+    const odb::Rect bbox = io.getBTerm()->getBBox();
+    if (bbox.isInverted()) {
+      continue;
+    }
+    const FloatPoint p(bbox.xCenter(), bbox.yCenter());
+    if (trace) {
+      const double moved = std::hypot(p.x - io.dCx(), p.y - io.dCy());
+      jump += moved;
+      jump_max = std::max(jump_max, moved);
+      ++jump_n;
+    }
+    io.setCenterLocation(p.x, p.y);
+    io.setDensityCenterLocation(p.x, p.y);
+    io_last_written_pos_[i] = odb::Point(bbox.xCenter(), bbox.yCenter());
+    const size_t k = ioNbPos(i);
+    curCoordi_[k] = curSLPCoordi_[k] = prevSLPCoordi_[k] = p;
+    nextCoordi_[k] = nextSLPCoordi_[k] = p;
+  }
+  debugPrint(log_,
+             GPL,
+             "place_ios_diag",
+             1,
+             "projection moved {} pins, mean {:.3e} max {:.3e}",
+             jump_n,
+             jump_n ? jump / jump_n : 0.0,
+             jump_max);
+}
+
 void NesterovBase::updateDbIoPins()
 {
   if (ioPinStor_.empty()) {
@@ -3103,22 +3420,32 @@ void NesterovBase::updateDbIoPins()
       half_w = io.dx() / 2;
       half_h = io.dy() / 2;
     }
-    const int min_half = static_cast<int>(layer->getWidth()) / 2;
-    half_w = std::max(half_w, min_half);
-    half_h = std::max(half_h, min_half);
-
-    // place_pins re-legalizes the pin, so only the center location
-    odb::dbSet<odb::dbBPin> bpins = bterm->getBPins();
-    for (auto it = bpins.begin(); it != bpins.end();) {
-      it = odb::dbBPin::destroy(it);
-    }
-
-    odb::dbBPin* bpin = odb::dbBPin::create(bterm);
-    odb::dbBox::create(
-        bpin, layer, cx - half_w, cy - half_h, cx + half_w, cy + half_h);
-    bpin->setPlacementStatus(odb::dbPlacementStatus::PLACED);
+    writeIoPinShape(bterm, cx, cy, layer, half_w, half_h);
     io_last_written_pos_[i] = odb::Point(cx, cy);
   }
+}
+
+void NesterovBase::writeIoPinShape(odb::dbBTerm* bterm,
+                                   int cx,
+                                   int cy,
+                                   odb::dbTechLayer* layer,
+                                   int half_w,
+                                   int half_h) const
+{
+  const int min_half = static_cast<int>(layer->getWidth()) / 2;
+  half_w = std::max(half_w, min_half);
+  half_h = std::max(half_h, min_half);
+
+  // place_pins re-legalizes the pin, so only the center location
+  odb::dbSet<odb::dbBPin> bpins = bterm->getBPins();
+  for (auto it = bpins.begin(); it != bpins.end();) {
+    it = odb::dbBPin::destroy(it);
+  }
+
+  odb::dbBPin* bpin = odb::dbBPin::create(bterm);
+  odb::dbBox::create(
+      bpin, layer, cx - half_w, cy - half_h, cx + half_w, cy + half_h);
+  bpin->setPlacementStatus(odb::dbPlacementStatus::PLACED);
 }
 
 NesterovBase::~NesterovBase() = default;
@@ -3760,10 +4087,8 @@ float NesterovBase::getStepLength(
 
   // IO pin GCells only slide along the perimeter, so letting them into the
   // norm would distort the step length.
-  coordiDistance_
-      = getDistance(prevSLPCoordi_, curSLPCoordi_, io_stor_index_to_nb_index_);
-  gradDistance_ = getDistance(
-      prevSLPSumGrads_, curSLPSumGrads_, io_stor_index_to_nb_index_);
+  coordiDistance_ = getDistance(prevSLPCoordi_, curSLPCoordi_, nb_gcells_);
+  gradDistance_ = getDistance(prevSLPSumGrads_, curSLPSumGrads_, nb_gcells_);
   debugPrint(log_,
              GPL,
              "getStepLength",
@@ -3881,7 +4206,9 @@ void NesterovBase::updateGradients(std::vector<FloatPoint>& sumGrads,
         sumGrads[i] = FloatPoint(0, 0);
         continue;
       }
-      // IO pins use wirelength gradients only.
+      // A pin has no 2-D density force: it is pinned to the perimeter, and the
+      // slot spacing it does have to respect is enforced by projecting the step
+      // rather than by a term here, so nothing scales against the cells.
       densityGrads[i] = FloatPoint(0, 0);
       sumGrads[i] = wireLengthGrads[i];
 
@@ -4093,6 +4420,10 @@ void NesterovBase::updateInitialPrevSLPCoordi()
     prevSLPCoordi_[i] = newCoordi;
   }
 
+  // No spacing pass here. This is not a placement the solve ever visits; it is
+  // the reference point the first step length is estimated against, and
+  // separating the pins in it moves that estimate and the whole trajectory
+  // with it -- on nangate45/bp_be it cost 1.3% of total wirelength.
   applyMirrorConstraints(prevSLPCoordi_);
 }
 
@@ -4253,7 +4584,6 @@ void NesterovBase::updateNextIter(const int iter)
   debugPrint(log_, GPL, "updateNextIter", 1, "Phi: {:g}", getSumPhi());
   debugPrint(
       log_, GPL, "updateNextIter", 1, "Overflow: {:g}", sum_overflow_unscaled_);
-
   densityPenalty_ *= phiCoef;
   prev_hpwl_ = hpwl;
 
@@ -4361,6 +4691,9 @@ void NesterovBase::nesterovUpdateCoordinates(float coeff)
       nextSLPCoordi_[k] = projectIoPin(io_i, nextSLPCoordi.x, nextSLPCoordi.y);
     }
   }
+
+  separateIoPins(nextCoordi_);
+  separateIoPins(nextSLPCoordi_);
 
   applyMirrorConstraints(nextCoordi_);
   applyMirrorConstraints(nextSLPCoordi_);
@@ -5677,27 +6010,25 @@ static float fastExp(float exp)
   return exp;
 }
 
-// skip_indices holds the nb_gcells_ positions to leave out of the norm, in any
-// order. Subtracting them keeps the no-IO-pin path a plain loop over floats.
+// IO pins slide along the perimeter under a projection, not a gradient the
+// step length is fitted to, so they are left out of the norm.
 static float getDistance(const std::vector<FloatPoint>& a,
                          const std::vector<FloatPoint>& b,
-                         const std::vector<size_t>& skip_indices)
+                         const std::vector<GCellHandle>& gcells)
 {
   float sumDistance = 0.0f;
+  size_t n = 0;
   for (size_t i = 0; i < a.size(); i++) {
+    if (gcells[i]->isIOPin()) {
+      continue;
+    }
     sumDistance += (a[i].x - b[i].x) * (a[i].x - b[i].x);
     sumDistance += (a[i].y - b[i].y) * (a[i].y - b[i].y);
+    ++n;
   }
-  for (const size_t i : skip_indices) {
-    sumDistance -= (a[i].x - b[i].x) * (a[i].x - b[i].x);
-    sumDistance -= (a[i].y - b[i].y) * (a[i].y - b[i].y);
-  }
-
-  const size_t n = a.size() - skip_indices.size();
   if (n == 0) {
     return 0.0f;
   }
-
   return std::sqrt(sumDistance / (2.0 * n));
 }
 
