@@ -59,17 +59,26 @@ odb::dbTech* IOPlacer::getTech() const
   return db_->getTech();
 }
 
-void IOPlacer::clear()
+void IOPlacer::clearLayers()
 {
   hor_layers_.clear();
   ver_layers_.clear();
+}
+
+// A run's own state. The layers and the parameters are the caller's
+// configuration: wiping them here is what forced every caller to re-state them
+// on every call, and left set_pin_length and friends applying to the first run
+// only.
+void IOPlacer::clear()
+{
   zero_sink_ios_.clear();
   sections_.clear();
   slots_.clear();
   top_layer_slots_.clear();
   assignment_.clear();
   excluded_intervals_.clear();
-  *parms_ = Parameters();
+  // An output this run was asked for, not something to keep doing.
+  parms_->setPinPlacementFile("");
 }
 
 void IOPlacer::clearConstraints()

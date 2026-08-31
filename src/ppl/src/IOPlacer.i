@@ -205,6 +205,37 @@ set_min_distance_in_tracks(bool in_tracks)
   getIOPlacer()->getParameters()->setMinDistanceInTracks(in_tracks);
 }
 
+void
+set_annealing(bool annealing)
+{
+  getIOPlacer()->getParameters()->setAnnealing(annealing);
+}
+
+int
+get_min_distance()
+{
+  return getIOPlacer()->getParameters()->getMinDistance();
+}
+
+bool
+get_annealing()
+{
+  return getIOPlacer()->getParameters()->getAnnealing();
+}
+
+void
+clear_layers()
+{
+  getIOPlacer()->clearLayers();
+}
+
+int
+layer_count()
+{
+  return static_cast<int>(getIOPlacer()->getHorLayers().size()
+                          + getIOPlacer()->getVerLayers().size());
+}
+
 void set_pin_placement_file(const char* file_name)
 {
   getIOPlacer()->getParameters()->setPinPlacementFile(file_name);

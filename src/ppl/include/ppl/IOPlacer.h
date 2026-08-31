@@ -87,6 +87,11 @@ class IOPlacer
   int64 computeIONetsHPWL();
   void excludeInterval(Edge edge, int begin, int end);
   void addHorLayer(odb::dbTechLayer* layer);
+  // The layers a run will use, kept across runs so a caller other than
+  // place_pins can be configured once and then just run.
+  void clearLayers();
+  const std::set<int>& getHorLayers() const { return hor_layers_; }
+  const std::set<int>& getVerLayers() const { return ver_layers_; }
   void addVerLayer(odb::dbTechLayer* layer);
   void placePin(odb::dbBTerm* bterm,
                 odb::dbTechLayer* layer,

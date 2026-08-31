@@ -74,6 +74,9 @@ class Parameters
   }
   std::string getPinPlacementFile() const { return pin_placement_file_; }
 
+  void setAnnealing(bool annealing) { annealing_ = annealing; }
+  bool getAnnealing() const { return annealing_; }
+
  private:
   bool report_hpwl_ = false;
   int slots_per_section_ = 200;
@@ -88,6 +91,7 @@ class Parameters
   int min_dist_ = 0;
   bool distance_in_tracks_ = false;
   std::string pin_placement_file_;
+  bool annealing_ = false;
 };
 
 }  // namespace ppl

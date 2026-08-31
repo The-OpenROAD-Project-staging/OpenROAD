@@ -206,6 +206,79 @@ proc write_pin_placement { args } {
   ppl::write_pin_placement $file_name [info exists flags(-placed_status)]
 }
 
+sta::define_cmd_args "set_io_pin_placement" {[-hor_layers h_layers]\
+                                             [-ver_layers v_layers]\
+                                             [-corner_avoidance distance]\
+                                             [-min_distance min_dist]\
+                                             [-min_distance_in_tracks]\
+                                             [-annealing]
+}
+
+# How the pins are to be placed, kept until it is changed. place_pins takes the
+# same switches and overrides what it is given; a caller that runs the placer
+# without going through place_pins -- global_placement -place_ios -- has no
+# switches of its own and reads this.
+proc set_io_pin_placement { args } {
+  sta::parse_key_args "set_io_pin_placement" args \
+    keys {-hor_layers -ver_layers -corner_avoidance -min_distance} \
+    flags {-min_distance_in_tracks -annealing}
+
+  sta::check_argc_eq0 "set_io_pin_placement" $args
+
+  if { [info exists keys(-hor_layers)] || [info exists keys(-ver_layers)] } {
+    ppl::set_io_pin_layers [ppl::key_or_empty keys -hor_layers] \
+      [ppl::key_or_empty keys -ver_layers]
+  }
+  if { [info exists keys(-corner_avoidance)] } {
+    ppl::set_corner_avoidance [ord::microns_to_dbu $keys(-corner_avoidance)]
+  }
+  if { [info exists keys(-min_distance)] } {
+    if { [info exists flags(-min_distance_in_tracks)] } {
+      ppl::set_min_distance $keys(-min_distance)
+    } else {
+      ppl::set_min_distance [ord::microns_to_dbu $keys(-min_distance)]
+    }
+  }
+  ppl::set_min_distance_in_tracks [info exists flags(-min_distance_in_tracks)]
+  ppl::set_annealing [info exists flags(-annealing)]
+}
+
+namespace eval ppl {
+proc key_or_empty { array_name key } {
+  upvar 1 $array_name keys
+  if { [info exists keys($key)] } {
+    return $keys($key)
+  }
+  return {}
+}
+
+# Validating here rather than at each caller keeps one definition of what a
+# usable pin layer is.
+proc set_io_pin_layers { hor_layers ver_layers } {
+  ppl::clear_layers
+  foreach name $hor_layers {
+    set layer [ppl::parse_layer_name $name]
+    if { ![ord::db_layer_has_hor_tracks $layer] } {
+      utl::error PPL 21 "Horizontal routing tracks not found for layer $name."
+    }
+    if { [$layer getDirection] != "HORIZONTAL" } {
+      utl::error PPL 45 "Layer $name preferred direction is not horizontal."
+    }
+    ppl::add_hor_layer $layer
+  }
+  foreach name $ver_layers {
+    set layer [ppl::parse_layer_name $name]
+    if { ![ord::db_layer_has_ver_tracks $layer] } {
+      utl::error PPL 23 "Vertical routing tracks not found for layer $name."
+    }
+    if { [$layer getDirection] != "VERTICAL" } {
+      utl::error PPL 46 "Layer $name preferred direction is not vertical."
+    }
+    ppl::add_ver_layer $layer
+  }
+}
+}
+
 sta::define_cmd_args "place_pins" {[-hor_layers h_layers]\
                                   [-ver_layers v_layers]\
                                   [-random_seed seed]\
@@ -260,17 +333,6 @@ proc place_pins { args } {
 
     utl::report "Found [llength $blockages] macro blocks."
 
-    if { [info exists keys(-hor_layers)] } {
-      set hor_layers $keys(-hor_layers)
-    } else {
-      utl::error PPL 17 "-hor_layers is required."
-    }
-
-    if { [info exists keys(-ver_layers)] } {
-      set ver_layers $keys(-ver_layers)
-    } else {
-      utl::error PPL 18 "-ver_layers is required."
-    }
 
     # set default interval_length from boundaries as 1u
     set distance 1
@@ -288,12 +350,15 @@ proc place_pins { args } {
       } else {
         ppl::set_min_distance [ord::microns_to_dbu $min_dist]
       }
-    } else {
+      ppl::set_min_distance_in_tracks $dist_in_tracks
+    } elseif { [ppl::get_min_distance] == 0 } {
       utl::report "Using $min_dist tracks default min distance between IO pins."
       # setting min distance as 0u leads to the default min distance
       ppl::set_min_distance 0
+      ppl::set_min_distance_in_tracks $dist_in_tracks
+    } elseif { $dist_in_tracks } {
+      ppl::set_min_distance_in_tracks 1
     }
-    ppl::set_min_distance_in_tracks $dist_in_tracks
 
     set bterms_cnt [llength [$dbBlock getBTerms]]
 
@@ -301,44 +366,22 @@ proc place_pins { args } {
       utl::error PPL 19 "Design without pins."
     }
 
-
-    set num_tracks_y 0
-    foreach hor_layer_name $hor_layers {
-      set hor_layer [ppl::parse_layer_name $hor_layer_name]
-      if { ![ord::db_layer_has_hor_tracks $hor_layer] } {
-        utl::error PPL 21 "Horizontal routing tracks not found for layer $hor_layer_name."
+    # Either switch replaces whatever set_io_pin_placement stored; neither
+    # falls back to it.
+    if { [info exists keys(-hor_layers)] || [info exists keys(-ver_layers)] } {
+      if { ![info exists keys(-hor_layers)] } {
+        utl::error PPL 17 "-hor_layers is required."
       }
-
-      if { [$hor_layer getDirection] != "HORIZONTAL" } {
-        utl::error PPL 45 "Layer $hor_layer_name preferred direction is not horizontal."
+      if { ![info exists keys(-ver_layers)] } {
+        utl::error PPL 18 "-ver_layers is required."
       }
-
-      set hor_track_grid [$dbBlock findTrackGrid $hor_layer]
-
-      set num_tracks_y [expr $num_tracks_y+[llength [$hor_track_grid getGridY]]]
-
-      ppl::add_hor_layer $hor_layer
+      ppl::set_io_pin_layers $keys(-hor_layers) $keys(-ver_layers)
+    } elseif { [ppl::layer_count] == 0 } {
+      utl::error PPL 26 \
+        "No pin layers. Pass -hor_layers and -ver_layers, or set them with \
+set_io_pin_placement."
     }
 
-    set num_tracks_x 0
-    foreach ver_layer_name $ver_layers {
-      set ver_layer [ppl::parse_layer_name $ver_layer_name]
-      if { ![ord::db_layer_has_ver_tracks $ver_layer] } {
-        utl::error PPL 23 "Vertical routing tracks not found for layer $ver_layer_name."
-      }
-
-      if { [$ver_layer getDirection] != "VERTICAL" } {
-        utl::error PPL 46 "Layer $ver_layer_name preferred direction is not vertical."
-      }
-
-      set ver_track_grid [$dbBlock findTrackGrid $ver_layer]
-
-      set num_tracks_x [expr $num_tracks_x+[llength [$ver_track_grid getGridX]]]
-
-      ppl::add_ver_layer $ver_layer
-    }
-
-    set num_slots [expr (2*$num_tracks_x + 2*$num_tracks_y)/$min_dist]
 
     if { [llength $regions] != 0 } {
       set lef_units [$dbTech getLefUnits]
@@ -362,6 +405,9 @@ proc place_pins { args } {
     }
 
     if { [info exists flags(-annealing)] } {
+      ppl::set_annealing 1
+    }
+    if { [ppl::get_annealing] } {
       ppl::run_annealing
     } else {
       ppl::run_hungarian_matching
