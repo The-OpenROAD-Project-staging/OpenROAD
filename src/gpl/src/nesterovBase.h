@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -1280,11 +1281,8 @@ class NesterovBase
 
   // -place_ios: take ppl's legalized pin positions as the solve's own.
   void adoptIoPinsFromDb();
-  void separateIoPins(std::vector<FloatPoint>& coordi);
   void reportIoDiagnostics(int iter);
   bool hasIoPins() const { return !ioPinStor_.empty(); }
-  odb::dbTechLayer* getIoHorLayer() const { return io_hor_layer_; }
-  odb::dbTechLayer* getIoVerLayer() const { return io_ver_layer_; }
 
  private:
   NesterovBaseVars nbVars_;
@@ -1527,9 +1525,10 @@ class NesterovBase
   // interval, so these pins are clamped to the box instead of projected.
   std::vector<std::optional<odb::Rect>> io_box_constraints_;
 
+  void separateIoPins(std::vector<FloatPoint>& coordi);
   void initIoSlotPitch();
   void initIoPinGCells();
-  void pickIoPinDummyLayers();
+  void initIoPinLayers();
   void pickIoPinTopLayerGrid();
   void initIoConstraints();
   static std::vector<PerimSegment> mirrorSegments(

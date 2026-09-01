@@ -2540,7 +2540,7 @@ void NesterovBase::initFillerGCells()
 // shape: the mid-solve legalization builds ppl's slot grid on these layers and
 // initIoSlotPitch() reads their track pitch, so guessing the lowest routing
 // layer models a slot grid the pins will never sit on.
-void NesterovBase::pickIoPinDummyLayers()
+void NesterovBase::initIoPinLayers()
 {
   io_hor_layer_ = nbVars_.placeIosHorLayer;
   io_ver_layer_ = nbVars_.placeIosVerLayer;
@@ -2575,7 +2575,7 @@ void NesterovBase::initIoPinGCells()
     return;
   }
 
-  pickIoPinDummyLayers();
+  initIoPinLayers();
 
   odb::dbBlock* block = pb_->db()->getChip()->getBlock();
   const int dbu_per_micron = block->getDbUnitsPerMicron();
@@ -3186,7 +3186,7 @@ void NesterovBase::initIoSlotPitch()
   // sign of it would be place_pins moving it at the end.
   if (along_x.pitch <= 0 || along_y.pitch <= 0) {
     log_->warn(GPL,
-               190,
+               187,
                "Concurrent IO placement: no usable slot grid on {}; the pins "
                "on those edges are not held apart.",
                along_x.pitch <= 0 ? "the horizontal die edges"
@@ -4584,6 +4584,7 @@ void NesterovBase::updateNextIter(const int iter)
   debugPrint(log_, GPL, "updateNextIter", 1, "Phi: {:g}", getSumPhi());
   debugPrint(
       log_, GPL, "updateNextIter", 1, "Overflow: {:g}", sum_overflow_unscaled_);
+
   densityPenalty_ *= phiCoef;
   prev_hpwl_ = hpwl;
 

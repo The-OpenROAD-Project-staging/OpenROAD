@@ -87,12 +87,16 @@ class IOPlacer
   int64 computeIONetsHPWL();
   void excludeInterval(Edge edge, int begin, int end);
   void addHorLayer(odb::dbTechLayer* layer);
+  void addVerLayer(odb::dbTechLayer* layer);
   // The layers a run will use, kept across runs so a caller other than
   // place_pins can be configured once and then just run.
   void clearLayers();
+  void setPinPlacementFile(const std::string& file_name)
+  {
+    pin_placement_file_ = file_name;
+  }
   const std::set<int>& getHorLayers() const { return hor_layers_; }
   const std::set<int>& getVerLayers() const { return ver_layers_; }
-  void addVerLayer(odb::dbTechLayer* layer);
   void placePin(odb::dbBTerm* bterm,
                 odb::dbTechLayer* layer,
                 int x,
@@ -275,6 +279,7 @@ class IOPlacer
   std::vector<Slot> top_layer_slots_;
   std::vector<Section> sections_;
   std::vector<IOPin> zero_sink_ios_;
+  std::string pin_placement_file_;
   std::set<int> hor_layers_;
   std::set<int> ver_layers_;
   std::unique_ptr<odb::dbBlock::dbBTermTopLayerGrid> top_grid_;

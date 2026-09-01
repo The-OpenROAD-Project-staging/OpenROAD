@@ -187,6 +187,34 @@ set_pin_thick_multiplier
 | `-hor_multiplier` | The thickness multiplier for the horizontal pins. |
 | `-ver_multiplier` | The thickness multiplier for the vertical pins. |
 
+### Set IO Pin Placement
+
+The `set_io_pin_placement` command defines how the pins are to be placed. It is
+read by `place_pins`, which overrides whatever it is given switches for, and by
+`global_placement -place_ios`, which runs the pin placement itself and has no
+switches of its own.
+
+```tcl
+set_io_pin_placement
+    [-hor_layers h_layers]
+    [-ver_layers v_layers]
+    [-corner_avoidance distance]
+    [-min_distance min_dist]
+    [-min_distance_in_tracks]
+    [-annealing]
+```
+
+#### Options
+
+| Switch Name | Description |
+| ----- | ----- |
+| `-hor_layers` | The layers to create the metal shapes of the pins placed in horizontal tracks. It can be a single layer or a list of layer names. |
+| `-ver_layers` | The layers to create the metal shapes of the pins placed in vertical tracks. It can be a single layer or a list of layer names. |
+| `-corner_avoidance` | The distance in microns from each corner within which pins will be excluded from placement. The default value is `1` micron, or 15 tracks, whichever is smaller. |
+| `-min_distance` | The minimum distance between pins, in microns unless `-min_distance_in_tracks` is given. The default value is two routing tracks. |
+| `-min_distance_in_tracks` | Read `-min_distance` as a number of routing tracks. |
+| `-annealing` | Place the pins with simulated annealing instead of Hungarian matching. |
+
 ### Set Simulated Annealing
 
 The `set_simulated_annealing` command defines the parameters for simulated annealing pin placement.

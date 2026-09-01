@@ -225,9 +225,16 @@ proc set_io_pin_placement { args } {
 
   sta::check_argc_eq0 "set_io_pin_placement" $args
 
-  if { [info exists keys(-hor_layers)] || [info exists keys(-ver_layers)] } {
-    ppl::set_io_pin_layers [ppl::key_or_empty keys -hor_layers] \
-      [ppl::key_or_empty keys -ver_layers]
+  set hor_layers {}
+  set ver_layers {}
+  if { [info exists keys(-hor_layers)] } {
+    set hor_layers $keys(-hor_layers)
+  }
+  if { [info exists keys(-ver_layers)] } {
+    set ver_layers $keys(-ver_layers)
+  }
+  if { [llength $hor_layers] != 0 || [llength $ver_layers] != 0 } {
+    ppl::set_io_pin_layers $hor_layers $ver_layers
   }
   if { [info exists keys(-corner_avoidance)] } {
     ppl::set_corner_avoidance [ord::microns_to_dbu $keys(-corner_avoidance)]
@@ -241,42 +248,6 @@ proc set_io_pin_placement { args } {
   }
   ppl::set_min_distance_in_tracks [info exists flags(-min_distance_in_tracks)]
   ppl::set_annealing [info exists flags(-annealing)]
-}
-
-namespace eval ppl {
-proc key_or_empty { array_name key } {
-  upvar 1 $array_name keys
-  if { [info exists keys($key)] } {
-    return $keys($key)
-  }
-  return {}
-}
-
-# Validating here rather than at each caller keeps one definition of what a
-# usable pin layer is.
-proc set_io_pin_layers { hor_layers ver_layers } {
-  ppl::clear_layers
-  foreach name $hor_layers {
-    set layer [ppl::parse_layer_name $name]
-    if { ![ord::db_layer_has_hor_tracks $layer] } {
-      utl::error PPL 21 "Horizontal routing tracks not found for layer $name."
-    }
-    if { [$layer getDirection] != "HORIZONTAL" } {
-      utl::error PPL 45 "Layer $name preferred direction is not horizontal."
-    }
-    ppl::add_hor_layer $layer
-  }
-  foreach name $ver_layers {
-    set layer [ppl::parse_layer_name $name]
-    if { ![ord::db_layer_has_ver_tracks $layer] } {
-      utl::error PPL 23 "Vertical routing tracks not found for layer $name."
-    }
-    if { [$layer getDirection] != "VERTICAL" } {
-      utl::error PPL 46 "Layer $name preferred direction is not vertical."
-    }
-    ppl::add_ver_layer $layer
-  }
-}
 }
 
 sta::define_cmd_args "place_pins" {[-hor_layers h_layers]\
@@ -333,7 +304,6 @@ proc place_pins { args } {
 
     utl::report "Found [llength $blockages] macro blocks."
 
-
     # set default interval_length from boundaries as 1u
     set distance 1
     if { [info exists keys(-corner_avoidance)] } {
@@ -376,12 +346,11 @@ proc place_pins { args } {
         utl::error PPL 18 "-ver_layers is required."
       }
       ppl::set_io_pin_layers $keys(-hor_layers) $keys(-ver_layers)
-    } elseif { [ppl::layer_count] == 0 } {
+    } elseif { [ppl::get_layer_count] == 0 } {
       utl::error PPL 26 \
         "No pin layers. Pass -hor_layers and -ver_layers, or set them with \
 set_io_pin_placement."
     }
-
 
     if { [llength $regions] != 0 } {
       set lef_units [$dbTech getLefUnits]
@@ -416,6 +385,32 @@ set_io_pin_placement."
 }
 
 namespace eval ppl {
+# Validating here rather than at each caller keeps one definition of what a
+# usable pin layer is.
+proc set_io_pin_layers { hor_layers ver_layers } {
+  ppl::clear_layers
+  foreach name $hor_layers {
+    set layer [ppl::parse_layer_name $name]
+    if { ![ord::db_layer_has_hor_tracks $layer] } {
+      utl::error PPL 21 "Horizontal routing tracks not found for layer $name."
+    }
+    if { [$layer getDirection] != "HORIZONTAL" } {
+      utl::error PPL 45 "Layer $name preferred direction is not horizontal."
+    }
+    ppl::add_hor_layer $layer
+  }
+  foreach name $ver_layers {
+    set layer [ppl::parse_layer_name $name]
+    if { ![ord::db_layer_has_ver_tracks $layer] } {
+      utl::error PPL 23 "Vertical routing tracks not found for layer $name."
+    }
+    if { [$layer getDirection] != "VERTICAL" } {
+      utl::error PPL 46 "Layer $name preferred direction is not vertical."
+    }
+    ppl::add_ver_layer $layer
+  }
+}
+
 proc parse_edge { cmd edge } {
   if {
     $edge != "top" && $edge != "bottom" &&

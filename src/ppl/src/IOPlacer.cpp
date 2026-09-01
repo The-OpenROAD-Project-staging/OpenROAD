@@ -77,8 +77,6 @@ void IOPlacer::clear()
   top_layer_slots_.clear();
   assignment_.clear();
   excluded_intervals_.clear();
-  // An output this run was asked for, not something to keep doing.
-  parms_->setPinPlacementFile("");
 }
 
 void IOPlacer::clearConstraints()
@@ -2367,7 +2365,7 @@ void IOPlacer::runHungarianMatching()
 
   checkPinPlacement();
   commitIOPlacementToDB(assignment_);
-  writePinPlacement(parms_->getPinPlacementFile().c_str(), false);
+  writePinPlacement(pin_placement_file_.c_str(), false);
   clear();
 }
 
@@ -2451,7 +2449,7 @@ void IOPlacer::runAnnealing()
 
   checkPinPlacement();
   commitIOPlacementToDB(assignment_);
-  writePinPlacement(parms_->getPinPlacementFile().c_str(), false);
+  writePinPlacement(pin_placement_file_.c_str(), false);
   clear();
 }
 

@@ -176,8 +176,6 @@ class RouteBase
   int getRevertCount() const;
 
  private:
-  void updateDbForRoute();
-
   RouteBaseVars rbVars_;
   odb::dbDatabase* db_ = nullptr;
   grt::GlobalRouter* grouter_ = nullptr;
@@ -211,6 +209,7 @@ class RouteBase
   void init();
   void resetRoutabilityResources();
   void revertToMinCongestion();
+  void updateDbForRoute();
 
   // update revert_count_
   void increaseCounter();

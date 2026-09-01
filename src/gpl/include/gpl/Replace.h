@@ -178,6 +178,9 @@ class Replace
                          bool check_density);
   void checkHasCoreRows();
   void checkPlaceIosSupported(const PlaceOptions& options);
+  // Read the pin placer's configuration into the solve, so the slot grid it
+  // models is the one the assignment will really use.
+  void resolveIoPinPlacement(NesterovBaseVars& nbVars) const;
 
   odb::dbDatabase* db_ = nullptr;
   sta::dbSta* sta_ = nullptr;
@@ -185,10 +188,6 @@ class Replace
   grt::GlobalRouter* fr_ = nullptr;
   ppl::IOPlacer* pin_placer_ = nullptr;
   utl::Logger* log_ = nullptr;
-
-  // Read the pin placer's configuration into the solve, so the slot grid it
-  // models is the one the assignment will really use.
-  void resolveIoPinPlacement(NesterovBaseVars& nbVars) const;
 
   std::unique_ptr<AbstractGraphics> graphics_;
 

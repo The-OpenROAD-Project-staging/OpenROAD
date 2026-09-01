@@ -68,12 +68,6 @@ class Parameters
   }
   bool getMinDistanceInTracks() const { return distance_in_tracks_; }
 
-  void setPinPlacementFile(const char* file_name)
-  {
-    pin_placement_file_ = file_name;
-  }
-  std::string getPinPlacementFile() const { return pin_placement_file_; }
-
   void setAnnealing(bool annealing) { annealing_ = annealing; }
   bool getAnnealing() const { return annealing_; }
 
@@ -90,7 +84,6 @@ class Parameters
   int corner_avoidance_ = -1;
   int min_dist_ = 0;
   bool distance_in_tracks_ = false;
-  std::string pin_placement_file_;
   bool annealing_ = false;
 };
 

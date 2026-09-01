@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright (c) 2018-2025, The OpenROAD Authors
 
-// Debug controls: npinit, updateGrad, np, updateNextIter
+// Debug controls: npinit, updateGrad, np, updateNextIter, place_ios_diag
 
 #include "nesterovPlace.h"
 
@@ -788,10 +788,11 @@ bool NesterovPlace::legalizeIoPins(int iter)
   return true;
 }
 
-// The wirelength gradient alone lets pins overlap, and the cells then settle
-// against positions place_pins cannot honour. Project onto ppl's slot grid
-// often enough that the cells only ever see legal pin locations.
-void NesterovPlace::runIoProjection(int iter)
+// The per-step projection holds the pins a slot pitch apart but never reorders
+// them, so on its own the solve settles on an arrangement the pin placer would
+// not choose. Hand the pins over often enough that the cells are always
+// optimizing against an assignment ppl can reproduce.
+void NesterovPlace::runIoLegalization(int iter)
 {
   // Not at iteration 0: the cells are still where the initial place left them,
   // so ppl would assign the pins against a placement that says nothing yet, and
@@ -1213,7 +1214,7 @@ int NesterovPlace::doNesterovPlace(int start_iter)
       ++npVars_.maxNesterovIter;
     }
 
-    runIoProjection(nesterov_iter);
+    runIoLegalization(nesterov_iter);
 
     runTimingDriven(nesterov_iter,
                     timing_driven_dir,

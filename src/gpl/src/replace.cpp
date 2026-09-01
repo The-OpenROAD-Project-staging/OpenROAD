@@ -338,7 +338,10 @@ void Replace::resolveIoPinPlacement(NesterovBaseVars& nbVars) const
   }
 
   const ppl::Parameters* parms = pin_placer_->getParameters();
-  // ppl reads a min distance of 0 as "use my default of two tracks".
+  // ppl reads a min distance of 0 as "use my default of two tracks". A
+  // distance given in DBU instead is left at that default here: the solve only
+  // uses the pitch to hold the pins apart between assignments, and ppl still
+  // enforces the real spacing every time it runs.
   const int min_dist = parms->getMinDistance();
   nbVars.placeIosMinDistanceTracks
       = (min_dist > 0 && parms->getMinDistanceInTracks()) ? min_dist : 2;
@@ -593,7 +596,7 @@ void PlaceOptions::validate(utl::Logger* logger)
       "keep_resize_below_overflow", keepResizeBelowOverflow, 0.0f, 1.0f, 425);
 
   val.check_non_negative(
-      "place_ios_legalize_every", placeIosLegalizeEvery, 427);
+      "place_ios_legalize_every", placeIosLegalizeEvery, 426);
 }
 
 void PlaceOptions::skipIo()

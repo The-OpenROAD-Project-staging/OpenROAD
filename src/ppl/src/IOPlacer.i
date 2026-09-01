@@ -230,7 +230,7 @@ clear_layers()
 }
 
 int
-layer_count()
+get_layer_count()
 {
   return static_cast<int>(getIOPlacer()->getHorLayers().size()
                           + getIOPlacer()->getVerLayers().size());
@@ -238,7 +238,7 @@ layer_count()
 
 void set_pin_placement_file(const char* file_name)
 {
-  getIOPlacer()->getParameters()->setPinPlacementFile(file_name);
+  getIOPlacer()->setPinPlacementFile(file_name);
 }
 
 void

@@ -62,11 +62,6 @@ class NesterovPlace
 
   void updateDb();
 
-  // -place_ios: run the pin placer and take its assignment as the solve's own.
-  bool legalizeIoPins(int iter);
-  void runIoProjection(int iter);
-  void reportDbHpwl(const char* tag, int iter);
-
   void checkInvalidValues(float wireLengthGradSum, float densityGradSum);
 
   float getWireLengthCoefX() const { return wireLengthCoefX_; }
@@ -98,6 +93,10 @@ class NesterovPlace
                           int routability_driven_count,
                           int timing_driven_count,
                           bool& final_routability_image_saved);
+  // -place_ios: run the pin placer and take its assignment as the solve's own.
+  bool legalizeIoPins(int iter);
+  void runIoLegalization(int iter);
+  void reportDbHpwl(const char* tag, int iter);
   void runTimingDriven(int iter,
                        const std::string& timing_driven_dir,
                        int routability_driven_count,
