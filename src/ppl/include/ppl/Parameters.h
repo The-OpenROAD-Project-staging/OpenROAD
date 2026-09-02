@@ -71,6 +71,12 @@ class Parameters
   void setAnnealing(bool annealing) { annealing_ = annealing; }
   bool getAnnealing() const { return annealing_; }
 
+  void setMinimizeDisplacement(bool minimize)
+  {
+    minimize_displacement_ = minimize;
+  }
+  bool getMinimizeDisplacement() const { return minimize_displacement_; }
+
  private:
   bool report_hpwl_ = false;
   int slots_per_section_ = 200;
@@ -85,6 +91,7 @@ class Parameters
   int min_dist_ = 0;
   bool distance_in_tracks_ = false;
   bool annealing_ = false;
+  bool minimize_displacement_ = false;
 };
 
 }  // namespace ppl

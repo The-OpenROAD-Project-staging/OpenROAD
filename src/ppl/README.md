@@ -202,6 +202,7 @@ set_io_pin_placement
     [-min_distance min_dist]
     [-min_distance_in_tracks]
     [-annealing]
+    [-minimize_displacement]
 ```
 
 #### Options
@@ -214,6 +215,7 @@ set_io_pin_placement
 | `-min_distance` | The minimum distance between pins, in microns unless `-min_distance_in_tracks` is given. The default value is two routing tracks. |
 | `-min_distance_in_tracks` | Read `-min_distance` as a number of routing tracks. |
 | `-annealing` | Place the pins with simulated annealing instead of Hungarian matching. |
+| `-minimize_displacement` | Rank slots by how far they are from where each pin already is, rather than by the wirelength of its net. Use it to legalize a pin placement that is already optimized, as `global_placement -place_ios` leaves behind. With `-annealing` it only biases the search, which starts from a random assignment. |
 
 ### Set Simulated Annealing
 
@@ -298,6 +300,7 @@ place_pins
     [-exclude region]
     [-group_pins pin_list]
     [-annealing]
+    [-minimize_displacement]
     [-write_pin_placement file_name]
 ```
 
@@ -313,6 +316,7 @@ place_pins
 | `-exclude` | A region where pins cannot be placed. Either `top\|bottom\|left\|right:edge_interval`, which is the edge interval from the selected edge; `begin:end` for begin-end of all edges. |
 | `-group_pins` | A list of pins to be placed together on the die boundary. |
 | `-annealing` | Flag to enable simulated annealing pin placement. |
+| `-minimize_displacement` | Rank slots by how far they are from where each pin already is, rather than by the wirelength of its net. Use it to legalize a pin placement that is already optimized, as `global_placement -place_ios` leaves behind. With `-annealing` it only biases the search, which starts from a random assignment. |
 | `-write_pin_placement` | A file with the pin placement generated in the format of multiple calls for the `place_pin` command. |
 
 The `exclude` option syntax is `-exclude edge:interval`. The `edge` values are

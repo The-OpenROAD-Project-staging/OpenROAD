@@ -81,8 +81,10 @@ class IOPlacer
   ~IOPlacer();
   void clear();
   void clearConstraints();
-  void runHungarianMatching();
-  void runAnnealing();
+  // Ranking slots by displacement legalizes the placement the pins already
+  // have instead of optimizing wirelength over it.
+  void runHungarianMatching(bool minimize_displacement = false);
+  void runAnnealing(bool minimize_displacement = false);
   Parameters* getParameters() { return parms_.get(); }
   int64 computeIONetsHPWL();
   void excludeInterval(Edge edge, int begin, int end);

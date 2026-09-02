@@ -1293,15 +1293,15 @@ int IOPlacer::assignGroupToSection(const std::vector<int>& io_group,
       for (int pin_idx : io_group) {
         IOPin& pin = net->getIoPin(pin_idx);
         bool has_mirrored_pin = pin.getBTerm()->hasMirroredBTerm();
-        int pin_hpwl = net->computeIONetHPWL(pin_idx, sections[i].pos);
-        if (pin_hpwl == std::numeric_limits<int>::max()) {
-          dst[i] = pin_hpwl;
+        int pin_cost = net->computeIOCost(pin_idx, sections[i].pos);
+        if (pin_cost == std::numeric_limits<int>::max()) {
+          dst[i] = pin_cost;
           break;
         }
         const int mirrored_pin_cost = getMirroredPinCost(pin, sections[i].pos);
-        dst[i] += pin_hpwl + mirrored_pin_cost;
+        dst[i] += pin_cost + mirrored_pin_cost;
         if (has_mirrored_pin) {
-          larger_cost[i] += std::max(pin_hpwl, mirrored_pin_cost);
+          larger_cost[i] += std::max(pin_cost, mirrored_pin_cost);
         }
       }
       used_slots[i] = sections[i].used_slots;
@@ -1453,12 +1453,12 @@ bool IOPlacer::assignPinToSection(IOPin& io_pin,
     std::vector<int> used_slots(sections.size());
 
     for (int i = 0; i < sections.size(); i++) {
-      const int io_net_hpwl = netlist_->computeIONetHPWL(idx, sections[i].pos);
+      const int pin_cost = netlist_->computeIOCost(idx, sections[i].pos);
       const int mirrored_pin_cost = getMirroredPinCost(io_pin, sections[i].pos);
-      dst[i] = io_net_hpwl + mirrored_pin_cost;
+      dst[i] = pin_cost + mirrored_pin_cost;
 
       if (has_mirrored_pin) {
-        larger_cost[i] = std::max(io_net_hpwl, mirrored_pin_cost);
+        larger_cost[i] = std::max(pin_cost, mirrored_pin_cost);
         used_slots[i] = sections[i].used_slots;
       }
     }
@@ -1494,7 +1494,7 @@ int IOPlacer::getMirroredPinCost(IOPin& io_pin, const odb::Point& position)
 {
   if (io_pin.getBTerm()->hasMirroredBTerm()) {
     odb::Point mirrored_pos = core_->getMirroredPosition(position);
-    return netlist_->computeIONetHPWL(io_pin.getMirrorPinIdx(), mirrored_pos);
+    return netlist_->computeIOCost(io_pin.getMirrorPinIdx(), mirrored_pos);
   }
   return 0;
 }
@@ -1525,6 +1525,9 @@ void IOPlacer::printConfig(bool annealing)
   }
   if (!annealing) {
     logger_->info(PPL, 5, "Slots per section         {}", slots_per_section_);
+  }
+  if (netlist_->getMinimizeDisplacement()) {
+    logger_->info(PPL, 7, "Ranking slots by displacement, not by wirelength.");
   }
 }
 
@@ -2270,11 +2273,12 @@ void IOPlacer::updateSlots()
   }
 }
 
-void IOPlacer::runHungarianMatching()
+void IOPlacer::runHungarianMatching(bool minimize_displacement)
 {
   bool isPolygon = getBlock()->getDieAreaPolygon().getPoints().size() > 5;
 
   slots_per_section_ = parms_->getSlotsPerSection();
+  netlist_->setMinimizeDisplacement(minimize_displacement);
   initExcludedIntervals();
   initNetlistAndCore(hor_layers_, ver_layers_);
   getBlockedRegionsFromMacros();
@@ -2413,10 +2417,11 @@ void IOPlacer::setAnnealingDebugNoPauseMode(const bool no_pause_mode)
   ioplacer_renderer_->setIsNoPauseMode(no_pause_mode);
 }
 
-void IOPlacer::runAnnealing()
+void IOPlacer::runAnnealing(bool minimize_displacement)
 {
   bool isPolygon = getBlock()->getDieAreaPolygon().getPoints().size() > 5;
   slots_per_section_ = parms_->getSlotsPerSection();
+  netlist_->setMinimizeDisplacement(minimize_displacement);
   initExcludedIntervals();
   initNetlistAndCore(hor_layers_, ver_layers_);
   getBlockedRegionsFromMacros();
@@ -3119,10 +3124,13 @@ void IOPlacer::initNetlist()
 
   odb::dbSet<odb::dbBTerm> bterms = getBlock()->getBTerms();
 
+  int unplaced = 0;
   for (odb::dbBTerm* bterm : bterms) {
     int x_pos = 0;
     int y_pos = 0;
-    bterm->getFirstPinLocation(x_pos, y_pos);
+    if (!bterm->getFirstPinLocation(x_pos, y_pos)) {
+      ++unplaced;
+    }
     if (bterm->getFirstPinPlacementStatus().isFixed()) {
       for (odb::dbBPin* bterm_pin : bterm->getBPins()) {
         for (odb::dbBox* bpin_box : bterm_pin->getBoxes()) {
@@ -3183,6 +3191,16 @@ void IOPlacer::initNetlist()
     if (inst_pins.empty()) {
       zero_sink_ios_.push_back(io_pin);
     }
+  }
+
+  // A pin with no shape has no location either, so there is nothing to keep.
+  if (netlist_->getMinimizeDisplacement() && unplaced > 0) {
+    logger_->warn(PPL,
+                  16,
+                  "{} of {} IO pins have no placement to minimize the "
+                  "displacement from. They are measured from the die origin.",
+                  unplaced,
+                  bterms.size());
   }
 
   int group_idx = 0;

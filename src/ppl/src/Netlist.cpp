@@ -122,6 +122,18 @@ int Netlist::computeIONetHPWL(int idx, const odb::Point& slot_pos)
   return (x + y);
 }
 
+// What the placer ranks slots by. Minimizing displacement keeps a placement
+// the caller already optimized: global_placement -place_ios weighs the IO pins
+// by net timing, which the wirelength cost above cannot see.
+int Netlist::computeIOCost(int idx, const odb::Point& slot_pos)
+{
+  if (!minimize_displacement_) {
+    return computeIONetHPWL(idx, slot_pos);
+  }
+  const odb::Point& from = io_pins_[idx].getInitialPosition();
+  return std::abs(slot_pos.x() - from.x()) + std::abs(slot_pos.y() - from.y());
+}
+
 int Netlist::computeDstIOtoPins(int idx, const odb::Point& slot_pos)
 {
   int net_start = net_pointer_[idx];

@@ -158,9 +158,9 @@ add_ver_layer(odb::dbTechLayer* layer)
 }
 
 void
-run_hungarian_matching()
+run_hungarian_matching(bool minimize_displacement)
 {
-  getIOPlacer()->runHungarianMatching();
+  getIOPlacer()->runHungarianMatching(minimize_displacement);
 }
 
 void
@@ -209,6 +209,18 @@ void
 set_annealing(bool annealing)
 {
   getIOPlacer()->getParameters()->setAnnealing(annealing);
+}
+
+void
+set_minimize_displacement(bool minimize)
+{
+  getIOPlacer()->getParameters()->setMinimizeDisplacement(minimize);
+}
+
+bool
+get_minimize_displacement()
+{
+  return getIOPlacer()->getParameters()->getMinimizeDisplacement();
 }
 
 int
@@ -289,9 +301,9 @@ simulated_annealing_debug(int iters_between_paintings,
 }
 
 void
-run_annealing()
+run_annealing(bool minimize_displacement)
 {
-  getIOPlacer()->runAnnealing();
+  getIOPlacer()->runAnnealing(minimize_displacement);
 }
 
 void

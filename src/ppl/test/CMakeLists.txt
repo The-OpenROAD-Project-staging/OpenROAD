@@ -78,6 +78,7 @@ or_integration_tests(
     large_groups3
     large_groups4
     macro_not_placed
+    minimize_displacement
     min_dist_in_tracks1
     min_dist_in_tracks2
     multiple_calls

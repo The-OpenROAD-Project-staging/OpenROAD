@@ -69,11 +69,11 @@ void HungarianMatching::createMatrix()
         }
         hungarian_matrix_[slot_index].resize(num_io_pins_,
                                              std::numeric_limits<int>::max());
-        const int io_net_hpwl = netlist_->computeIONetHPWL(idx, slot_pos);
+        const int pin_cost = netlist_->computeIOCost(idx, slot_pos);
         const int mirrored_cost = getMirroredPinCost(io_pin, slot_pos);
-        const int hpwl = io_net_hpwl + mirrored_cost;
-        larger_costs.push_back(std::max(io_net_hpwl, mirrored_cost));
-        hungarian_matrix_[slot_index][pin_index] = hpwl;
+        const int cost = pin_cost + mirrored_cost;
+        larger_costs.push_back(std::max(pin_cost, mirrored_cost));
+        hungarian_matrix_[slot_index][pin_index] = cost;
         is_mirrored = is_mirrored || mirrored_cost != 0;
         slot_index++;
       }
@@ -81,11 +81,11 @@ void HungarianMatching::createMatrix()
       if (is_mirrored) {
         std::vector<uint8_t> rank = getTieBreakRank(larger_costs);
         for (int idx = 0; idx < slot_index; idx++) {
-          const int hpwl = hungarian_matrix_[idx][pin_index];
-          if ((hpwl >> 24) != 0) {
+          const int cost = hungarian_matrix_[idx][pin_index];
+          if ((cost >> 24) != 0) {
             logger_->critical(utl::PPL, 210, "Cost for pin exceeds 24 bits.");
           }
-          hungarian_matrix_[idx][pin_index] = (hpwl << 8) | rank[idx];
+          hungarian_matrix_[idx][pin_index] = (cost << 8) | rank[idx];
         }
       }
       pin_index++;
@@ -238,38 +238,38 @@ void HungarianMatching::createMatrixForGroups()
       bool is_mirrored = false;
       std::vector<int> larger_costs(valid_starting_slots_.size(), 0);
       for (int i : valid_starting_slots_) {
-        int group_hpwl = 0;
+        int group_cost = 0;
         for (const int io_idx : pins) {
           const odb::Point& slot_pos = slots_[i].pos;
 
           hungarian_matrix_[slot_index].resize(num_pin_groups_,
                                                std::numeric_limits<int>::max());
           IOPin& io_pin = netlist_->getIoPin(io_idx);
-          int pin_hpwl = netlist_->computeIONetHPWL(io_idx, slot_pos);
-          if (pin_hpwl == hungarian_fail_) {
-            group_hpwl = hungarian_fail_;
+          int pin_cost = netlist_->computeIOCost(io_idx, slot_pos);
+          if (pin_cost == hungarian_fail_) {
+            group_cost = hungarian_fail_;
             break;
           }
           const int mirrored_cost = getMirroredPinCost(io_pin, slot_pos);
-          group_hpwl += pin_hpwl + mirrored_cost;
-          larger_costs[slot_index] += std::max(pin_hpwl, mirrored_cost);
+          group_cost += pin_cost + mirrored_cost;
+          larger_costs[slot_index] += std::max(pin_cost, mirrored_cost);
           is_mirrored = is_mirrored || mirrored_cost != 0;
         }
         if (pins.size() > group_slot_capacity[slot_index]) {
-          group_hpwl = std::numeric_limits<int>::max();
+          group_cost = std::numeric_limits<int>::max();
         }
-        hungarian_matrix_[slot_index][group_index] = group_hpwl;
+        hungarian_matrix_[slot_index][group_index] = group_cost;
         slot_index++;
       }
 
       if (is_mirrored) {
         std::vector<uint8_t> rank = getTieBreakRank(larger_costs);
         for (int idx = 0; idx < slot_index; idx++) {
-          const int hpwl = hungarian_matrix_[idx][group_index];
-          if ((hpwl >> 24) != 0) {
+          const int cost = hungarian_matrix_[idx][group_index];
+          if ((cost >> 24) != 0) {
             logger_->critical(utl::PPL, 211, "Cost for pin exceeds 24 bits.");
           }
-          hungarian_matrix_[idx][group_index] = (hpwl << 8) | rank[idx];
+          hungarian_matrix_[idx][group_index] = (cost << 8) | rank[idx];
         }
       }
       group_index++;
@@ -379,7 +379,7 @@ int HungarianMatching::getMirroredPinCost(IOPin& io_pin,
 {
   if (io_pin.getBTerm()->hasMirroredBTerm()) {
     odb::Point mirrored_pos = core_->getMirroredPosition(position);
-    return netlist_->computeIONetHPWL(io_pin.getMirrorPinIdx(), mirrored_pos);
+    return netlist_->computeIOCost(io_pin.getMirrorPinIdx(), mirrored_pos);
   }
 
   return 0;

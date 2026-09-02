@@ -211,7 +211,8 @@ sta::define_cmd_args "set_io_pin_placement" {[-hor_layers h_layers]\
                                              [-corner_avoidance distance]\
                                              [-min_distance min_dist]\
                                              [-min_distance_in_tracks]\
-                                             [-annealing]
+                                             [-annealing]\
+                                             [-minimize_displacement]
 }
 
 # How the pins are to be placed, kept until it is changed. place_pins takes the
@@ -221,7 +222,7 @@ sta::define_cmd_args "set_io_pin_placement" {[-hor_layers h_layers]\
 proc set_io_pin_placement { args } {
   sta::parse_key_args "set_io_pin_placement" args \
     keys {-hor_layers -ver_layers -corner_avoidance -min_distance} \
-    flags {-min_distance_in_tracks -annealing}
+    flags {-min_distance_in_tracks -annealing -minimize_displacement}
 
   sta::check_argc_eq0 "set_io_pin_placement" $args
 
@@ -252,6 +253,9 @@ proc set_io_pin_placement { args } {
   if { [info exists flags(-annealing)] } {
     ppl::set_annealing 1
   }
+  if { [info exists flags(-minimize_displacement)] } {
+    ppl::set_minimize_displacement 1
+  }
 }
 
 sta::define_cmd_args "place_pins" {[-hor_layers h_layers]\
@@ -264,6 +268,7 @@ sta::define_cmd_args "place_pins" {[-hor_layers h_layers]\
                                   [-exclude region]\
                                   [-group_pins pin_list]\
                                   [-annealing] \
+                                  [-minimize_displacement] \
                                   [-write_pin_placement file_name]
 }
 
@@ -272,7 +277,7 @@ proc place_pins { args } {
   sta::parse_key_args "place_pins" args \
     keys {-hor_layers -ver_layers -random_seed -corner_avoidance \
           -min_distance -write_pin_placement} \
-    flags {-random -min_distance_in_tracks -annealing}
+    flags {-random -min_distance_in_tracks -annealing -minimize_displacement}
 
   sta::check_argc_eq0 "place_pins" $args
 
@@ -376,10 +381,14 @@ proc place_pins { args } {
       ppl::set_pin_placement_file $keys(-write_pin_placement)
     }
 
+    set minimize_displacement [expr {
+      [info exists flags(-minimize_displacement)]
+      || [ppl::get_minimize_displacement]
+    }]
     if { [info exists flags(-annealing)] || [ppl::get_annealing] } {
-      ppl::run_annealing
+      ppl::run_annealing $minimize_displacement
     } else {
-      ppl::run_hungarian_matching
+      ppl::run_hungarian_matching $minimize_displacement
     }
   }
 }
