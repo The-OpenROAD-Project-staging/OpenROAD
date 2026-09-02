@@ -83,6 +83,9 @@ def place_pins(
     if bterms_cnt == 0:
         utl.error(utl.PPL, 319, "Design without pins.")
 
+    # The placer keeps its layers between runs; this call sets its own.
+    design.getIOPlacer().clearLayers()
+
     num_tracks_y = 0
     for hor_layer_name in hor_layers.split():
         hor_layer = parse_layer_name(design, hor_layer_name)

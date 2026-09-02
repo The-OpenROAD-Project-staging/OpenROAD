@@ -67,7 +67,7 @@ static int64_t getOverlapArea(const Bin* bin,
 
 static float getDistance(const std::vector<FloatPoint>& a,
                          const std::vector<FloatPoint>& b,
-                         const std::vector<GCellHandle>& gcells);
+                         const std::vector<size_t>& skip_indices);
 
 static float getSecondNorm(const std::vector<FloatPoint>& a);
 
@@ -3215,8 +3215,10 @@ void NesterovBase::initIoSlotPitch()
                187,
                "Concurrent IO placement: no usable slot grid on {}; the pins "
                "on those edges are not held apart.",
-               along_x.pitch <= 0 ? "the horizontal die edges"
-                                  : "the vertical die edges");
+               (along_x.pitch <= 0 && along_y.pitch <= 0)
+                   ? "any die edge"
+                   : (along_x.pitch <= 0 ? "the horizontal die edges"
+                                         : "the vertical die edges"));
   }
 }
 
@@ -3292,9 +3294,19 @@ void NesterovBase::buildIoSlotArcs()
         arc.clear();
       }
       if (slots.pitch <= 0) {
+        // No slots to walk here, so the arc cannot carry on past this edge.
+        if (!arc.empty()) {
+          io_slot_arcs_.push_back(arc);
+          io_arc_cyclic_.push_back(false);
+          arc.clear();
+        }
         continue;
       }
-      const float lo = std::max(f_lo, slots.lo);
+      // The stretch starts where the free segment does, but a slot only
+      // exists on a track: step up to the first one inside it.
+      const float from = std::max(f_lo, slots.lo);
+      const float lo
+          = slots.lo + std::ceil((from - slots.lo) / slots.pitch) * slots.pitch;
       const float hi = std::min(f_hi, slots.hi);
       if (hi < lo) {
         continue;
@@ -4352,8 +4364,10 @@ float NesterovBase::getStepLength(
 
   // IO pin GCells only slide along the perimeter, so letting them into the
   // norm would distort the step length.
-  coordiDistance_ = getDistance(prevSLPCoordi_, curSLPCoordi_, nb_gcells_);
-  gradDistance_ = getDistance(prevSLPSumGrads_, curSLPSumGrads_, nb_gcells_);
+  coordiDistance_
+      = getDistance(prevSLPCoordi_, curSLPCoordi_, io_stor_index_to_nb_index_);
+  gradDistance_ = getDistance(
+      prevSLPSumGrads_, curSLPSumGrads_, io_stor_index_to_nb_index_);
   debugPrint(log_,
              GPL,
              "getStepLength",
@@ -6279,21 +6293,23 @@ static float fastExp(float exp)
 }
 
 // IO pins slide along the perimeter under a projection, not a gradient the
-// step length is fitted to, so they are left out of the norm.
+// step length is fitted to, so they are left out of the norm. skip_indices
+// holds their nb_gcells_ positions, in any order; subtracting them keeps the
+// no-IO-pin path a plain loop over floats.
 static float getDistance(const std::vector<FloatPoint>& a,
                          const std::vector<FloatPoint>& b,
-                         const std::vector<GCellHandle>& gcells)
+                         const std::vector<size_t>& skip_indices)
 {
-  float sumDistance = 0.0f;
-  size_t n = 0;
+  double sumDistance = 0;
   for (size_t i = 0; i < a.size(); i++) {
-    if (gcells[i]->isIOPin()) {
-      continue;
-    }
     sumDistance += (a[i].x - b[i].x) * (a[i].x - b[i].x);
     sumDistance += (a[i].y - b[i].y) * (a[i].y - b[i].y);
-    ++n;
   }
+  for (const size_t i : skip_indices) {
+    sumDistance -= (a[i].x - b[i].x) * (a[i].x - b[i].x);
+    sumDistance -= (a[i].y - b[i].y) * (a[i].y - b[i].y);
+  }
+  const size_t n = a.size() - skip_indices.size();
   if (n == 0) {
     return 0.0f;
   }

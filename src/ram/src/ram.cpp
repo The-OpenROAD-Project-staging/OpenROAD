@@ -26,6 +26,7 @@
 #include "ord/OpenRoad.hh"
 #include "pdn/PdnGen.hh"
 #include "ppl/IOPlacer.h"
+#include "ppl/Parameters.h"
 #include "ram/layout.h"
 #include "sta/ConcreteLibrary.hh"
 #include "sta/FuncExpr.hh"
@@ -1106,11 +1107,18 @@ void RamGen::ramPinplacer(const char* ver_name, const char* hor_name)
     block_->addBTermsToConstraint(inputs, right_constraint);
   }
 
+  // The pin placer keeps its layers and parameters between runs, so start
+  // from ours and give back what we borrow.
   auto pin_tech = block_->getDb()->getTech();
+  io_placer_->clearLayers();
   io_placer_->addHorLayer(pin_tech->findLayer(hor_name));
   io_placer_->addVerLayer(pin_tech->findLayer(ver_name));
-  io_placer_->getParameters()->setCornerAvoidance(0);
+  ppl::Parameters* parms = io_placer_->getParameters();
+  const int corner_avoidance = parms->getCornerAvoidance();
+  parms->setCornerAvoidance(0);
   io_placer_->runHungarianMatching();
+  parms->setCornerAvoidance(corner_avoidance);
+  io_placer_->clearLayers();
 }
 
 void RamGen::ramFiller(const vector<std::string>& filler_cells)

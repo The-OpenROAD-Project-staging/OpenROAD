@@ -301,11 +301,14 @@ void RouteBase::init()
   nbc_->resizeMinRcCellSize();
 }
 
+// The same write NesterovPlace::updateDb does, and it has to stay that way:
+// the router sees this iteration's cells and, under -place_ios, its pins.
 void RouteBase::updateDbForRoute()
 {
+  for (auto& nb : nbVec_) {
+    nb->pullCoordsFromDevice();
+  }
   nbc_->updateDbGCells();
-  // -place_ios keeps the IO pins in the solve, so the router must see the
-  // positions of this iteration, not the ones NesterovPlace last wrote.
   for (auto& nb : nbVec_) {
     nb->updateDbIoPins();
   }

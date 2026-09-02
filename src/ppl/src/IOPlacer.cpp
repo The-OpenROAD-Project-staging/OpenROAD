@@ -68,9 +68,11 @@ void IOPlacer::clearLayers()
 // A run's own state. The layers and the parameters are the caller's
 // configuration: wiping them here is what forced every caller to re-state them
 // on every call, and left set_pin_length and friends applying to the first run
-// only.
+// only. The placement file is not configuration but an output this run was
+// asked for, so it does go.
 void IOPlacer::clear()
 {
+  pin_placement_file_.clear();
   zero_sink_ios_.clear();
   sections_.clear();
   slots_.clear();

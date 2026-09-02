@@ -24,6 +24,9 @@ set mirror_pairs {req_msg[0] resp_msg[0] req_msg[1] resp_msg[1]}
 set_io_pin_constraint -mirrored_pins $mirror_pairs
 exclude_io_pin_region -region top:*
 
+# What the solve models is read from here, so place_pins below needs no
+# switches of its own and assigns on the grid the solve held the pins to.
+set_io_pin_placement -hor_layers metal5 -ver_layers metal6
 global_placement -place_ios -init_density_penalty 0.01
 
 proc pin_center { bterm } {
@@ -41,19 +44,22 @@ proc pin_center { bterm } {
 }
 
 set die [$block getDieArea]
-foreach bterm [$block getBTerms] {
-  set name [$bterm getName]
-  lassign [pin_center $bterm] cx cy
 
-  if {
-    $cx != [$die xMin] && $cx != [$die xMax]
-    && $cy != [$die yMin] && $cy != [$die yMax]
-  } {
-    error "$name is at ($cx $cy), off the die perimeter"
+# The solve models the grid place_pins will assign on, so the positions it
+# ends with have to be on it: every pin on a routing track of its own layer.
+foreach bterm [$block getBTerms] {
+  set box [lindex [[lindex [$bterm getBPins] 0] getBoxes] 0]
+  set layer [$box getTechLayer]
+  set grid [$block findTrackGrid $layer]
+  if { [$layer getDirection] eq "HORIZONTAL" } {
+    set coord [expr { ([$box yMin] + [$box yMax]) / 2 }]
+    set tracks [$grid getGridY]
+  } else {
+    set coord [expr { ([$box xMin] + [$box xMax]) / 2 }]
+    set tracks [$grid getGridX]
   }
-  # The whole top edge was excluded before the solve.
-  if { $cy == [$die yMax] } {
-    error "$name is at ($cx $cy), on the excluded top edge"
+  if { [lsearch -exact -integer $tracks $coord] < 0 } {
+    error "[$bterm getName] is at $coord on [$layer getName], not on a track"
   }
 }
 

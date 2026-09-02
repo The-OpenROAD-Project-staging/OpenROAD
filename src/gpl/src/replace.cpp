@@ -296,9 +296,6 @@ void Replace::runMBFF(const int max_sz,
 // pin placer rather than accepting a second copy of its switches.
 void Replace::resolveIoPinPlacement(NesterovBaseVars& nbVars) const
 {
-  if (pin_placer_ == nullptr) {
-    return;
-  }
   odb::dbTech* tech = db_->getTech();
   // Several layers in a direction each carry their own slots, so the finest
   // pitch is what the union of them offers and the lowest routing layer has
@@ -309,12 +306,14 @@ void Replace::resolveIoPinPlacement(NesterovBaseVars& nbVars) const
     }
     return tech->findRoutingLayer(*levels.begin());
   };
-  nbVars.placeIosHorLayer = lowest(pin_placer_->getHorLayers());
-  nbVars.placeIosVerLayer = lowest(pin_placer_->getVerLayers());
-  nbVars.placeIosHorLayerCount
-      = std::max<int>(1, pin_placer_->getHorLayers().size());
-  nbVars.placeIosVerLayerCount
-      = std::max<int>(1, pin_placer_->getVerLayers().size());
+  if (pin_placer_ != nullptr) {
+    nbVars.placeIosHorLayer = lowest(pin_placer_->getHorLayers());
+    nbVars.placeIosVerLayer = lowest(pin_placer_->getVerLayers());
+    nbVars.placeIosHorLayerCount
+        = std::max<int>(1, pin_placer_->getHorLayers().size());
+    nbVars.placeIosVerLayerCount
+        = std::max<int>(1, pin_placer_->getVerLayers().size());
+  }
 
   // Unconfigured, the solve still has to give a pin a shape, and the lowest
   // routing layer of each direction serves. It models that layer's grid, which
@@ -348,10 +347,12 @@ void Replace::resolveIoPinPlacement(NesterovBaseVars& nbVars) const
   // The spacing and the corner keep-out place_pins will be run with. The
   // solve models the slot grid they leave, so a guess at them has it counting
   // slots the die edge does not offer.
-  const ppl::Parameters* parms = pin_placer_->getParameters();
-  nbVars.placeIosMinDistance = parms->getMinDistance();
-  nbVars.placeIosMinDistanceInTracks = parms->getMinDistanceInTracks();
-  nbVars.placeIosCornerAvoidance = parms->getCornerAvoidance();
+  if (pin_placer_ != nullptr) {
+    const ppl::Parameters* parms = pin_placer_->getParameters();
+    nbVars.placeIosMinDistance = parms->getMinDistance();
+    nbVars.placeIosMinDistanceInTracks = parms->getMinDistanceInTracks();
+    nbVars.placeIosCornerAvoidance = parms->getCornerAvoidance();
+  }
 }
 
 bool Replace::initNesterovPlace(const PlaceOptions& options,

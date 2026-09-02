@@ -246,8 +246,12 @@ proc set_io_pin_placement { args } {
       ppl::set_min_distance [ord::microns_to_dbu $keys(-min_distance)]
     }
   }
-  ppl::set_min_distance_in_tracks [info exists flags(-min_distance_in_tracks)]
-  ppl::set_annealing [info exists flags(-annealing)]
+  if { [info exists flags(-min_distance_in_tracks)] } {
+    ppl::set_min_distance_in_tracks 1
+  }
+  if { [info exists flags(-annealing)] } {
+    ppl::set_annealing 1
+  }
 }
 
 sta::define_cmd_args "place_pins" {[-hor_layers h_layers]\
@@ -347,9 +351,8 @@ proc place_pins { args } {
       }
       ppl::set_io_pin_layers $keys(-hor_layers) $keys(-ver_layers)
     } elseif { [ppl::get_layer_count] == 0 } {
-      utl::error PPL 26 \
-        "No pin layers. Pass -hor_layers and -ver_layers, or set them with \
-set_io_pin_placement."
+      utl::error PPL 26 "No pin layers. Pass -hor_layers and -ver_layers, or\
+        set them with set_io_pin_placement."
     }
 
     if { [llength $regions] != 0 } {
@@ -373,10 +376,7 @@ set_io_pin_placement."
       ppl::set_pin_placement_file $keys(-write_pin_placement)
     }
 
-    if { [info exists flags(-annealing)] } {
-      ppl::set_annealing 1
-    }
-    if { [ppl::get_annealing] } {
+    if { [info exists flags(-annealing)] || [ppl::get_annealing] } {
       ppl::run_annealing
     } else {
       ppl::run_hungarian_matching

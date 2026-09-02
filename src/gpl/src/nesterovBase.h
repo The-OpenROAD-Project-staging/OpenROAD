@@ -1287,7 +1287,6 @@ class NesterovBase
   void updateDbIoPins();
 
   void reportIoDiagnostics(int iter);
-  bool hasIoPins() const { return !ioPinStor_.empty(); }
 
  private:
   NesterovBaseVars nbVars_;
