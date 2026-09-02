@@ -3470,13 +3470,18 @@ void NesterovBase::separateIoPins(std::vector<FloatPoint>& coordi)
         }
       }
       if (cut > 0) {
-        origin = pins[cut].first;
+        const float at = pins[cut].first;
         std::ranges::rotate(pins, pins.begin() + cut);
         for (auto& [g, io_i] : pins) {
-          if (g < origin) {
+          if (g < at) {
             g += total;
           }
         }
+        // The cut lands wherever the pin was, which is between slots. The fit
+        // rounds against this origin, so take the slot below it: rounding to a
+        // fraction of a slot would hold every pin on the arc that far off the
+        // track grid, and there is a whole gap here to give it up to.
+        origin = std::floor(at);
       }
     }
 
