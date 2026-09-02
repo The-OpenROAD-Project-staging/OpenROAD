@@ -301,23 +301,10 @@ void RouteBase::init()
   nbc_->resizeMinRcCellSize();
 }
 
-// The same write NesterovPlace::updateDb does, and it has to stay that way:
-// the router sees this iteration's cells and, under -place_ios, its pins.
-void RouteBase::updateDbForRoute()
-{
-  for (auto& nb : nbVec_) {
-    nb->pullCoordsFromDevice();
-  }
-  nbc_->updateDbGCells();
-  for (auto& nb : nbVec_) {
-    nb->updateDbIoPins();
-  }
-}
-
 void RouteBase::getGrtResult()
 {
   // update gCells' location to DB for GR
-  updateDbForRoute();
+  updateDbGCellsAndIoPins(*nbc_, nbVec_);
 
   // these two options must be on
   grouter_->setAllowCongestion(true);
@@ -401,7 +388,7 @@ static float getUsageCapacityRatio(Tile* tile,
 
 void RouteBase::calculateRudyTiles()
 {
-  updateDbForRoute();
+  updateDbGCellsAndIoPins(*nbc_, nbVec_);
   grt::Rudy* rudy = grouter_->getRudy();
   rudy->calculateRudy();
   tg_->setNumRoutingLayers(0);

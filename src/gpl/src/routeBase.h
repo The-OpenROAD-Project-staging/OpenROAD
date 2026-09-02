@@ -209,7 +209,6 @@ class RouteBase
   void init();
   void resetRoutabilityResources();
   void revertToMinCongestion();
-  void updateDbForRoute();
 
   // update revert_count_
   void increaseCounter();

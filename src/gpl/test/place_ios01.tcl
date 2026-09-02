@@ -48,14 +48,14 @@ set die [$block getDieArea]
 # The solve models the grid place_pins will assign on, so the positions it
 # ends with have to be on it: every pin on a routing track of its own layer.
 foreach bterm [$block getBTerms] {
-  set box [lindex [[lindex [$bterm getBPins] 0] getBoxes] 0]
-  set layer [$box getTechLayer]
+  lassign [pin_center $bterm] cx cy
+  set layer [[lindex [[lindex [$bterm getBPins] 0] getBoxes] 0] getTechLayer]
   set grid [$block findTrackGrid $layer]
   if { [$layer getDirection] eq "HORIZONTAL" } {
-    set coord [expr { ([$box yMin] + [$box yMax]) / 2 }]
+    set coord $cy
     set tracks [$grid getGridY]
   } else {
-    set coord [expr { ([$box xMin] + [$box xMax]) / 2 }]
+    set coord $cx
     set tracks [$grid getGridX]
   }
   if { [lsearch -exact -integer $tracks $coord] < 0 } {

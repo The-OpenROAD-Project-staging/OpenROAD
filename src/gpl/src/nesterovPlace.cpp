@@ -723,11 +723,7 @@ void NesterovPlace::routabilitySnapshot(
   }
 }
 
-// Real bounding-box wirelength straight off the database, split into the nets
-// that reach an IO pin and the rest. The solve's own figure is a smooth
-// approximation over its own coordinates, so this is what says whether a
-// projection cost anything and whether the pins bought the cells anything.
-void NesterovPlace::reportDbHpwl(const char* tag, int iter)
+void NesterovPlace::reportDbHpwl(int iter)
 {
   if (!log_->debugCheck(GPL, "place_ios_diag", 1)) {
     return;
@@ -750,9 +746,8 @@ void NesterovPlace::reportDbHpwl(const char* tag, int iter)
              GPL,
              "place_ios_diag",
              1,
-             "db hpwl iter {} {}: total {:.1f} io {:.1f} internal {:.1f}",
+             "db hpwl iter {}: total {:.1f} io {:.1f} internal {:.1f}",
              iter,
-             tag,
              block->dbuToMicrons(io + internal),
              block->dbuToMicrons(io),
              block->dbuToMicrons(internal));
@@ -1219,7 +1214,7 @@ int NesterovPlace::doNesterovPlace(int start_iter)
   // In all case, including divergence, the db should be updated.
   updateDb();
 
-  reportDbHpwl("solve", nesterov_iter);
+  reportDbHpwl(nesterov_iter);
 
   if (num_region_diverged_ > 0) {
     log_->error(GPL, divergeCode_, divergeMsg_);
@@ -1299,15 +1294,7 @@ void NesterovPlace::updateNextIter(int iter)
 
 void NesterovPlace::updateDb()
 {
-  // The GPU device-resident density pipeline leaves host GCell coords
-  // stale during the hot loop; refresh them before writing to the DB.
-  for (auto& nb : nbVec_) {
-    nb->pullCoordsFromDevice();
-  }
-  nbc_->updateDbGCells();
-  for (auto& nb : nbVec_) {
-    nb->updateDbIoPins();
-  }
+  updateDbGCellsAndIoPins(*nbc_, nbVec_);
 }
 
 // divergence detection on

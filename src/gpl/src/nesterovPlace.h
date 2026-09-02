@@ -90,7 +90,7 @@ class NesterovPlace
                           bool& final_routability_image_saved);
   // -place_ios: what the solve's own pin positions are worth, split into the
   // nets that reach one and the rest.
-  void reportDbHpwl(const char* tag, int iter);
+  void reportDbHpwl(int iter);
   void runTimingDriven(int iter,
                        const std::string& timing_driven_dir,
                        int routability_driven_count,

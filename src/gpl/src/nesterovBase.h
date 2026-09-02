@@ -1477,11 +1477,12 @@ class NesterovBase
     float pitch = 0;
     float lo = 0;
     float hi = 0;
+    int count = 0;
   };
   std::array<EdgeSlots, 4> io_edge_slots_;
   // Scratch for the projections, kept alive so one allocates nothing.
   std::vector<std::vector<std::pair<float, size_t>>> io_arc_pins_;
-  std::vector<std::pair<float, size_t>> io_axis_pins_;
+  std::array<std::vector<std::pair<float, size_t>>, 2> io_axis_pins_;
   std::vector<float> io_slot_fit_;
   std::vector<std::pair<double, int>> io_slot_blocks_;
   std::vector<odb::Point> io_last_written_pos_;
@@ -1533,8 +1534,11 @@ class NesterovBase
   // blocked region breaks an arc; the corner keep-out does not, so pins can
   // still slide from one edge to the next.
   std::vector<std::vector<SlotRun>> io_slot_arcs_;
-  // Whether an arc closes on itself, so its two ends are neighbours.
-  std::vector<bool> io_arc_cyclic_;
+  std::vector<int> io_arc_slots_;
+  // Set when the whole perimeter is one arc, so its two ends are neighbours.
+  bool io_arc_cyclic_ = false;
+  // The pins the projections act on. Fixed once the pins are seeded.
+  std::vector<uint32_t> io_movable_pins_;
 
   struct PerimSegment
   {
@@ -1550,6 +1554,13 @@ class NesterovBase
 
   void separateIoPins(std::vector<FloatPoint>& coordi);
   void separateMirroredIoPins(std::vector<FloatPoint>& coordi);
+  // Move pins to the nearest arrangement one pitch apart within [lo, hi],
+  // rounding onto the grid when they fit. Positions come back in z.
+  void fitSpacing(const std::vector<std::pair<float, size_t>>& pins,
+                  float lo,
+                  float pitch,
+                  int total,
+                  std::vector<float>& z);
   void initIoSlotPitch();
   void buildIoSlotArcs();
   // Where a point on the perimeter sits in slot units along its arc, and the
@@ -1708,5 +1719,10 @@ inline constexpr const char* format_label_um2 = "{:27} {:10.3f} um^2";
 inline constexpr const char* format_label_percent = "{:27} {:10.2f} %";
 inline constexpr const char* format_label_um2_with_delta
     = "{:27} {:10.3f} um^2 ({:+.2f}%)";
+
+// Write the solve's cells, and its IO pins under -place_ios, to the database.
+void updateDbGCellsAndIoPins(
+    NesterovBaseCommon& nbc,
+    const std::vector<std::shared_ptr<NesterovBase>>& nbVec);
 
 }  // namespace gpl
