@@ -300,6 +300,9 @@ void Replace::resolveIoPinPlacement(NesterovBaseVars& nbVars) const
     return;
   }
   odb::dbTech* tech = db_->getTech();
+  // Several layers in a direction each carry their own slots, so the finest
+  // pitch is what the union of them offers and the lowest routing layer has
+  // it. The count is what thins that pitch down to the pins they hold.
   const auto lowest = [tech](const std::set<int>& levels) -> odb::dbTechLayer* {
     if (levels.empty() || tech == nullptr) {
       return nullptr;
@@ -308,9 +311,14 @@ void Replace::resolveIoPinPlacement(NesterovBaseVars& nbVars) const
   };
   nbVars.placeIosHorLayer = lowest(pin_placer_->getHorLayers());
   nbVars.placeIosVerLayer = lowest(pin_placer_->getVerLayers());
+  nbVars.placeIosHorLayerCount
+      = std::max<int>(1, pin_placer_->getHorLayers().size());
+  nbVars.placeIosVerLayerCount
+      = std::max<int>(1, pin_placer_->getVerLayers().size());
+
   // Unconfigured, the solve still has to give a pin a shape, and the lowest
-  // routing layer of each direction serves. It will not run the pin placer
-  // mid-solve on that guess: the grid would not be the one place_pins uses.
+  // routing layer of each direction serves. It models that layer's grid, which
+  // is not the one place_pins uses unless the flow names the same one.
   if (tech != nullptr
       && (nbVars.placeIosHorLayer == nullptr
           || nbVars.placeIosVerLayer == nullptr)) {
@@ -337,14 +345,12 @@ void Replace::resolveIoPinPlacement(NesterovBaseVars& nbVars) const
                 "locations.");
   }
 
+  // The spacing and the corner keep-out place_pins will be run with. The
+  // solve models the slot grid they leave, so a guess at them has it counting
+  // slots the die edge does not offer.
   const ppl::Parameters* parms = pin_placer_->getParameters();
-  // ppl reads a min distance of 0 as "use my default of two tracks". A
-  // distance given in DBU instead is left at that default here: the solve only
-  // uses the pitch to hold the pins apart between assignments, and ppl still
-  // enforces the real spacing every time it runs.
-  const int min_dist = parms->getMinDistance();
-  nbVars.placeIosMinDistanceTracks
-      = (min_dist > 0 && parms->getMinDistanceInTracks()) ? min_dist : 2;
+  nbVars.placeIosMinDistance = parms->getMinDistance();
+  nbVars.placeIosMinDistanceInTracks = parms->getMinDistanceInTracks();
   nbVars.placeIosCornerAvoidance = parms->getCornerAvoidance();
 }
 
@@ -447,7 +453,6 @@ bool Replace::initNesterovPlace(const PlaceOptions& options,
                                           tb_,
                                           cb_,
                                           graphics_->MakeNew(log_),
-                                          pin_placer_,
                                           log_);
   }
   // Ensure these get set even if np_ already exists.
@@ -594,9 +599,6 @@ void PlaceOptions::validate(utl::Logger* logger)
                   424);
   val.check_range(
       "keep_resize_below_overflow", keepResizeBelowOverflow, 0.0f, 1.0f, 425);
-
-  val.check_non_negative(
-      "place_ios_legalize_every", placeIosLegalizeEvery, 426);
 }
 
 void PlaceOptions::skipIo()

@@ -23,19 +23,15 @@ foreach bterm [$block getBTerms] {
 }
 set insts_before [llength [$block getInsts]]
 
-# Configuring the pin placer is what lets the solve legalize its own pins
-# mid-run and before each timing-driven pass, so rsz and STA read shapes on
-# real tracks.
+# How the pins are to be placed: the solve reads it to model the slot grid
+# place_pins will assign on, so rsz and STA see shapes it can reproduce.
 set_io_pin_placement -hor_layers metal5 -ver_layers metal6
-global_placement -timing_driven -timing_driven_repair_timing -place_ios \
-  -place_ios_legalize_every 20
+global_placement -timing_driven -timing_driven_repair_timing -place_ios
 
 puts "instance count: $insts_before -> [llength [$block getInsts]]"
 
 # A pin that lost its GPin in the churn would stop moving, so check that every
-# one of them ends on the perimeter. The solve now hands the pins to the pin
-# placer before it returns, so the shape sits just inside the die edge rather
-# than centred on it: allow the shape's own extent.
+# one of them ends on the perimeter.
 set die [$block getDieArea]
 foreach bterm [$block getBTerms] {
   set name [$bterm getName]
@@ -48,13 +44,13 @@ foreach bterm [$block getBTerms] {
     error "$name is [$bpin getPlacementStatus], expected PLACED"
   }
   set box [lindex [$bpin getBoxes] 0]
-  set slack [expr { max([$box xMax] - [$box xMin], [$box yMax] - [$box yMin]) }]
-  set to_edge [expr {
-    min([$box xMin] - [$die xMin], [$die xMax] - [$box xMax],
-      [$box yMin] - [$die yMin], [$die yMax] - [$box yMax])
-  }]
-  if { $to_edge > $slack } {
-    error "$name is $to_edge from the die edge, more than its own $slack"
+  set cx [expr { ([$box xMin] + [$box xMax]) / 2 }]
+  set cy [expr { ([$box yMin] + [$box yMax]) / 2 }]
+  if {
+    $cx != [$die xMin] && $cx != [$die xMax]
+    && $cy != [$die yMin] && $cy != [$die yMax]
+  } {
+    error "$name is at ($cx $cy), off the die perimeter"
   }
 }
 

@@ -1192,7 +1192,6 @@ NesterovPlaceVars::NesterovPlaceVars(const PlaceOptions& options)
       routability_end_overflow(options.routabilityCheckOverflow),
       routability_snapshot_overflow(options.routabilitySnapshotOverflow),
       keepResizeBelowOverflow(options.keepResizeBelowOverflow),
-      placeIosLegalizeEvery(options.placeIosLegalizeEvery),
       timingDrivenMode(options.timingDrivenMode),
       timingDrivenRepairTiming(options.timingDrivenRepairTiming),
       timingDrivenRepairTnsEndPercent(options.timingDrivenRepairTnsEndPercent),
@@ -2707,6 +2706,7 @@ void NesterovBase::initIoPinGCells()
   }
 
   initIoSlotPitch();
+  buildIoSlotArcs();
 
   log_->info(GPL,
              171,
@@ -3123,13 +3123,23 @@ void NesterovBase::initIoSlotPitch()
   }
   odb::dbBlock* block = pb_->db()->getChip()->getBlock();
   const Die& die = pb_->getDie();
-  const int kTracksPerPin = std::max(1, nbVars_.placeIosMinDistanceTracks);
+  // ppl reads a min distance of 0 as its own default of two tracks.
+  const int kTracksPerPin
+      = (nbVars_.placeIosMinDistance > 0 && nbVars_.placeIosMinDistanceInTracks)
+            ? nbVars_.placeIosMinDistance
+            : 2;
+  // A distance in DBU thins the same track grid down to that spacing instead.
+  const int kMinDistanceDbu = (nbVars_.placeIosMinDistance > 0
+                               && !nbVars_.placeIosMinDistanceInTracks)
+                                  ? nbVars_.placeIosMinDistance
+                                  : 0;
 
   // The track grid gives the pitch and the origin straight out, averaged over
   // multiple track patterns; walking an expanded coordinate list instead reads
   // the first pattern's step and then strides across all of them.
-  auto edge_slots
-      = [&](odb::dbTechLayer* layer, bool horizontal_edge) -> EdgeSlots {
+  auto edge_slots = [&](odb::dbTechLayer* layer,
+                        bool horizontal_edge,
+                        int layer_count) -> EdgeSlots {
     EdgeSlots out;
     if (layer == nullptr) {
       return out;
@@ -3157,15 +3167,29 @@ void NesterovBase::initIoSlotPitch()
               ? static_cast<float>(nbVars_.placeIosCornerAvoidance)
               : std::min<float>(15.0f * step,
                                 static_cast<float>(block->micronsToDbu(1.0)));
-    out.pitch = static_cast<float>(step) * kTracksPerPin;
+    // Each named layer carries its own slots, so a stretch of edge holds that
+    // many times as many pins. The model has one grid, so it stands in for the
+    // union by thinning the spacing instead: the count is right even though
+    // the extra pins really sit on top of each other on other layers.
+    out.pitch
+        = static_cast<float>(step) * kTracksPerPin / std::max(1, layer_count);
+    if (kMinDistanceDbu > 0) {
+      // The slots kept are the tracks that stand at least this far apart.
+      out.pitch = std::ceil(static_cast<float>(kMinDistanceDbu) / step) * step
+                  / std::max(1, layer_count);
+    }
     const int64_t first = std::max<int64_t>(
         0,
         static_cast<int64_t>(
             std::ceil((die_lo + corner - origin) / out.pitch)));
+    // The track cap counts tracks; the slot index counts pitches, and a pitch
+    // is now a fraction of a track spacing when several layers are named.
+    const int64_t track_cap = static_cast<int64_t>(
+        std::floor(static_cast<float>(count - 1) * step / out.pitch));
     const int64_t last = std::min<int64_t>(
         static_cast<int64_t>(
             std::floor((die_hi - corner - origin) / out.pitch)),
-        (count - 1) / kTracksPerPin);
+        track_cap);
     if (last < first) {
       return {};
     }
@@ -3175,8 +3199,10 @@ void NesterovBase::initIoSlotPitch()
   };
 
   // ppl's convention: a horizontal die edge carries vertical-layer pins.
-  const EdgeSlots along_x = edge_slots(io_ver_layer_, true);
-  const EdgeSlots along_y = edge_slots(io_hor_layer_, false);
+  const EdgeSlots along_x
+      = edge_slots(io_ver_layer_, true, nbVars_.placeIosVerLayerCount);
+  const EdgeSlots along_y
+      = edge_slots(io_hor_layer_, false, nbVars_.placeIosHorLayerCount);
   io_edge_slots_[static_cast<size_t>(DieEdge::kLeft)] = along_y;
   io_edge_slots_[static_cast<size_t>(DieEdge::kRight)] = along_y;
   io_edge_slots_[static_cast<size_t>(DieEdge::kBottom)] = along_x;
@@ -3191,6 +3217,187 @@ void NesterovBase::initIoSlotPitch()
                "on those edges are not held apart.",
                along_x.pitch <= 0 ? "the horizontal die edges"
                                   : "the vertical die edges");
+  }
+}
+
+// The free perimeter as arcs of usable slots, in walking order, so a crowded
+// edge can spill around a corner instead of having nowhere legal to go. A
+// blocked region breaks an arc; the corner keep-out does not, being tracks the
+// pins may not sit on with the perimeter carrying on past them.
+void NesterovBase::buildIoSlotArcs()
+{
+  io_slot_arcs_.clear();
+  io_arc_cyclic_.clear();
+  if (io_free_segments_.empty()) {
+    return;
+  }
+  const Die& die = pb_->getDie();
+  // The walk: along the bottom, up the right, back along the top, down the
+  // left. Each entry is the edge and the coordinate the walk enters it at.
+  struct Leg
+  {
+    DieEdge edge;
+    float from;
+    float to;
+  };
+  const std::array<Leg, 4> legs
+      = {Leg{DieEdge::kBottom, (float) die.dieLx(), (float) die.dieUx()},
+         Leg{DieEdge::kRight, (float) die.dieLy(), (float) die.dieUy()},
+         Leg{DieEdge::kTop, (float) die.dieUx(), (float) die.dieLx()},
+         Leg{DieEdge::kLeft, (float) die.dieUy(), (float) die.dieLy()}};
+
+  std::vector<SlotRun> arc;
+  bool broken_before_first = false;
+  bool first_leg = true;
+  for (const Leg& leg : legs) {
+    const size_t e = static_cast<size_t>(leg.edge);
+    const EdgeSlots& slots = io_edge_slots_[e];
+    const bool forward = leg.to > leg.from;
+    // The free stretches of this edge, in walking order.
+    std::vector<std::pair<float, float>> free_here;
+    for (const PerimSegment& seg : io_free_segments_) {
+      if (seg.edge == leg.edge) {
+        free_here.emplace_back(seg.lo, seg.hi);
+      }
+    }
+    std::ranges::sort(free_here);
+    if (!forward) {
+      std::ranges::reverse(free_here);
+    }
+    // A gap at the start of the leg separates it from the previous one. The
+    // leg carries its own direction, so the walk enters at from and leaves at
+    // to whichever way the coordinate runs.
+    const float entry = leg.from;
+    bool touches_entry = !free_here.empty()
+                         && (forward ? free_here.front().first <= entry
+                                     : free_here.front().second >= entry);
+    if (!touches_entry) {
+      if (!arc.empty()) {
+        io_slot_arcs_.push_back(arc);
+        io_arc_cyclic_.push_back(false);
+        arc.clear();
+      }
+      if (first_leg) {
+        broken_before_first = true;
+      }
+    }
+    first_leg = false;
+
+    for (size_t j = 0; j < free_here.size(); ++j) {
+      auto [f_lo, f_hi] = free_here[j];
+      if (j > 0 && !arc.empty()) {
+        // A gap inside this edge: nothing can cross it.
+        io_slot_arcs_.push_back(arc);
+        io_arc_cyclic_.push_back(false);
+        arc.clear();
+      }
+      if (slots.pitch <= 0) {
+        continue;
+      }
+      const float lo = std::max(f_lo, slots.lo);
+      const float hi = std::min(f_hi, slots.hi);
+      if (hi < lo) {
+        continue;
+      }
+      const int n = static_cast<int>(std::floor((hi - lo) / slots.pitch)) + 1;
+      SlotRun run;
+      run.edge = leg.edge;
+      run.step = forward ? slots.pitch : -slots.pitch;
+      run.start = forward ? lo : lo + (n - 1) * slots.pitch;
+      run.count = n;
+      run.first = arc.empty() ? 0 : arc.back().first + arc.back().count;
+      arc.push_back(run);
+    }
+    // A gap at the far end of the leg separates it from the next one.
+    const float exit = leg.to;
+    const bool touches_exit = !free_here.empty()
+                              && (forward ? free_here.back().second >= exit
+                                          : free_here.back().first <= exit);
+    if (!touches_exit && !arc.empty()) {
+      io_slot_arcs_.push_back(arc);
+      io_arc_cyclic_.push_back(false);
+      arc.clear();
+    }
+  }
+  if (!arc.empty()) {
+    if (!broken_before_first && !io_slot_arcs_.empty()) {
+      // The walk crossed the start line without a break there, so its last
+      // stretch continues into its first. They are one arc -- but an open
+      // one: reaching here means a break somewhere else split the perimeter,
+      // and that break is what the joined arc's two ends sit against.
+      std::vector<SlotRun>& head = io_slot_arcs_.front();
+      const int shift = arc.back().first + arc.back().count;
+      for (SlotRun& r : head) {
+        r.first += shift;
+      }
+      arc.insert(arc.end(), head.begin(), head.end());
+      io_slot_arcs_.front() = std::move(arc);
+      io_arc_cyclic_.front() = false;
+    } else {
+      // Nothing broke anywhere, so this arc is the whole perimeter and closes
+      // on itself.
+      io_slot_arcs_.push_back(std::move(arc));
+      io_arc_cyclic_.push_back(!broken_before_first
+                               && io_slot_arcs_.size() == 1);
+    }
+  }
+  io_arc_pins_.assign(io_slot_arcs_.size(), {});
+}
+
+// In slot units, so one pitch is one slot on every edge however far apart the
+// tracks of its pin layers stand.
+bool NesterovBase::ioSlotCoord(size_t io_index,
+                               float x,
+                               float y,
+                               size_t& arc,
+                               float& slot) const
+{
+  const DieEdge edge = ioEdgeOnLocus(io_index, x, y);
+  const float pos = isHorizontalEdge(edge) ? x : y;
+  float best = std::numeric_limits<float>::max();
+  bool found = false;
+  for (size_t a = 0; a < io_slot_arcs_.size(); ++a) {
+    for (const SlotRun& r : io_slot_arcs_[a]) {
+      if (r.edge != edge || r.count <= 0) {
+        continue;
+      }
+      const float g = (pos - r.start) / r.step;
+      const float clamped = std::clamp(g, 0.0f, (float) (r.count - 1));
+      const float dist = std::abs(g - clamped) * std::abs(r.step);
+      if (dist < best) {
+        best = dist;
+        arc = a;
+        slot = r.first + clamped;
+        found = true;
+      }
+    }
+  }
+  return found;
+}
+
+FloatPoint NesterovBase::ioSlotPoint(size_t arc, float slot) const
+{
+  const std::vector<SlotRun>& runs = io_slot_arcs_[arc];
+  const int total = runs.back().first + runs.back().count;
+  float g = std::clamp(slot, 0.0f, (float) (total - 1));
+  const SlotRun* run = &runs.back();
+  for (const SlotRun& r : runs) {
+    if (g < r.first + r.count) {
+      run = &r;
+      break;
+    }
+  }
+  const float pos = run->start + (g - run->first) * run->step;
+  const Die& die = pb_->getDie();
+  switch (run->edge) {
+    case DieEdge::kLeft:
+      return {(float) die.dieLx(), pos};
+    case DieEdge::kRight:
+      return {(float) die.dieUx(), pos};
+    case DieEdge::kBottom:
+      return {pos, (float) die.dieLy()};
+    default:
+      return {pos, (float) die.dieUy()};
   }
 }
 
@@ -3239,61 +3446,161 @@ static void poolAdjacentViolators(std::vector<float>& z,
 // costs one pass over each edge.
 void NesterovBase::separateIoPins(std::vector<FloatPoint>& coordi)
 {
-  if (ioPinStor_.empty()) {
+  if (ioPinStor_.empty() || io_slot_arcs_.empty()) {
     return;
   }
-  for (auto& edge_pins : io_edge_pins_) {
-    edge_pins.clear();
+  for (auto& arc_pins : io_arc_pins_) {
+    arc_pins.clear();
   }
   for (size_t i = 0; i < ioPinStor_.size(); ++i) {
     if (isMirrorFollower(i) || isIoBoxConstrained(i)) {
       continue;
     }
     const size_t k = ioNbPos(i);
-    const DieEdge edge = ioEdgeOnLocus(i, coordi[k].x, coordi[k].y);
-    const size_t e = static_cast<size_t>(edge);
-    if (io_edge_slots_[e].pitch <= 0) {
-      continue;
+    size_t arc = 0;
+    float slot = 0;
+    if (ioSlotCoord(i, coordi[k].x, coordi[k].y, arc, slot)) {
+      io_arc_pins_[arc].emplace_back(slot, i);
     }
-    io_edge_pins_[e].emplace_back(
-        isHorizontalEdge(edge) ? coordi[k].x : coordi[k].y, i);
   }
 
-  for (size_t e = 0; e < 4; ++e) {
-    std::vector<std::pair<float, size_t>>& pins = io_edge_pins_[e];
+  for (size_t a = 0; a < io_arc_pins_.size(); ++a) {
+    std::vector<std::pair<float, size_t>>& pins = io_arc_pins_[a];
     if (pins.size() < 2) {
       continue;
     }
-    const EdgeSlots& edge_slots = io_edge_slots_[e];
-    const float pitch = edge_slots.pitch;
-    const float span = (pins.size() - 1) * pitch;
-    if (edge_slots.hi - edge_slots.lo < span) {
-      // More pins than the edge can hold: ppl will error on this design, so
-      // leave the positions alone rather than pile them at one end.
-      continue;
-    }
+    const std::vector<SlotRun>& runs = io_slot_arcs_[a];
+    const int total = runs.back().first + runs.back().count;
     std::ranges::sort(pins);
-    std::vector<float>& z = io_edge_fit_;
+
+    // A cycle has no first pin. Cut it at the widest gap: the two pins either
+    // side of the cut are the ones never spaced against each other.
+    float origin = 0;
+    if (io_arc_cyclic_[a]) {
+      float widest = total - pins.back().first + pins.front().first;
+      size_t cut = 0;
+      for (size_t r = 1; r < pins.size(); ++r) {
+        const float gap = pins[r].first - pins[r - 1].first;
+        if (gap > widest) {
+          widest = gap;
+          cut = r;
+        }
+      }
+      if (cut > 0) {
+        origin = pins[cut].first;
+        std::ranges::rotate(pins, pins.begin() + cut);
+        for (auto& [g, io_i] : pins) {
+          if (g < origin) {
+            g += total;
+          }
+        }
+      }
+    }
+
+    // One slot per pin, or an even share of the arc when there are not
+    // enough to go round; the pin placer settles the rest.
+    const bool fits = static_cast<int>(pins.size()) <= total;
+    const float step
+        = fits ? 1.0f : static_cast<float>(total - 1) / (pins.size() - 1);
+    // The slots left over, counted rather than taken off the far end as a
+    // span: dividing to get the step and multiplying it back does not land
+    // where it started, and the bound would fall below origin.
+    const float slack
+        = fits ? static_cast<float>(total - static_cast<int>(pins.size())) : 0;
+    std::vector<float>& z = io_slot_fit_;
     z.resize(pins.size());
     for (size_t r = 0; r < pins.size(); ++r) {
-      z[r] = pins[r].first - r * pitch;
+      z[r] = pins[r].first - r * step;
     }
-    poolAdjacentViolators(
-        z, io_edge_blocks_, edge_slots.lo, edge_slots.hi - span);
-    const bool horizontal = isHorizontalEdge(static_cast<DieEdge>(e));
+    poolAdjacentViolators(z, io_slot_blocks_, origin, origin + slack);
+    if (fits) {
+      // Round the fit, not the position: the fit stays non-decreasing, so
+      // the spacing survives and every pin lands on a slot.
+      for (float& v : z) {
+        v = std::round(v);
+      }
+    }
     for (size_t r = 0; r < pins.size(); ++r) {
       const size_t io_i = pins[r].second;
       const size_t k = ioNbPos(io_i);
-      const float pos = z[r] + r * pitch;
-      FloatPoint p = coordi[k];
-      if (horizontal) {
-        p.x = pos;
-      } else {
-        p.y = pos;
+      float g = z[r] + r * step;
+      if (g >= total) {
+        g -= total;
       }
-      // Spacing is a preference; the pin's own locus is not. A constrained pin
-      // whose region is narrower than its share of the edge goes back on the
-      // locus and lets ppl settle the overlap.
+      const FloatPoint p = ioSlotPoint(a, g);
+      // Spacing is a preference; the pin's own locus is not.
+      coordi[k] = projectIoPin(io_i, p.x, p.y);
+    }
+  }
+}
+
+// A follower is its master reflected across the die, so the arc pass never
+// sees it and applyMirrorConstraints drops it on whatever that pass put on the
+// far edge. Reflection keeps the coordinate along the edge, so both edges of
+// an axis share one line: spacing the masters on it holds both. Stricter than
+// needed -- the two edges could share a coordinate -- but pins outside a
+// mirror are few wherever mirroring is used.
+void NesterovBase::separateMirroredIoPins(std::vector<FloatPoint>& coordi)
+{
+  if (io_mirror_pairs_.empty()) {
+    return;
+  }
+  for (int axis = 0; axis < 2; ++axis) {
+    const bool horizontal_edges = axis == 1;
+    const EdgeSlots& slots = io_edge_slots_[static_cast<size_t>(
+        horizontal_edges ? DieEdge::kBottom : DieEdge::kLeft)];
+    if (slots.pitch <= 0) {
+      continue;
+    }
+    std::vector<std::pair<float, size_t>>& pins = io_axis_pins_;
+    pins.clear();
+    for (size_t i = 0; i < ioPinStor_.size(); ++i) {
+      if (isMirrorFollower(i) || isIoBoxConstrained(i)) {
+        continue;
+      }
+      const size_t k = ioNbPos(i);
+      const DieEdge edge = ioEdgeOnLocus(i, coordi[k].x, coordi[k].y);
+      if (isHorizontalEdge(edge) != horizontal_edges) {
+        continue;
+      }
+      pins.emplace_back(horizontal_edges ? coordi[k].x : coordi[k].y, i);
+    }
+    if (pins.size() < 2) {
+      continue;
+    }
+    std::ranges::sort(pins);
+    // Settle the count against the multiplication the bound below uses, not
+    // the division that produced it.
+    int total = static_cast<int>((slots.hi - slots.lo) / slots.pitch) + 1;
+    while (total > 1 && slots.lo + (total - 1) * slots.pitch > slots.hi) {
+      --total;
+    }
+    const bool fits = static_cast<int>(pins.size()) <= total;
+    const float step
+        = fits ? slots.pitch : (slots.hi - slots.lo) / (pins.size() - 1);
+    // As on an arc: the leftover slots, counted.
+    const float slack
+        = fits ? (total - static_cast<int>(pins.size())) * slots.pitch : 0;
+    std::vector<float>& z = io_slot_fit_;
+    z.resize(pins.size());
+    for (size_t r = 0; r < pins.size(); ++r) {
+      z[r] = pins[r].first - r * step;
+    }
+    poolAdjacentViolators(z, io_slot_blocks_, slots.lo, slots.lo + slack);
+    if (fits) {
+      for (float& v : z) {
+        v = slots.lo + std::round((v - slots.lo) / step) * step;
+      }
+    }
+    for (size_t r = 0; r < pins.size(); ++r) {
+      const size_t io_i = pins[r].second;
+      const size_t k = ioNbPos(io_i);
+      FloatPoint p = coordi[k];
+      if (horizontal_edges) {
+        p.x = z[r] + r * step;
+      } else {
+        p.y = z[r] + r * step;
+      }
       coordi[k] = projectIoPin(io_i, p.x, p.y);
     }
   }
@@ -3347,48 +3654,6 @@ void NesterovBase::reportIoDiagnostics(int iter)
              mean(pin_sgrad, pin_n),
              mean(pin_disp, pin_n),
              pin_disp_max);
-}
-
-// Take ppl's legalized positions as the solve's own. The pins stay variables,
-// so this is a projection onto the slot grid: the wirelength gradient moves
-// them freely, and this pulls them back to positions ppl can honour, which is
-// what the cells are optimized against.
-void NesterovBase::adoptIoPinsFromDb()
-{
-  if (ioPinStor_.empty()) {
-    return;
-  }
-  const bool trace = log_->debugCheck(GPL, "place_ios_diag", 1);
-  double jump = 0, jump_max = 0;
-  size_t jump_n = 0;
-  for (size_t i = 0; i < ioPinStor_.size(); ++i) {
-    GCell& io = ioPinStor_[i];
-    const odb::Rect bbox = io.getBTerm()->getBBox();
-    if (bbox.isInverted()) {
-      continue;
-    }
-    const FloatPoint p(bbox.xCenter(), bbox.yCenter());
-    if (trace) {
-      const double moved = std::hypot(p.x - io.dCx(), p.y - io.dCy());
-      jump += moved;
-      jump_max = std::max(jump_max, moved);
-      ++jump_n;
-    }
-    io.setCenterLocation(p.x, p.y);
-    io.setDensityCenterLocation(p.x, p.y);
-    io_last_written_pos_[i] = odb::Point(bbox.xCenter(), bbox.yCenter());
-    const size_t k = ioNbPos(i);
-    curCoordi_[k] = curSLPCoordi_[k] = prevSLPCoordi_[k] = p;
-    nextCoordi_[k] = nextSLPCoordi_[k] = p;
-  }
-  debugPrint(log_,
-             GPL,
-             "place_ios_diag",
-             1,
-             "projection moved {} pins, mean {:.3e} max {:.3e}",
-             jump_n,
-             jump_n ? jump / jump_n : 0.0,
-             jump_max);
 }
 
 void NesterovBase::updateDbIoPins()
@@ -4695,6 +4960,8 @@ void NesterovBase::nesterovUpdateCoordinates(float coeff)
 
   separateIoPins(nextCoordi_);
   separateIoPins(nextSLPCoordi_);
+  separateMirroredIoPins(nextCoordi_);
+  separateMirroredIoPins(nextSLPCoordi_);
 
   applyMirrorConstraints(nextCoordi_);
   applyMirrorConstraints(nextSLPCoordi_);

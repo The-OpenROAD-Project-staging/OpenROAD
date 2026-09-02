@@ -789,8 +789,16 @@ struct NesterovBaseVars
   bool placeIosMode = false;
   // Resolved from the pin placer's own configuration, so the solve models the
   // grid the pins will really be assigned on.
-  int placeIosMinDistanceTracks = 2;
+  // As place_pins reads them: a track count when in tracks, DBU otherwise,
+  // 0 for the pin placer's default of two tracks.
+  int placeIosMinDistance = 0;
+  bool placeIosMinDistanceInTracks = false;
   int placeIosCornerAvoidance = -1;
+  // How many layers each direction was given. The pin placer builds a slot
+  // set per layer, so naming several of them multiplies how many pins a
+  // stretch of edge holds.
+  int placeIosHorLayerCount = 1;
+  int placeIosVerLayerCount = 1;
   odb::dbTechLayer* placeIosHorLayer = nullptr;
   odb::dbTechLayer* placeIosVerLayer = nullptr;
   bool isMaxPhiCoefChanged = false;  // not user config
@@ -829,7 +837,6 @@ struct NesterovPlaceVars
   bool timingDrivenRepairTiming;
   float timingDrivenRepairTnsEndPercent;
   int timingDrivenIterCounter = 0;
-  int placeIosLegalizeEvery;
   const bool routability_driven_mode;
   const bool disableRevertIfDiverge;
 
@@ -1279,8 +1286,6 @@ class NesterovBase
 
   void updateDbIoPins();
 
-  // -place_ios: take ppl's legalized pin positions as the solve's own.
-  void adoptIoPinsFromDb();
   void reportIoDiagnostics(int iter);
   bool hasIoPins() const { return !ioPinStor_.empty(); }
 
@@ -1475,10 +1480,11 @@ class NesterovBase
     float hi = 0;
   };
   std::array<EdgeSlots, 4> io_edge_slots_;
-  // Scratch for separateIoPins, kept alive so a projection allocates nothing.
-  std::array<std::vector<std::pair<float, size_t>>, 4> io_edge_pins_;
-  std::vector<float> io_edge_fit_;
-  std::vector<std::pair<double, int>> io_edge_blocks_;
+  // Scratch for the projections, kept alive so one allocates nothing.
+  std::vector<std::vector<std::pair<float, size_t>>> io_arc_pins_;
+  std::vector<std::pair<float, size_t>> io_axis_pins_;
+  std::vector<float> io_slot_fit_;
+  std::vector<std::pair<double, int>> io_slot_blocks_;
   std::vector<odb::Point> io_last_written_pos_;
   odb::dbTechLayer* io_hor_layer_ = nullptr;
   odb::dbTechLayer* io_ver_layer_ = nullptr;
@@ -1513,6 +1519,24 @@ class NesterovBase
     return edge == DieEdge::kBottom || edge == DieEdge::kTop;
   }
 
+  // One usable stretch of slots along a die edge. Slot g of the run sits at
+  // start + (g - first) * step, with step signed so a whole arc reads in one
+  // direction around the die.
+  struct SlotRun
+  {
+    DieEdge edge;
+    float start = 0;
+    float step = 0;
+    int count = 0;
+    int first = 0;
+  };
+  // The free perimeter as contiguous arcs of slots, in walking order. A
+  // blocked region breaks an arc; the corner keep-out does not, so pins can
+  // still slide from one edge to the next.
+  std::vector<std::vector<SlotRun>> io_slot_arcs_;
+  // Whether an arc closes on itself, so its two ends are neighbours.
+  std::vector<bool> io_arc_cyclic_;
+
   struct PerimSegment
   {
     DieEdge edge;
@@ -1526,7 +1550,17 @@ class NesterovBase
   std::vector<std::optional<odb::Rect>> io_box_constraints_;
 
   void separateIoPins(std::vector<FloatPoint>& coordi);
+  void separateMirroredIoPins(std::vector<FloatPoint>& coordi);
   void initIoSlotPitch();
+  void buildIoSlotArcs();
+  // Where a point on the perimeter sits in slot units along its arc, and the
+  // reverse. Returns false for a point no arc covers.
+  bool ioSlotCoord(size_t io_index,
+                   float x,
+                   float y,
+                   size_t& arc,
+                   float& slot) const;
+  FloatPoint ioSlotPoint(size_t arc, float slot) const;
   void initIoPinGCells();
   void initIoPinLayers();
   void pickIoPinTopLayerGrid();

@@ -40,7 +40,6 @@ static gpl::PlaceOptions getOptions(
   });
   checkKey(keys, "-initial_place_max_iter", options.initialPlaceMaxIter);
   checkKey(keys, "-initial_place_max_fanout", options.initialPlaceMaxFanout);
-  checkKey(keys, "-place_ios_legalize_every", options.placeIosLegalizeEvery);
   checkKey(
       keys, "-routability_check_overflow", options.routabilityCheckOverflow);
   checkKey(

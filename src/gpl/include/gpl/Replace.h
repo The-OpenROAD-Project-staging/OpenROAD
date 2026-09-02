@@ -112,11 +112,6 @@ struct PlaceOptions
 
   // Concurrent IO pin + cell placement
   bool placeIosMode = false;
-  // Hand the pins to ppl every this many iterations and adopt the assignment.
-  // It is also what reorders them, which the spacing projection cannot. 0
-  // disables it.
-  int placeIosLegalizeEvery = 50;
-
   void skipIo();
   void validate(utl::Logger* log);
 };
@@ -179,7 +174,7 @@ class Replace
   void checkHasCoreRows();
   void checkPlaceIosSupported(const PlaceOptions& options);
   // Read the pin placer's configuration into the solve, so the slot grid it
-  // models is the one the assignment will really use.
+  // models is the one place_pins will really assign on.
   void resolveIoPinPlacement(NesterovBaseVars& nbVars) const;
 
   odb::dbDatabase* db_ = nullptr;
