@@ -447,7 +447,15 @@ class TileGenerator
   int getThreadCount() const { return num_threads_; }
   void setThreadCount(const int num_threads) { num_threads_ = num_threads; }
 
+  // The tile grid's georeference: getFitBounds() grown by the pin-label
+  // margin, so the labels hanging outward from the die edge fall inside tiles
+  // that exist.  Tile indices are clamped to it.
   odb::Rect getBounds() const;
+
+  // What the client zooms to fit: the design proper, with no room reserved for
+  // pin labels.  Mirrors LayoutViewer::getBounds() in the Qt GUI.
+  odb::Rect getFitBounds() const;
+
   int getPinMaxSize() const;
 
   std::vector<std::string> getLayers() const;
@@ -762,10 +770,14 @@ class TileGenerator
                 const Color& c,
                 int dim = -1) const;
 
+  // `px_per_css` is the display's device-pixel ratio: the overlay's inset and
+  // font height are authored in CSS px and scaled by it.  It is NOT derivable
+  // from the buffer, whose side is the client's own tile size times the ratio.
   void drawDebugOverlay(std::vector<unsigned char>& image,
                         int z,
                         int x,
-                        int y) const;
+                        int y,
+                        double px_per_css) const;
 
   // Anti-aliased text rendering.  All methods take a pre-resolved FontSize
   // handle so callers lock the glyph cache once per rendering context rather
@@ -1042,6 +1054,15 @@ class TileGenerator
                                  const TileFrame& frame,
                                  int dim,
                                  int stroke);
+  // The instance's name, centred in its bbox and elided to fit.  Called after
+  // the blockage hatch rather than with the rest of the instance, the way Qt
+  // defers drawInstanceNames past drawBlockages, so no hatch line crosses a
+  // label.
+  static void drawInstanceName(std::vector<unsigned char>& image,
+                               odb::dbInst* inst,
+                               const TileFrame& frame,
+                               int dim,
+                               const GlyphCache::FontSize& inst_font);
   mutable std::mutex heatmap_mutex_;
   mutable std::map<std::string, std::shared_ptr<gui::HeatMapDataSource>>
       heatmaps_;
@@ -1085,6 +1106,11 @@ void collectTimingPathShapes(const std::vector<ChipletNode>& chiplets,
                              std::vector<FlightLine>& lines);
 
 // ── JSON serialization helpers for TileGenerator responses ──
+
+// A DBU rect in the wire order the client's coordinate transforms expect:
+// [[yMin, xMin], [yMax, xMax]].  Note this is NOT bboxArray()'s flat
+// [xMin, yMin, xMax, yMax] -- the two orders are not interchangeable.
+boost::json::array boundsArray(const odb::Rect& r);
 
 boost::json::object serializeTechResponse(const TileGenerator& gen);
 boost::json::object serializeBoundsResponse(const TileGenerator& gen,
