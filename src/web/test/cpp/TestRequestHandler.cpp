@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "boost/asio/ip/address.hpp"
 #include "boost/json/object.hpp"
 #include "boost/json/parse.hpp"
 #include "boost/json/serialize.hpp"
@@ -28,6 +29,7 @@
 #include "tile_generator.h"
 #include "tst/nangate45_fixture.h"
 #include "utl/Logger.h"
+#include "web/web.h"
 #include "web_viewer_hook.h"
 
 namespace web {
@@ -535,6 +537,127 @@ TEST_F(TileHandlerTest, OverlayTileWithNothingSelectedIsEmpty)
       = handler_->handleOverlayTile(overlayRequest(1, false), state_);
   EXPECT_EQ(resp.type, WebSocketResponse::kEmpty);
   EXPECT_TRUE(resp.payload.empty());
+}
+
+// Origin validation for the WebSocket handshake (issue #11167, anti-CSWSH).
+TEST(WebSocketOriginAllowed, AbsentOriginIsAllowed)
+{
+  // Non-browser clients (local tooling, tests) send no Origin.
+  EXPECT_TRUE(webSocketOriginAllowed("", "localhost:8080"));
+}
+
+TEST(WebSocketOriginAllowed, SameOriginIsAllowed)
+{
+  EXPECT_TRUE(
+      webSocketOriginAllowed("http://localhost:8080", "localhost:8080"));
+}
+
+TEST(WebSocketOriginAllowed, SameOriginComparisonIsCaseInsensitive)
+{
+  // A host is case-insensitive; a proxy or client may vary its casing.
+  EXPECT_TRUE(
+      webSocketOriginAllowed("http://localhost:8080", "LocalHost:8080"));
+  EXPECT_TRUE(
+      webSocketOriginAllowed("http://LOCALHOST:8080", "localhost:8080"));
+}
+
+TEST(WebSocketOriginAllowed, DifferentLoopbackSpellingIsRejected)
+{
+  // Strict same-origin: a loopback Origin whose spelling differs from the Host
+  // the request targeted is rejected (closes the cross-port-localhost vector).
+  EXPECT_FALSE(
+      webSocketOriginAllowed("http://127.0.0.1:8080", "localhost:8080"));
+  EXPECT_FALSE(webSocketOriginAllowed("http://[::1]:8080", "localhost:8080"));
+}
+
+TEST(WebSocketOriginAllowed, SameOriginWorksForAnyLoopbackSpelling)
+{
+  // Any spelling is fine as long as Origin authority and Host match exactly.
+  EXPECT_TRUE(
+      webSocketOriginAllowed("http://127.0.0.1:8080", "127.0.0.1:8080"));
+}
+
+TEST(WebSocketOriginAllowed, CrossOriginIsRejected)
+{
+  // The F-01 vector: a foreign page opening the loopback socket.
+  EXPECT_FALSE(
+      webSocketOriginAllowed("https://evil.example", "localhost:8080"));
+}
+
+TEST(WebSocketOriginAllowed, LoopbackSuffixIsNotConfusedForLoopback)
+{
+  EXPECT_FALSE(
+      webSocketOriginAllowed("http://localhost.evil.com", "localhost:8080"));
+}
+
+TEST(WebSocketOriginAllowed, OpaqueOriginIsRejected)
+{
+  // A sandboxed iframe / file:// page serializes its Origin as "null".
+  EXPECT_FALSE(webSocketOriginAllowed("null", "localhost:8080"));
+}
+
+// Bind-address classification for web_server -bind (issue #11167).
+TEST(ClassifyBindAddress, LoopbackIsRecognised)
+{
+  EXPECT_EQ(classifyBindAddress("127.0.0.1"), BindAddressKind::kLoopback);
+  EXPECT_EQ(classifyBindAddress("::1"), BindAddressKind::kLoopback);
+}
+
+TEST(ClassifyBindAddress, NonLoopbackIsExposed)
+{
+  // 0.0.0.0 was the old hard-coded default: listens on every interface.
+  EXPECT_EQ(classifyBindAddress("0.0.0.0"), BindAddressKind::kExposed);
+  EXPECT_EQ(classifyBindAddress("::"), BindAddressKind::kExposed);
+  EXPECT_EQ(classifyBindAddress("192.168.1.5"), BindAddressKind::kExposed);
+}
+
+TEST(ClassifyBindAddress, IPv4MappedIsClassifiedByItsIPv4Part)
+{
+  // ::ffff:a.b.c.d is an IPv4 bind in v6 clothing; is_loopback() alone would
+  // call the loopback one exposed and raise a spurious warning.
+  EXPECT_EQ(classifyBindAddress("::ffff:127.0.0.1"),
+            BindAddressKind::kLoopback);
+  EXPECT_EQ(classifyBindAddress("::ffff:192.168.1.5"),
+            BindAddressKind::kExposed);
+}
+
+TEST(ClassifyBindAddress, NonLiteralsAreInvalid)
+{
+  // IP literals only, never resolved — pins the documented contract.
+  EXPECT_EQ(classifyBindAddress("localhost"), BindAddressKind::kInvalid);
+  EXPECT_EQ(classifyBindAddress(""), BindAddressKind::kInvalid);
+  EXPECT_EQ(classifyBindAddress("not-an-ip"), BindAddressKind::kInvalid);
+  EXPECT_EQ(classifyBindAddress("999.999.999.999"), BindAddressKind::kInvalid);
+}
+
+// The URL the browser is pointed at has to name where the listener actually is.
+static std::string browserHost(const std::string& literal)
+{
+  return browserHostForBind(boost::asio::ip::make_address(literal));
+}
+
+TEST(BrowserHostForBind, CanonicalLoopbackAndWildcardBecomeLocalhost)
+{
+  // localhost resolves to these, and it is inside the wildcard, which is not
+  // an address a browser can connect to.
+  EXPECT_EQ(browserHost("127.0.0.1"), "localhost");
+  EXPECT_EQ(browserHost("::1"), "localhost");
+  EXPECT_EQ(browserHost("0.0.0.0"), "localhost");
+  EXPECT_EQ(browserHost("::"), "localhost");
+}
+
+TEST(BrowserHostForBind, OtherLoopbackAddressesKeepTheirLiteral)
+{
+  // The bug this pins: localhost resolves to 127.0.0.1, so naming it for the
+  // rest of 127.0.0.0/8 sends the browser to a port nobody is listening on.
+  EXPECT_EQ(browserHost("127.0.0.2"), "127.0.0.2");
+  EXPECT_EQ(browserHost("::ffff:127.0.0.1"), "[::ffff:127.0.0.1]");
+}
+
+TEST(BrowserHostForBind, RoutableAddressesKeepTheirLiteral)
+{
+  EXPECT_EQ(browserHost("192.168.1.5"), "192.168.1.5");
+  EXPECT_EQ(browserHost("fd00::1"), "[fd00::1]");  // URLs bracket v6
 }
 
 TEST_F(TileHandlerTest, HonoursTheClientReportedDpr)
@@ -3207,6 +3330,30 @@ TEST_F(SetPropertyTest, StringEditAcceptedAndBroadcast)
   const auto expected = serializeBoundsResponse(*gen_, gen_->shapesReady());
   EXPECT_EQ(boost::json::serialize(push.at("bounds")),
             boost::json::serialize(expected.at("bounds")));
+  // The framing rect travels with it: an edit moves both.
+  ASSERT_TRUE(push.if_contains("fit_bounds"));
+  EXPECT_EQ(boost::json::serialize(push.at("fit_bounds")),
+            boost::json::serialize(expected.at("fit_bounds")));
+}
+
+// The bounds response carries two rects: `bounds` georeferences the tile grid
+// and `fit_bounds` is what the client frames.  They differ by the pin-label
+// margin, so the framing rect is always inside the georeference one.
+TEST_F(SetPropertyTest, BoundsResponseCarriesTheFramingRect)
+{
+  const auto resp = serializeBoundsResponse(*gen_, true);
+  ASSERT_TRUE(resp.if_contains("fit_bounds"));
+  const auto& geo = resp.at("bounds").as_array();
+  const auto& fit = resp.at("fit_bounds").as_array();
+  // Wire order is [[yMin, xMin], [yMax, xMax]].
+  EXPECT_GE(fit.at(0).as_array().at(0).as_int64(),
+            geo.at(0).as_array().at(0).as_int64());
+  EXPECT_GE(fit.at(0).as_array().at(1).as_int64(),
+            geo.at(0).as_array().at(1).as_int64());
+  EXPECT_LE(fit.at(1).as_array().at(0).as_int64(),
+            geo.at(1).as_array().at(0).as_int64());
+  EXPECT_LE(fit.at(1).as_array().at(1).as_int64(),
+            geo.at(1).as_array().at(1).as_int64());
 }
 
 // Documents the dynamic-bounds behavior the client resync exists for:

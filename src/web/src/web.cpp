@@ -1401,6 +1401,47 @@ void DetectSession::on_read(beast::error_code ec)
   }
 
   if (websocket::is_upgrade(req_)) {
+    // Reject a cross-origin handshake before upgrading (issue #11167): the
+    // WebSocket carries a full Tcl interpreter, and the same-origin policy does
+    // not stop a foreign page a victim visits from opening the socket.  The
+    // browser sets Origin and page JavaScript cannot forge it, so this gates
+    // the browser cross-site vector.  It does NOT authenticate a non-browser
+    // network client, which controls every header; that is the job of binding
+    // to loopback (issue #11167, F-02), on which this guard depends.
+    const std::string_view origin = req_[http::field::origin];
+    const std::string_view host = req_[http::field::host];
+    if (!webSocketOriginAllowed(origin, host)) {
+      // The Origin is attacker-controlled; strip control characters and cap
+      // the length so it cannot inject newlines/escape sequences into the log.
+      const std::string_view clipped = origin.substr(0, 128);
+      std::string safe_origin;
+      safe_origin.reserve(clipped.size());
+      for (const char c : clipped) {
+        safe_origin.push_back(
+            std::isprint(static_cast<unsigned char>(c)) != 0 ? c : '?');
+      }
+      logger_->warn(utl::WEB,
+                    78,
+                    "Rejected WebSocket upgrade from disallowed Origin \"{}\".",
+                    safe_origin);
+      auto res = std::make_shared<http::response<http::string_body>>(
+          http::status::forbidden, req_.version());
+      res->set(http::field::server, "OpenROAD WebSocket Server");
+      res->set(http::field::content_type, "text/plain");
+      res->keep_alive(false);
+      res->body() = "Forbidden: cross-origin WebSocket rejected.";
+      res->prepare_payload();
+      // Keep `res` alive until the write completes, then shut the socket down
+      // for a graceful FIN — same teardown as HttpSession::do_close.
+      http::async_write(
+          stream_,
+          *res,
+          [self = shared_from_this(), res](beast::error_code, std::size_t) {
+            beast::error_code ec;
+            self->stream_.socket().shutdown(Tcp::socket::shutdown_send, ec);
+          });
+      return;
+    }
     // WebSocket upgrade - hand off to WebSocketSession
     auto websocket_session
         = std::make_shared<WebSocketSession>(stream_.release_socket(),
@@ -1668,7 +1709,8 @@ void WebServer::saveReport(const std::string& filename,
   ensureGenerator().eagerInit();
 
   odb::dbBlock* block = generator_->getBlock();
-  if (!block) {
+  const std::vector<odb::dbBlock*> design_blocks = generator_->blocks();
+  if (design_blocks.empty()) {
     logger_->error(utl::WEB, 35, "No design loaded.");
     return;
   }
@@ -1705,7 +1747,7 @@ void WebServer::saveReport(const std::string& filename,
   }
   // Net fanout histogram depends only on odb, so it's always populated.
   const std::string hist_fanout = boost::json::serialize(
-      serializeFanoutHistogram(computeFanoutHistogram(block)));
+      serializeFanoutHistogram(computeFanoutHistogram(design_blocks)));
   const std::string tech_json
       = boost::json::serialize(serializeTechResponse(*generator_));
   const std::string bounds_json
@@ -1714,6 +1756,13 @@ void WebServer::saveReport(const std::string& filename,
 
   // ── Serialize module hierarchy ──
 
+  // HierarchyReport walks one block's module tree, which a 3DBlox top lacks.
+  if (!block) {
+    logger_->warn(utl::WEB,
+                  77,
+                  "Multi-die design: the module hierarchy section will be "
+                  "empty, it is not aggregated across chiplets yet.");
+  }
   HierarchyReport hier_report(block, sta_);
   auto hier_result = hier_report.getReport();
 
@@ -1772,12 +1821,13 @@ void WebServer::saveReport(const std::string& filename,
 
   // ── Render per-path overlay images ──
 
+  const std::vector<ChipletNode>& chiplets = generator_->chiplets();
   auto render_path_overlays = [&](const std::vector<TimingPathSummary>& paths) {
     std::vector<std::string> overlays;
     for (const auto& path : paths) {
       std::vector<ColoredRect> rects;
       std::vector<FlightLine> lines;
-      collectTimingPathShapes(block, path, rects, lines);
+      collectTimingPathShapes(chiplets, path, rects, lines);
       const int overlay_px = 256 * (1 << kZ);
       auto png = generator_->renderOverlayPng(overlay_px, rects, lines);
       // An empty string is the report's "this path has no overlay" marker.  A
@@ -1797,11 +1847,17 @@ void WebServer::saveReport(const std::string& filename,
   const auto setup_overlays = render_path_overlays(setup_paths);
   const auto hold_overlays = render_path_overlays(hold_paths);
 
+  // Entries stay index-aligned with the paths, so an unrenderable path leaves
+  // an empty slot; only count the ones that actually carry an image.
+  auto count_rendered = [](const std::vector<std::string>& overlays) {
+    return std::ranges::count_if(
+        overlays, [](const std::string& png) { return !png.empty(); });
+  };
   logger_->info(utl::WEB,
                 34,
                 "Rendered {} setup + {} hold path overlays.",
-                setup_overlays.size(),
-                hold_overlays.size());
+                count_rendered(setup_overlays),
+                count_rendered(hold_overlays));
 
   // ── Write the HTML ──
 

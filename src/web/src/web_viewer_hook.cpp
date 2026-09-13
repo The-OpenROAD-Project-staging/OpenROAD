@@ -374,7 +374,7 @@ std::string WebViewerHook::registerCustom(std::vector<T>& vec,
                                           int& next_id,
                                           const char* prefix,
                                           const std::string& name,
-                                          T item,
+                                          T&& item,
                                           bool* is_duplicate)
 {
   *is_duplicate = false;

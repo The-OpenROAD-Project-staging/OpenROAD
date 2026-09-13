@@ -16,6 +16,7 @@
 #include <set>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -446,7 +447,15 @@ class TileGenerator
   int getThreadCount() const { return num_threads_; }
   void setThreadCount(const int num_threads) { num_threads_ = num_threads; }
 
+  // The tile grid's georeference: getFitBounds() grown by the pin-label
+  // margin, so the labels hanging outward from the die edge fall inside tiles
+  // that exist.  Tile indices are clamped to it.
   odb::Rect getBounds() const;
+
+  // What the client zooms to fit: the design proper, with no room reserved for
+  // pin labels.  Mirrors LayoutViewer::getBounds() in the Qt GUI.
+  odb::Rect getFitBounds() const;
+
   int getPinMaxSize() const;
 
   std::vector<std::string> getLayers() const;
@@ -568,6 +577,13 @@ class TileGenerator
   // selectAt) read it on every tile / click; the free function
   // `collectChiplets` is kept for tests and one-shot callers.
   const std::vector<ChipletNode>& chiplets() const;
+
+  // The distinct blocks holding the design's geometry: every chiplet's block,
+  // deduplicated (one node per dbChipInst, so a master placed N times reports
+  // the same block N times) and never null.  Empty means nothing is loaded --
+  // a 3DBlox top chip owns no block of its own, so getBlock() alone is not a
+  // usable "is there a design" test.
+  std::vector<odb::dbBlock*> blocks() const;
 
   // Monotonic counter, bumped every time chiplets() rebuilds its cache.
   // Caches derived from the chiplet list poll this to notice a hierarchy
@@ -704,7 +720,7 @@ class TileGenerator
                        const TileFrame& frame,
                        bool debug_live,
                        odb::dbTechLayer* layer)>
-        draw;
+        draw = nullptr;
 
     // Renderer::select: a renderer can answer a click with objects of its own
     // (the placer's gcells, the DRC markers, psm's nodes).  Same `layer`
@@ -715,7 +731,7 @@ class TileGenerator
     std::function<void(odb::dbTechLayer* layer,
                        const odb::Rect& region,
                        std::vector<SelectionResult>& out)>
-        select;
+        select = nullptr;
   };
 
   // Install (or clear with `{}`) the renderer bridge.  Global process state;
@@ -780,10 +796,14 @@ class TileGenerator
                 const Color& c,
                 int dim = -1) const;
 
+  // `px_per_css` is the display's device-pixel ratio: the overlay's inset and
+  // font height are authored in CSS px and scaled by it.  It is NOT derivable
+  // from the buffer, whose side is the client's own tile size times the ratio.
   void drawDebugOverlay(std::vector<unsigned char>& image,
                         int z,
                         int x,
-                        int y) const;
+                        int y,
+                        double px_per_css) const;
 
   // Anti-aliased text rendering.  All methods take a pre-resolved FontSize
   // handle so callers lock the glyph cache once per rendering context rather
@@ -1076,6 +1096,15 @@ class TileGenerator
                                  const TileFrame& frame,
                                  int dim,
                                  int stroke);
+  // The instance's name, centred in its bbox and elided to fit.  Called after
+  // the blockage hatch rather than with the rest of the instance, the way Qt
+  // defers drawInstanceNames past drawBlockages, so no hatch line crosses a
+  // label.
+  static void drawInstanceName(std::vector<unsigned char>& image,
+                               odb::dbInst* inst,
+                               const TileFrame& frame,
+                               int dim,
+                               const GlyphCache::FontSize& inst_font);
   mutable std::mutex heatmap_mutex_;
   mutable std::map<std::string, std::shared_ptr<gui::HeatMapDataSource>>
       heatmaps_;
@@ -1097,8 +1126,11 @@ class TileGenerator
 
 struct TimingPathSummary;
 
-std::pair<odb::dbITerm*, odb::dbBTerm*> resolvePin(odb::dbBlock* block,
-                                                   const std::string& pin_name);
+// Resolve a (possibly "<chip-inst>/"-prefixed) pin name against the chiplets,
+// returning the owning node so the caller can transform the pin's geometry.
+std::tuple<odb::dbITerm*, odb::dbBTerm*, const ChipletNode*> resolvePin(
+    const std::vector<ChipletNode>& chiplets,
+    const std::string& pin_name);
 
 void collectNetShapes(odb::dbNet* net,
                       odb::dbITerm* drv_iterm,
@@ -1107,14 +1139,20 @@ void collectNetShapes(odb::dbNet* net,
                       odb::dbBTerm* snk_bterm,
                       const Color& color,
                       std::vector<ColoredRect>& rects,
-                      std::vector<FlightLine>& lines);
+                      std::vector<FlightLine>& lines,
+                      const odb::dbTransform& xfm);
 
-void collectTimingPathShapes(odb::dbBlock* block,
+void collectTimingPathShapes(const std::vector<ChipletNode>& chiplets,
                              const TimingPathSummary& path,
                              std::vector<ColoredRect>& rects,
                              std::vector<FlightLine>& lines);
 
 // ── JSON serialization helpers for TileGenerator responses ──
+
+// A DBU rect in the wire order the client's coordinate transforms expect:
+// [[yMin, xMin], [yMax, xMax]].  Note this is NOT bboxArray()'s flat
+// [xMin, yMin, xMax, yMax] -- the two orders are not interchangeable.
+boost::json::array boundsArray(const odb::Rect& r);
 
 boost::json::object serializeTechResponse(const TileGenerator& gen);
 boost::json::object serializeBoundsResponse(const TileGenerator& gen,
