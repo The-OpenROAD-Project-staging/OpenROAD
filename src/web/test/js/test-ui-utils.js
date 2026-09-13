@@ -3,9 +3,10 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { boundsEqual, computeBoundsTransforms, computeScaleBar, cssColorToHex,
-         fittedTileSizeCss, installWheelPanning, isValidHexColor, kZoomMargin,
-         maxUsefulZoom, MAX_TILE_ZOOM, niceRoundParts }
+import { applyArrowStep, boundsEqual, computeBoundsTransforms, computeScaleBar,
+         cssColorToHex, fittedTileSizeCss, installWheelPanning, isValidHexColor,
+         kArrowStepDefault, kZoomMargin, maxUsefulZoom, MAX_TILE_ZOOM,
+         niceRoundParts }
     from '../../src/ui-utils.js';
 import { isDeviceExactTileSize, TILE_SIZE_CSS, TILE_SIZE_QUANTUM }
     from '../../src/tile-request.js';
@@ -474,5 +475,67 @@ describe('installWheelPanning', () => {
         fire({ deltaY: 3, deltaMode: 1 });
         fire({ deltaY: 1, deltaMode: 2 });
         assert.deepEqual(calls.pan, [[0, 48], [0, 600]]);
+    });
+});
+
+// ─── applyArrowStep (Options > arrow keys scroll step, 2.15) ────────────────
+
+// A stand-in for Leaflet's Keyboard handler, transcribed from Leaflet 1.9.4
+// (Map.Keyboard.js): options.keyboardPanDelta is read once in initialize, and
+// _setPanDelta rebuilds _panKeys from its *argument* -- it never re-reads the
+// option.  _onKeyDown then pans by whatever _panKeys holds.  Modelling it this
+// way means the assertions below are about the distance an arrow press moves,
+// not merely about which function got called.
+const kLeft = 37, kRight = 39;
+
+function makeKeyboardMap(initialPanDelta) {
+    const keyboard = {
+        _panKeys: {},
+        _setPanDelta(panDelta) {
+            this._panKeys = {
+                [kLeft]: [-1 * panDelta, 0],
+                [kRight]: [panDelta, 0],
+            };
+        },
+    };
+    // What Keyboard.initialize does with options.keyboardPanDelta.
+    keyboard._setPanDelta(initialPanDelta);
+    const map = { keyboard, options: { keyboardPanDelta: initialPanDelta } };
+    // What _onKeyDown pans by for a key press.
+    const panFor = (key) => keyboard._panKeys[key];
+    return { map, panFor };
+}
+
+describe('applyArrowStep', () => {
+    // The regression this guards: writing only the cookie (or only
+    // map.options.keyboardPanDelta) leaves an open viewer panning by the old
+    // distance until a reload, because Leaflet reads that option once.
+    it('changes the live pan distance, not just the next map', () => {
+        const { map, panFor } = makeKeyboardMap(kArrowStepDefault);
+        assert.deepEqual(panFor(kRight), [kArrowStepDefault, 0]);
+
+        applyArrowStep(map, 250);
+        assert.deepEqual(panFor(kRight), [250, 0], 'right arrow pans by 250');
+        assert.deepEqual(panFor(kLeft), [-250, 0], 'left arrow mirrors it');
+    });
+
+    // Assigning the option instead would be a dead store; this pins that the
+    // helper does not settle for that and leave _panKeys stale.
+    it('does not rely on map.options.keyboardPanDelta', () => {
+        const { map, panFor } = makeKeyboardMap(kArrowStepDefault);
+        map.options.keyboardPanDelta = 999;
+        assert.deepEqual(panFor(kRight), [kArrowStepDefault, 0],
+                         'the option alone moves nothing');
+        applyArrowStep(map, 120);
+        assert.deepEqual(panFor(kRight), [120, 0]);
+    });
+
+    // A static report builds no keyboard handler, and the Options menu can be
+    // driven before the map exists; neither may throw.
+    it('is a no-op when there is no map or no keyboard handler', () => {
+        assert.doesNotThrow(() => applyArrowStep(null, 100));
+        assert.doesNotThrow(() => applyArrowStep(undefined, 100));
+        assert.doesNotThrow(() => applyArrowStep({}, 100));
+        assert.doesNotThrow(() => applyArrowStep({ keyboard: {} }, 100));
     });
 });

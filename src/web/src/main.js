@@ -22,11 +22,12 @@ import { ChartsWidget } from './charts-widget.js';
 import { HierarchyBrowser } from './hierarchy-browser.js';
 import { createInspectorPanel } from './inspector.js';
 import { SelectionBrowser } from './selection-browser.js';
-import { applySelectionFlags, beginSelection, boundsEqual, buildMapOptions,
-         buildVisibilityFlags, clampArrowStep, computeBoundsTransforms,
-         computeScaleBar, decorateTabIcons, fittedTileSizeCss, formatDbu,
-         formatDistance, installWheelPanning, isCurrentSelection, isStaticMode,
-         maxUsefulZoom, parseDbu, rafCoalesce, showToast, unitLabel }
+import { applyArrowStep, applySelectionFlags, beginSelection, boundsEqual,
+         buildMapOptions, buildVisibilityFlags, clampArrowStep,
+         computeBoundsTransforms, computeScaleBar, decorateTabIcons,
+         fittedTileSizeCss, formatDbu, formatDistance, installWheelPanning,
+         isCurrentSelection, isStaticMode, maxUsefulZoom, parseDbu,
+         rafCoalesce, showToast, unitLabel }
     from './ui-utils.js';
 import { clampFontScale, showAppFontDialog, showArrowStepDialog }
     from './options-dialogs.js';
@@ -1367,13 +1368,12 @@ app.toggleWheelZoom = function() {
 };
 
 // Qt's Options > "Arrow keys scroll step".  Leaflet caches the pan distance in
-// its keyboard handler's key map, so the new step has to be pushed into it;
-// _setPanDelta is private, hence the guard, and buildMapOptions carries the
-// value for the next page load either way.
+// its keyboard handler's key map, so the new step has to be pushed into it:
+// see applyArrowStep.
 app.setArrowStep = function(step) {
     app.arrowStep = clampArrowStep(step);
     setCookie('or_arrow_step', String(app.arrowStep));
-    app.map?.keyboard?._setPanDelta?.(app.arrowStep);
+    applyArrowStep(app.map, app.arrowStep);
     scheduleSyncDisplayState();
 };
 

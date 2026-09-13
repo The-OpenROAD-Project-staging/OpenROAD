@@ -252,6 +252,19 @@ export function clampArrowStep(value) {
     return Math.min(kArrowStepMax, Math.max(kArrowStepMin, step));
 }
 
+// Push a new arrow-key step into an already-open map.
+//
+// Leaflet reads options.keyboardPanDelta once, in Keyboard.initialize, so
+// assigning that option on a live map does nothing -- the distance lives in
+// the handler's own key map, which _setPanDelta rebuilds from this argument
+// (Leaflet 1.9.4, Map.Keyboard.js).  Hence the push rather than an option
+// write.  _setPanDelta is private, so every hop is optional-chained: a static
+// report has no keyboard handler, and setArrowStep can run before the map
+// exists.  buildMapOptions carries the value for the next map either way.
+export function applyArrowStep(map, step) {
+    map?.keyboard?._setPanDelta?.(step);
+}
+
 // Build a display-controls group header row: an expand/collapse triangle and
 // a stretching name cell.  Callers fill in `name.textContent` and append their
 // checkbox columns after it, which pins those columns to the row's right edge
