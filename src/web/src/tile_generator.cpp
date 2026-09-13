@@ -4783,7 +4783,12 @@ std::vector<unsigned char> TileGenerator::renderTileBuffer(
   }
 
   if (vis.debug) {
-    drawDebugOverlay(world_image_buffer, z, x, y);
+    // effective_dpr, not tile_px/256: the client picks its own CSS tile size
+    // (240 by default, and a fitted size when zoom-to-fit needs one), so the
+    // buffer's side is that size times the ratio.  Inferring the scale from the
+    // 256 constant would size the label by the tile choice instead of by the
+    // display.
+    drawDebugOverlay(world_image_buffer, z, x, y, effective_dpr);
   }
 
   return world_image_buffer;
@@ -5593,18 +5598,16 @@ std::vector<unsigned char> TileGenerator::renderOverlayPng(
 void TileGenerator::drawDebugOverlay(std::vector<unsigned char>& image,
                                      const int z,
                                      const int x,
-                                     const int y) const
+                                     const int y,
+                                     const double px_per_css) const
 {
   const Color yellow{.r = 255, .g = 255, .b = 0, .a = 255};
-  // The output buffer is tile_px = 256*dpr on a side, NOT kTileSizeInPixel.
-  // Recover the real dimension: hardcoding 256 boxed the whole overlay into
-  // the top-left 256x256 corner of a HiDPI tile, so the "tile" outline drew
-  // at 1/dpr of the tile it was supposed to trace.
+  // The output buffer is tile_px on a side, NOT kTileSizeInPixel.  Recover the
+  // real dimension: hardcoding 256 boxed the whole overlay into the top-left
+  // 256x256 corner of a HiDPI tile, so the "tile" outline drew at 1/dpr of the
+  // tile it was supposed to trace.
   const int dim = bufferDim(image);
   const int last = dim - 1;
-  // Pixel-authored sizes (border inset, font height) are in CSS px; scale them
-  // to physical px so the overlay looks identical across dpr.
-  const double px_per_css = static_cast<double>(dim) / kTileSizeInPixel;
 
   // Draw 1-pixel yellow border
   for (int i = 0; i < dim; ++i) {

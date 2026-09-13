@@ -770,10 +770,14 @@ class TileGenerator
                 const Color& c,
                 int dim = -1) const;
 
+  // `px_per_css` is the display's device-pixel ratio: the overlay's inset and
+  // font height are authored in CSS px and scaled by it.  It is NOT derivable
+  // from the buffer, whose side is the client's own tile size times the ratio.
   void drawDebugOverlay(std::vector<unsigned char>& image,
                         int z,
                         int x,
-                        int y) const;
+                        int y,
+                        double px_per_css) const;
 
   // Anti-aliased text rendering.  All methods take a pre-resolved FontSize
   // handle so callers lock the glyph cache once per rendering context rather
