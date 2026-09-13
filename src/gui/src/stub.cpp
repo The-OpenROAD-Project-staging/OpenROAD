@@ -323,8 +323,22 @@ int Gui::select(const std::string& type,
   return 0;
 }
 
+// The display-control state belongs to whatever front-end is installed, which
+// for a no-Qt binary is the headless viewer (e.g. the web viewer).  Without a
+// viewer everything is visible so headless renderers draw by default.
 void Gui::setDisplayControlsVisible(const std::string& name, bool value)
 {
+  if (headless_viewer_ != nullptr) {
+    headless_viewer_->setDisplayControlVisible(name, value);
+  }
+}
+
+bool Gui::checkDisplayControlsVisible(const std::string& name)
+{
+  if (headless_viewer_ != nullptr) {
+    return headless_viewer_->checkDisplayControlVisible(name);
+  }
+  return true;
 }
 
 void Gui::clearHighlights(int highlight_group)
