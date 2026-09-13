@@ -164,6 +164,14 @@ static void message_handler(QtMsgType type,
       suppress = true;
     }
   }
+
+  // A Bazel-installed binary has no reachable ICU data directory (see
+  // bazel/icu-patches), so QCollator legitimately cannot open a collator.
+  // Qt already falls back to a plain, non-locale-aware string compare in
+  // that case (qcollator_icu.cpp), so this is harmless -- just noisy.
+  if (msg.contains("Could not create collator")) {
+    suppress = true;
+  }
 #endif
 
   if (suppress) {
@@ -1353,23 +1361,12 @@ void Renderer::redraw()
 
 bool Renderer::checkDisplayControl(const std::string& name)
 {
-  const std::string& group_name = getDisplayControlGroupName();
-
-  if (group_name.empty()) {
-    return Gui::get()->checkDisplayControlsVisible(name);
-  }
-  return Gui::get()->checkDisplayControlsVisible(group_name + "/" + name);
+  return Gui::get()->checkDisplayControlsVisible(displayControlPath(name));
 }
 
 void Renderer::setDisplayControl(const std::string& name, bool value)
 {
-  const std::string& group_name = getDisplayControlGroupName();
-
-  if (group_name.empty()) {
-    Gui::get()->setDisplayControlsVisible(name, value);
-  } else {
-    Gui::get()->setDisplayControlsVisible(group_name + "/" + name, value);
-  }
+  Gui::get()->setDisplayControlsVisible(displayControlPath(name), value);
 }
 
 void Renderer::addDisplayControl(
