@@ -501,10 +501,12 @@ cc_test(
         "//test:nangate45_data",
     ],
     deps = [
+        "//src/gui",
         "//src/gui:gui_stub",
         "//src/odb/src/db",
         "//src/tst:nangate45_fixture",
         "//src/web",
+        "@boost.json",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
