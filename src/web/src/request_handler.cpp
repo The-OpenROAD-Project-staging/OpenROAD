@@ -26,6 +26,7 @@
 #include <variant>
 #include <vector>
 
+#include "boost/asio/ip/address.hpp"
 #include "boost/json/array.hpp"
 #include "boost/json/object.hpp"
 #include "boost/json/serialize.hpp"
@@ -52,6 +53,7 @@
 #include "timing_report.h"
 #include "utl/Logger.h"
 #include "utl/algorithms.h"
+#include "web/web.h"
 
 namespace web {
 
@@ -367,6 +369,47 @@ bool webSocketOriginAllowed(const std::string_view origin,
                     [&ascii_lower](const char a, const char b) {
                       return ascii_lower(a) == ascii_lower(b);
                     });
+}
+
+BindAddressKind classifyBindAddress(const std::string_view address)
+{
+  // make_address parses IP literals only — it never resolves a name, so
+  // "localhost" lands here as invalid rather than silently binding somewhere.
+  boost::system::error_code ec;
+  const auto parsed = boost::asio::ip::make_address(address, ec);
+  if (ec) {
+    return BindAddressKind::kInvalid;
+  }
+  // is_loopback() covers 127.0.0.0/8 and ::1, but not ::ffff:127.0.0.1 — an
+  // IPv4 bind wearing a v6 literal, which would otherwise be reported as
+  // exposed.  Unwrap those and judge them by their IPv4 half.  Everything
+  // else, the unspecified 0.0.0.0/:: included, is reachable off-machine.
+  bool loopback = parsed.is_loopback();
+  if (parsed.is_v6() && parsed.to_v6().is_v4_mapped()) {
+    loopback = boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped,
+                                                parsed.to_v6())
+                   .is_loopback();
+  }
+  return loopback ? BindAddressKind::kLoopback : BindAddressKind::kExposed;
+}
+
+std::string browserHostForBind(const boost::asio::ip::address& address)
+{
+  // "localhost" reads better than a literal, but it resolves to the canonical
+  // loopback only — naming it for the whole 127.0.0.0/8 range would send the
+  // browser to 127.0.0.1 while the listener sits on, say, 127.0.0.2.  The
+  // wildcard is not a destination at all, and localhost is inside it.
+  if (address.is_unspecified()
+      || address
+             == boost::asio::ip::address(
+                 boost::asio::ip::address_v4::loopback())
+      || address
+             == boost::asio::ip::address(
+                 boost::asio::ip::address_v6::loopback())) {
+    return "localhost";
+  }
+  const std::string literal = address.to_string();
+  return address.is_v6() ? "[" + literal + "]" : literal;
 }
 
 WebSocketResponse errorResponse(const uint32_t id,
@@ -4421,14 +4464,17 @@ WebSocketResponse TimingHandler::handleTimingHighlight(
       std::lock_guard<std::mutex> sta_lock(tcl_eval_->mutex);
       auto paths = timing_report_->getReport(is_setup);
       if (path_index < static_cast<int>(paths.size())) {
-        odb::dbBlock* block = gen_->getBlock();
-        collectTimingPathShapes(block, paths[path_index], new_rects, new_lines);
+        // chiplets() covers both cases: for a single-die design its root node
+        // carries the top block with an identity transform.
+        const std::vector<ChipletNode>& chiplets = gen_->chiplets();
+        collectTimingPathShapes(
+            chiplets, paths[path_index], new_rects, new_lines);
 
         const std::string pin_name
             = jsonOr<std::string>(req.json, "pin_name", "");
         if (!pin_name.empty()) {
           static const Color kStageColor{.r = 255, .g = 255, .b = 0, .a = 180};
-          auto [iterm, bterm] = resolvePin(block, pin_name);
+          auto [iterm, bterm, node] = resolvePin(chiplets, pin_name);
 
           odb::dbNet* net = nullptr;
           if (iterm) {
@@ -4445,7 +4491,8 @@ WebSocketResponse TimingHandler::handleTimingHighlight(
                              nullptr,
                              kStageColor,
                              new_rects,
-                             new_lines);
+                             new_lines,
+                             node->world_xfm);
           }
         }
       }
@@ -4471,7 +4518,7 @@ WebSocketResponse TimingHandler::handleTimingHighlight(
 namespace {
 
 // Center of a cone pin in DBU: ITerm average pin location (fallback: instance
-// center), or the first BPin box center for a BTerm.
+// center), or the first placed BPin box center for a BTerm.
 odb::Point conePinCenter(const TimingConeNode& node)
 {
   if (node.iterm) {
@@ -4484,9 +4531,10 @@ odb::Point conePinCenter(const TimingConeNode& node)
     return {(bbox.xMin() + bbox.xMax()) / 2, (bbox.yMin() + bbox.yMax()) / 2};
   }
   if (node.bterm) {
-    for (odb::dbBPin* bpin : node.bterm->getBPins()) {
-      const odb::Rect r = bpin->getBBox();
-      return {(r.xMin() + r.xMax()) / 2, (r.yMin() + r.yMax()) / 2};
+    int x = 0;
+    int y = 0;
+    if (node.bterm->getFirstPinLocation(x, y)) {
+      return {x, y};
     }
   }
   return {0, 0};
@@ -4687,8 +4735,7 @@ WebSocketResponse TimingHandler::handleFanoutHistogram(
   resp.type = WebSocketResponse::kJson;
   try {
     std::lock_guard<std::mutex> lock(tcl_eval_->mutex);
-    odb::dbBlock* block = gen_->getBlock();
-    auto histogram = computeFanoutHistogram(block);
+    auto histogram = computeFanoutHistogram(gen_->blocks());
     writePayload(resp, serializeFanoutHistogram(histogram));
   } catch (const std::exception& e) {
     resp.type = WebSocketResponse::kError;
@@ -5434,7 +5481,7 @@ LabelFields parseLabelFields(const boost::json::object& obj)
       // way.
       .size = static_cast<int>(std::clamp<int64_t>(
           jsonOr<int64_t>(obj, "size", 0), 0, TileGenerator::kMaxLabelSize)),
-      .anchor = anchor,
+      .anchor = std::move(anchor),
       .color = parseLabelColor(obj)};
 }
 
