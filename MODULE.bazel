@@ -241,9 +241,11 @@ bazel_dep(name = "qt-bazel")
 # "Parse error at QT7_ONLY"). 541ebf6d teaches the moc rule to also collect
 # external_includes. 5587ebca adds the qwebp imageformat plugin so save_image
 # can write .webp (without it the path is rewritten to *.webp.png).
+# c3319f9e includes <stdlib.h> for free() in qxcbatom.cpp, which libc++ 23
+# (hermetic-llvm >= 0.8.20) no longer pulls in transitively.
 git_override(
     module_name = "qt-bazel",
-    commit = "5587ebcaf61bab7abe8e69c4db6d068b35562245",
+    commit = "c3319f9e7735c67d47c7dfcc4a135bb91080f1a3",
     remote = "https://github.com/The-OpenROAD-Project/qt_bazel_prebuilts",
 )
 
