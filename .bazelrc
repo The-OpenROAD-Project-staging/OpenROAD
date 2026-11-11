@@ -309,7 +309,10 @@ build:ci --experimental_remote_downloader=grpcs://bazel.precisioninno.com:443
 # Usage: bazel build --config=lint //src/utl/...
 build:lint --aspects=//tools/lint:linters.bzl%clang_tidy
 build:lint --output_groups=rules_lint_human
-build:lint --remote_download_outputs=all
+# Download only the lint reports; the generator tools and their outputs
+# stay remote unless a local action needs them.
+build:lint --remote_download_minimal
+build:lint --remote_download_regex=.*\.AspectRulesLintClangTidy\.out.*
 
 # Telling real work from cache hits.
 #

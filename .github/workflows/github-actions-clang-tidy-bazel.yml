@@ -55,10 +55,9 @@ jobs:
               --remote_header="Authorization=Basic ${TOKEN_B64}"
             )
           fi
-          # Note: do NOT use --config=ci here. That config sets
-          # --remote_download_minimal and --config=opt (LTO), but we need
-          # the .AspectRulesLintClangTidy.out files materialized locally
-          # to feed reviewdog, and LTO is wasted work for lint.
+          # Note: do NOT use --config=ci here. It adds --config=opt (LTO),
+          # which is wasted work for lint. --config=lint downloads only the
+          # .AspectRulesLintClangTidy.out* files that feed reviewdog.
           # Self-hosted runners keep the output base between jobs; drop lint
           # outputs from earlier builds so collection sees only this build's.
           # Bazel recreates or re-downloads the ones this build needs.
