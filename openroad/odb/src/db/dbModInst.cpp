@@ -131,7 +131,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbModInst& obj)
   return stream;
 }
 
-void _dbModInst::collectMemInfo(MemInfo& info)
+void _dbModInst::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -333,9 +333,9 @@ dbSet<dbModInst>::iterator dbModInst::destroy(dbSet<dbModInst>::iterator& itr)
   return next;
 }
 
-dbSet<dbModITerm> dbModInst::getModITerms()
+dbSet<dbModITerm> dbModInst::getModITerms() const
 {
-  _dbModInst* _mod_inst = (_dbModInst*) this;
+  const _dbModInst* _mod_inst = (const _dbModInst*) this;
   _dbBlock* _block = (_dbBlock*) _mod_inst->getOwner();
   return dbSet<dbModITerm>(_mod_inst, _block->module_modinstmoditerm_itr_);
 }
@@ -361,9 +361,9 @@ std::string dbModInst::getHierarchicalName() const
                      inst_name);
 }
 
-dbModITerm* dbModInst::findModITerm(const char* name)
+dbModITerm* dbModInst::findModITerm(const char* name) const
 {
-  _dbModInst* obj = (_dbModInst*) this;
+  const _dbModInst* obj = (const _dbModInst*) this;
   _dbBlock* par = (_dbBlock*) obj->getOwner();
   auto it = obj->moditerm_hash_.find(name);
   if (it != obj->moditerm_hash_.end()) {

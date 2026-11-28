@@ -47,7 +47,7 @@ class _dbSWire : public _dbObject
   bool operator!=(const _dbSWire& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbSWire& rhs) const;
 
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   _dbSWireFlags flags_;
   dbId<_dbNet> net_;

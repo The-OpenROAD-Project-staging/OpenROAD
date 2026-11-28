@@ -37,7 +37,7 @@ class _dbTechVia : public _dbObject
 
   bool operator==(const _dbTechVia& rhs) const;
   bool operator!=(const _dbTechVia& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbTechViaFlags flags_;

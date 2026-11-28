@@ -25,7 +25,7 @@ class _dbTechLayerForbiddenSpacingRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerForbiddenSpacingRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   std::pair<int, int> forbidden_spacing_;
   int width_;

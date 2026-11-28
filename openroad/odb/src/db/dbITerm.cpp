@@ -168,9 +168,9 @@ dbMTerm* dbITerm::getMTerm() const
   return (dbMTerm*) iterm->mterm_;
 }
 
-dbBTerm* dbITerm::getBTerm()
+dbBTerm* dbITerm::getBTerm() const
 {
-  _dbITerm* iterm = (_dbITerm*) this;
+  const _dbITerm* iterm = (const _dbITerm*) this;
   _dbBlock* block = (_dbBlock*) iterm->getOwner();
   _dbInst* inst = block->inst_tbl_->getPtr(iterm->inst_);
 
@@ -202,10 +202,10 @@ void dbITerm::setClocked(bool v)
   iterm->flags_.clocked = v;
 }
 
-bool dbITerm::isClocked()
+bool dbITerm::isClocked() const
 {
   bool masterFlag = getMTerm()->getSigType() == dbSigType::CLOCK;
-  _dbITerm* iterm = (_dbITerm*) this;
+  const _dbITerm* iterm = (const _dbITerm*) this;
   return iterm->flags_.clocked > 0 || masterFlag;
 }
 
@@ -215,15 +215,15 @@ void dbITerm::setMark(uint32_t v)
   iterm->flags_.mark = v;
 }
 
-bool dbITerm::isSetMark()
+bool dbITerm::isSetMark() const
 {
-  _dbITerm* iterm = (_dbITerm*) this;
+  const _dbITerm* iterm = (const _dbITerm*) this;
   return iterm->flags_.mark > 0;
 }
 
-bool dbITerm::isSpecial()
+bool dbITerm::isSpecial() const
 {
-  _dbITerm* iterm = (_dbITerm*) this;
+  const _dbITerm* iterm = (const _dbITerm*) this;
   return iterm->flags_.special == 1;
 }
 
@@ -245,9 +245,9 @@ void dbITerm::setSpef(uint32_t v)
   iterm->flags_.spef = v;
 }
 
-bool dbITerm::isSpef()
+bool dbITerm::isSpef() const
 {
-  _dbITerm* iterm = (_dbITerm*) this;
+  const _dbITerm* iterm = (const _dbITerm*) this;
   return iterm->flags_.spef > 0;
 }
 
@@ -257,15 +257,15 @@ void dbITerm::setExtId(uint32_t v)
   iterm->ext_id_ = v;
 }
 
-uint32_t dbITerm::getExtId()
+uint32_t dbITerm::getExtId() const
 {
-  _dbITerm* iterm = (_dbITerm*) this;
+  const _dbITerm* iterm = (const _dbITerm*) this;
   return iterm->ext_id_;
 }
 
-bool dbITerm::isConnected()
+bool dbITerm::isConnected() const
 {
-  _dbITerm* iterm = (_dbITerm*) this;
+  const _dbITerm* iterm = (const _dbITerm*) this;
   return iterm->flags_.connected == 1;
 }
 
@@ -694,7 +694,7 @@ dbIoType dbITerm::getIoType() const
   _dbMTerm* mterm = (_dbMTerm*) getMTerm();
   return dbIoType(mterm->flags_.io_type);
 }
-bool dbITerm::isOutputSignal(bool io)
+bool dbITerm::isOutputSignal(bool io) const
 {
   _dbMTerm* mterm = (_dbMTerm*) getMTerm();
   dbSigType sType = dbSigType(mterm->flags_.sig_type);
@@ -714,7 +714,7 @@ bool dbITerm::isOutputSignal(bool io)
 
   return false;
 }
-bool dbITerm::isInputSignal(bool io)
+bool dbITerm::isInputSignal(bool io) const
 {
   _dbMTerm* mterm = (_dbMTerm*) getMTerm();
   dbSigType sType = dbSigType(mterm->flags_.sig_type);
@@ -741,7 +741,7 @@ dbITerm* dbITerm::getITerm(dbBlock* block_, uint32_t dbid)
   return (dbITerm*) block->iterm_tbl_->getPtr(dbid);
 }
 
-Rect dbITerm::getBBox()
+Rect dbITerm::getBBox() const
 {
   dbMTerm* term = getMTerm();
   Rect bbox = term->getBBox();
@@ -787,9 +787,9 @@ bool dbITerm::getAvgXY(int* x, int* y) const
   return true;
 }
 
-uint32_t dbITerm::staVertexId()
+uint32_t dbITerm::staVertexId() const
 {
-  _dbITerm* iterm = (_dbITerm*) this;
+  const _dbITerm* iterm = (const _dbITerm*) this;
   return iterm->sta_vertex_id_;
 }
 
@@ -897,7 +897,7 @@ std::vector<std::pair<dbTechLayer*, Rect>> dbITerm::getGeometries() const
   return geometries;
 }
 
-void _dbITerm::collectMemInfo(MemInfo& info)
+void _dbITerm::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

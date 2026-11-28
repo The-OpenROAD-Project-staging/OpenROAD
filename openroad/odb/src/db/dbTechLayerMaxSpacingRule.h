@@ -25,7 +25,7 @@ class _dbTechLayerMaxSpacingRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerMaxSpacingRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   std::string cut_class_;
   int max_spacing_;

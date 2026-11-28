@@ -37,7 +37,7 @@ class _dbGDSStructure : public _dbObject
   bool operator!=(const _dbGDSStructure& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbGDSStructure& rhs) const;
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   dbId<_dbGDSStructure> next_entry_;

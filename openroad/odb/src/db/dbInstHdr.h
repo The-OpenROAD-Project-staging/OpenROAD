@@ -40,7 +40,7 @@ class _dbInstHdr : public _dbObject
 
   bool operator==(const _dbInstHdr& rhs) const;
   bool operator!=(const _dbInstHdr& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   int mterm_cnt_;
   uint32_t id_;

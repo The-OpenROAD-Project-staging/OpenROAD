@@ -104,7 +104,7 @@ class _dbTechLayerAntennaRule : public _dbObject
   {
     return !operator==(rhs);
   }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbTechLayer> layer_;
   ARuleFactor area_mult_;
@@ -172,7 +172,7 @@ class _dbTechAntennaPinModel : public _dbObject
   {
     return !operator==(rhs);
   }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   static void getAntennaValues(
       _dbTech* tech,

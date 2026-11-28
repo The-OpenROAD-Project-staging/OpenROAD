@@ -130,7 +130,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbModBTerm& obj)
   return stream;
 }
 
-void _dbModBTerm::collectMemInfo(MemInfo& info)
+void _dbModBTerm::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

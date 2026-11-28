@@ -60,7 +60,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbChipBumpInst& obj)
   return stream;
 }
 
-void _dbChipBumpInst::collectMemInfo(MemInfo& info)
+void _dbChipBumpInst::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

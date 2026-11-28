@@ -34,7 +34,7 @@ class _dbTechLayerCutClassRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerCutClassRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerCutClassRuleFlags flags_;
   char* name_;

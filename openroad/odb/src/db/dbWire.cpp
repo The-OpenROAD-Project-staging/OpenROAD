@@ -81,14 +81,14 @@ class dbDiffShapeCmp
 // DB wire methods here
 //
 
-dbBlock* dbWire::getBlock()
+dbBlock* dbWire::getBlock() const
 {
   return (dbBlock*) getImpl()->getOwner();
 }
 
-dbNet* dbWire::getNet()
+dbNet* dbWire::getNet() const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
 
   if (wire->net_ == 0) {
     return nullptr;
@@ -98,15 +98,15 @@ dbNet* dbWire::getNet()
   return (dbNet*) block->net_tbl_->getPtr(wire->net_);
 }
 
-bool dbWire::isGlobalWire()
+bool dbWire::isGlobalWire() const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   return wire->flags_.is_global == 1;
 }
 
-bool dbWire::hasNormalizedConnectivity()
+bool dbWire::hasNormalizedConnectivity() const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   return wire->flags_.normalized_connectivity == 1;
 }
 
@@ -188,7 +188,7 @@ uint32_t dbWire::getTermShapeJunctionId(const int term_id) const
   return junction_id;
 }
 
-std::optional<Rect> dbWire::getBBox()
+std::optional<Rect> dbWire::getBBox() const
 {
   Rect bbox;
   bbox.mergeInit();
@@ -207,9 +207,9 @@ std::optional<Rect> dbWire::getBBox()
 
 #define DB_WIRE_SHAPE_INVALID_SHAPE_ID 0
 
-void dbWire::getShape(int shape_id, dbShape& shape)
+void dbWire::getShape(int shape_id, dbShape& shape) const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   assert((0 <= shape_id) && (shape_id < (int) wire->length()));
   unsigned char opcode = wire->opcodes_[shape_id];
 
@@ -277,9 +277,9 @@ void dbWire::getShape(int shape_id, dbShape& shape)
   }
 }
 
-Point dbWire::getCoord(int jid)
+Point dbWire::getCoord(int jid) const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   assert((0 <= jid) && (jid < (int) wire->length()));
   dbBlock* block = (dbBlock*) wire->getOwner();
   dbTech* tech = getDb()->getTech();
@@ -289,9 +289,9 @@ Point dbWire::getCoord(int jid)
   return {pnt.x, pnt.y};
 }
 
-bool dbWire::getProperty(int jid, int& prpty)
+bool dbWire::getProperty(int jid, int& prpty) const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   [[maybe_unused]] const int wlen = (int) wire->length();
   assert(0 <= jid && jid < wlen);
   unsigned char op = wire->opcodes_[jid] & WOP_OPCODE_MASK;
@@ -336,21 +336,21 @@ bool dbWire::setProperty(int jid, int prpty)
   return false;
 }
 
-int dbWire::getData(int idx)
+int dbWire::getData(int idx) const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   assert((0 <= idx) && (idx < (int) wire->length()));
   return (wire->data_[idx]);
 }
 
-unsigned char dbWire::getOpcode(int idx)
+unsigned char dbWire::getOpcode(int idx) const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   assert((0 <= idx) && (idx < (int) wire->length()));
   return (wire->opcodes_[idx]);
 }
 
-uint64_t dbWire::getLength()
+uint64_t dbWire::getLength() const
 {
   dbWireShapeItr shapes;
   dbShape s;
@@ -364,18 +364,18 @@ uint64_t dbWire::getLength()
   return rtlen;
 }
 
-uint32_t dbWire::length()
+uint32_t dbWire::length() const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   return wire->length();
 }
 
-uint32_t dbWire::count()
+uint32_t dbWire::count() const
 {
   uint32_t jj;
   int opcode;
   uint32_t cnt = 0;
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   for (jj = 0; jj < wire->length(); jj++) {
     opcode = wire->opcodes_[jj] & WOP_OPCODE_MASK;
     if (opcode == kX || opcode == kY) {
@@ -448,9 +448,9 @@ static const Coord prevCoord[13][3] = {/*            X        Y        C */
                                        /*  11 */ {XCoord, None, None},
                                        /*  12 */ {XCoord, YCoord, None}};
 
-void dbWire::getSegment(int shape_id, dbShape& shape)
+void dbWire::getSegment(int shape_id, dbShape& shape) const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   dbTechLayer* layer = nullptr;
 
   int width = 0;
@@ -703,9 +703,9 @@ decode_loop:
 // This version is optimized for the extraction code, where the layer is already
 // known
 //
-void dbWire::getSegment(int shape_id, dbTechLayer* layer, dbShape& shape)
+void dbWire::getSegment(int shape_id, dbTechLayer* layer, dbShape& shape) const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   assert(layer);
 
   int width = 0;
@@ -889,7 +889,7 @@ decode_loop:
                    layer);
 }
 
-static unsigned char getPrevOpcode(_dbWire* wire, int& idx)
+static unsigned char getPrevOpcode(const _dbWire* wire, int& idx)
 {
   --idx;
 
@@ -921,7 +921,7 @@ prevOpCode:
   }
 }
 
-static bool createVia(_dbWire* wire, int idx, dbShape& shape)
+static bool createVia(const _dbWire* wire, int idx, dbShape& shape)
 {
   dbBlock* block = (dbBlock*) wire->getOwner();
   dbTech* tech = wire->getDb()->getTech();
@@ -948,7 +948,7 @@ static bool createVia(_dbWire* wire, int idx, dbShape& shape)
   return true;
 }
 
-static bool createTechVia(_dbWire* wire, int idx, dbShape& shape)
+static bool createTechVia(const _dbWire* wire, int idx, dbShape& shape)
 {
   dbBlock* block = (dbBlock*) wire->getOwner();
   dbTech* tech = wire->getDb()->getTech();
@@ -977,9 +977,9 @@ static bool createTechVia(_dbWire* wire, int idx, dbShape& shape)
 
 // This function gets the previous via of this shape_id,
 // if one exists.
-bool dbWire::getPrevVia(int idx, dbShape& shape)
+bool dbWire::getPrevVia(int idx, dbShape& shape) const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   assert((0 < idx) && (idx < (int) wire->length()));
 
   unsigned char opcode;
@@ -1024,9 +1024,9 @@ bool dbWire::getPrevVia(int idx, dbShape& shape)
 //
 // This function gets the next via of this shape_id,
 // if one exists.
-bool dbWire::getNextVia(int idx, dbShape& shape)
+bool dbWire::getNextVia(int idx, dbShape& shape) const
 {
-  _dbWire* wire = (_dbWire*) this;
+  const _dbWire* wire = (const _dbWire*) this;
   assert((0 < idx) && (idx < (int) wire->length()));
   ++idx;
 
@@ -1066,7 +1066,7 @@ nextOpCode:
   return false;
 }
 
-bool dbWire::getViaBoxes(int via_shape_id, std::vector<dbShape>& shapes)
+bool dbWire::getViaBoxes(int via_shape_id, std::vector<dbShape>& shapes) const
 {
   dbShape via;
 
@@ -1272,7 +1272,7 @@ void dbWire::destroy(dbWire* wire_)
   block->wire_tbl_->destroy(wire);
 }
 
-void _dbWire::collectMemInfo(MemInfo& info)
+void _dbWire::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

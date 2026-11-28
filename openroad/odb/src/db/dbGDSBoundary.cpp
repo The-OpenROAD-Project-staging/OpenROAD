@@ -64,7 +64,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbGDSBoundary& obj)
   return stream;
 }
 
-void _dbGDSBoundary::collectMemInfo(MemInfo& info)
+void _dbGDSBoundary::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -125,9 +125,9 @@ void dbGDSBoundary::getXy(std::vector<Point>& tbl) const
 }
 
 // User Code Begin dbGDSBoundaryPublicMethods
-const std::vector<Point>& dbGDSBoundary::getXY()
+const std::vector<Point>& dbGDSBoundary::getXY() const
 {
-  auto obj = (_dbGDSBoundary*) this;
+  const auto* obj = (const _dbGDSBoundary*) this;
   return obj->xy_;
 }
 

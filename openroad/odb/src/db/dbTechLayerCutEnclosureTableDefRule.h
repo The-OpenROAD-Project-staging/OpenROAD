@@ -28,7 +28,7 @@ class _dbTechLayerCutEnclosureTableDefRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerCutEnclosureTableDefRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbTechLayerCutClassRule> cut_class_;
   dbVector<dbTechLayerCutEnclosureTableDefRule::DefaultRow> default_rows_;

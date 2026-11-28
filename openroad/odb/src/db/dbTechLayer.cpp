@@ -870,7 +870,7 @@ dbObjectTable* _dbTechLayer::getObjectTable(dbObjectType type)
   }
   return getTable()->getObjectTable(type);
 }
-void _dbTechLayer::collectMemInfo(MemInfo& info)
+void _dbTechLayer::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -1461,15 +1461,15 @@ const char* dbTechLayer::getConstName() const
   return layer->name_;
 }
 
-bool dbTechLayer::hasAlias()
+bool dbTechLayer::hasAlias() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->flags_.has_alias == 1;
 }
 
-std::string dbTechLayer::getAlias()
+std::string dbTechLayer::getAlias() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
 
   if (layer->alias_ == nullptr) {
     return "";
@@ -1505,9 +1505,9 @@ void dbTechLayer::setWidth(int width)
   }
 }
 
-int dbTechLayer::getSpacing()
+int dbTechLayer::getSpacing() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->spacing_;
 }
 
@@ -1517,9 +1517,9 @@ void dbTechLayer::setSpacing(int spacing)
   layer->spacing_ = spacing;
 }
 
-double dbTechLayer::getEdgeCapacitance()
+double dbTechLayer::getEdgeCapacitance() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->edge_capacitance_;
 }
 
@@ -1529,9 +1529,9 @@ void dbTechLayer::setEdgeCapacitance(double cap)
   layer->edge_capacitance_ = cap;
 }
 
-uint32_t dbTechLayer::getWireExtension()
+uint32_t dbTechLayer::getWireExtension() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->wire_extension_;
 }
 
@@ -1541,9 +1541,9 @@ void dbTechLayer::setWireExtension(uint32_t ext)
   layer->wire_extension_ = ext;
 }
 
-int dbTechLayer::getSpacing(int w, int l)
+int dbTechLayer::getSpacing(int w, int l) const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
 
   bool found_spacing = false;
   uint32_t spacing = MAX_INT;
@@ -1595,9 +1595,9 @@ int dbTechLayer::getSpacing(int w, int l)
 //
 // Get the low end of the uppermost range for wide wire design rules.
 //
-void dbTechLayer::getMaxWideDRCRange(int& owidth, int& olength)
+void dbTechLayer::getMaxWideDRCRange(int& owidth, int& olength) const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
 
   owidth = getWidth();
   olength = owidth;
@@ -1621,9 +1621,9 @@ void dbTechLayer::getMaxWideDRCRange(int& owidth, int& olength)
 //
 // Get the low end of the lowermost range for wide wire design rules.
 //
-void dbTechLayer::getMinWideDRCRange(int& owidth, int& olength)
+void dbTechLayer::getMinWideDRCRange(int& owidth, int& olength) const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
 
   owidth = getWidth();
   olength = owidth;
@@ -1845,7 +1845,8 @@ int dbTechLayer::findTwSpacing(const int width1,
   return layer->two_widths_sp_spacing_(rowIdx, colIdx);
 }
 
-bool dbTechLayer::getMinimumCutRules(std::vector<dbTechMinCutRule*>& cut_rules)
+bool dbTechLayer::getMinimumCutRules(
+    std::vector<dbTechMinCutRule*>& cut_rules) const
 {
   cut_rules.clear();
 
@@ -1856,30 +1857,30 @@ bool dbTechLayer::getMinimumCutRules(std::vector<dbTechMinCutRule*>& cut_rules)
   return !cut_rules.empty();
 }
 
-dbSet<dbTechMinCutRule> dbTechLayer::getMinCutRules()
+dbSet<dbTechMinCutRule> dbTechLayer::getMinCutRules() const
 {
   dbSet<dbTechMinCutRule> rules;
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   rules = dbSet<dbTechMinCutRule>(layer, layer->min_cut_rules_tbl_);
   return rules;
 }
 
-dbSet<dbTechMinEncRule> dbTechLayer::getMinEncRules()
+dbSet<dbTechMinEncRule> dbTechLayer::getMinEncRules() const
 {
   dbSet<dbTechMinEncRule> rules;
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   rules = dbSet<dbTechMinEncRule>(layer, layer->min_enc_rules_tbl_);
   return rules;
 }
 
-dbSet<dbTechV55InfluenceEntry> dbTechLayer::getV55InfluenceRules()
+dbSet<dbTechV55InfluenceEntry> dbTechLayer::getV55InfluenceRules() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return dbSet<dbTechV55InfluenceEntry>(layer, layer->v55inf_tbl_);
 }
 
 bool dbTechLayer::getMinEnclosureRules(
-    std::vector<dbTechMinEncRule*>& enc_rules)
+    std::vector<dbTechMinEncRule*>& enc_rules) const
 {
   enc_rules.clear();
 
@@ -2131,27 +2132,27 @@ void dbTechLayer::setProtrusion(uint32_t pt_width,
   layer->pt_.from_width = pt_from_width;
 }
 
-int dbTechLayer::getPitch()
+int dbTechLayer::getPitch() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->pitch_x_;
 }
 
-int dbTechLayer::getPitchX()
+int dbTechLayer::getPitchX() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->pitch_x_;
 }
 
-int dbTechLayer::getPitchY()
+int dbTechLayer::getPitchY() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->pitch_y_;
 }
 
-int dbTechLayer::getFirstLastPitch()
+int dbTechLayer::getFirstLastPitch() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->first_last_pitch_;
 }
 
@@ -2177,27 +2178,27 @@ void dbTechLayer::setFirstLastPitch(int first_last_pitch)
   layer->first_last_pitch_ = first_last_pitch;
 }
 
-bool dbTechLayer::hasXYPitch()
+bool dbTechLayer::hasXYPitch() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->flags_.has_xy_pitch;
 }
 
-int dbTechLayer::getOffset()
+int dbTechLayer::getOffset() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->offset_x_;
 }
 
-int dbTechLayer::getOffsetX()
+int dbTechLayer::getOffsetX() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->offset_x_;
 }
 
-int dbTechLayer::getOffsetY()
+int dbTechLayer::getOffsetY() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->offset_y_;
 }
 
@@ -2217,15 +2218,15 @@ void dbTechLayer::setOffsetXY(int offset_x, int offset_y)
   layer->flags_.has_xy_offset = true;
 }
 
-bool dbTechLayer::hasXYOffset()
+bool dbTechLayer::hasXYOffset() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->flags_.has_xy_offset;
 }
 
-dbTechLayerDir dbTechLayer::getDirection()
+dbTechLayerDir dbTechLayer::getDirection() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return dbTechLayerDir(layer->flags_.direction);
 }
 
@@ -2283,15 +2284,15 @@ void dbTechLayer::setMinStepMaxEdges(uint32_t edges)
   layer->min_step_max_edges_ = edges;
 }
 
-dbTechLayerType dbTechLayer::getType()
+dbTechLayerType dbTechLayer::getType() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return dbTechLayerType(layer->flags_.type);
 }
 
-double dbTechLayer::getResistance()
+double dbTechLayer::getResistance() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->resistance_;
 }
 
@@ -2301,9 +2302,9 @@ void dbTechLayer::setResistance(double resistance)
   layer->resistance_ = resistance;
 }
 
-double dbTechLayer::getCapacitance()
+double dbTechLayer::getCapacitance() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->capacitance_;
 }
 
@@ -2319,15 +2320,15 @@ int dbTechLayer::getNumber() const
   return layer->number_;
 }
 
-int dbTechLayer::getRoutingLevel()
+int dbTechLayer::getRoutingLevel() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   return layer->rlevel_;
 }
 
-dbTechLayer* dbTechLayer::getLowerLayer()
+dbTechLayer* dbTechLayer::getLowerLayer() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   _dbTech* tech = (_dbTech*) layer->getOwner();
 
   if (layer->lower_ == 0) {
@@ -2337,9 +2338,9 @@ dbTechLayer* dbTechLayer::getLowerLayer()
   return (dbTechLayer*) tech->layer_tbl_->getPtr(layer->lower_);
 }
 
-dbTechLayer* dbTechLayer::getUpperLayer()
+dbTechLayer* dbTechLayer::getUpperLayer() const
 {
-  _dbTechLayer* layer = (_dbTechLayer*) this;
+  const _dbTechLayer* layer = (const _dbTechLayer*) this;
   _dbTech* tech = (_dbTech*) layer->getOwner();
 
   if (layer->upper_ == 0) {

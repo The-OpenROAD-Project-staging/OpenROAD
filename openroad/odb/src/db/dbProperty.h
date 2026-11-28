@@ -50,11 +50,11 @@ class _dbProperty : public _dbObject
   bool operator==(const _dbProperty& rhs) const;
   bool operator!=(const _dbProperty& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbProperty& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   _dbProperty(_dbDatabase*, const _dbProperty& n);
   static dbTable<_dbProperty>* getPropTable(dbObject* object);
-  static _dbNameCache* getNameCache(dbObject* object);
+  static _dbNameCache* getNameCache(const dbObject* object);
   static dbPropertyItr* getItr(dbObject* object);
   static _dbProperty* createProperty(dbObject* object,
                                      const char* name,

@@ -102,7 +102,7 @@ dbObjectTable* _dbScanChain::getObjectTable(dbObjectType type)
   }
   return getTable()->getObjectTable(type);
 }
-void _dbScanChain::collectMemInfo(MemInfo& info)
+void _dbScanChain::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -29,7 +29,7 @@ class _dbHier : public _dbObject
 
   bool operator==(const _dbHier& rhs) const;
   bool operator!=(const _dbHier& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   static _dbHier* create(dbInst* inst, dbBlock* child);
   static void destroy(_dbHier* hdr);

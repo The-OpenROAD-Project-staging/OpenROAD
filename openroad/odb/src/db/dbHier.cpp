@@ -141,7 +141,7 @@ void _dbHier::destroy(_dbHier* hier)
   parent->hier_tbl_->destroy(hier);
 }
 
-void _dbHier::collectMemInfo(MemInfo& info)
+void _dbHier::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -46,7 +46,7 @@ class _dbModule : public _dbObject
   bool operator==(const _dbModule& rhs) const;
   bool operator!=(const _dbModule& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbModule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
 
   void removeInst(dbInst* inst, bool notify = true);
@@ -94,7 +94,7 @@ class _dbModule : public _dbObject
   std::unordered_map<std::string, dbId<_dbModInst>> modinst_hash_;
   std::unordered_map<std::string, dbId<_dbModBTerm>> modbterm_hash_;
   std::unordered_map<std::string, dbId<_dbModNet>> modnet_hash_;
-  dbModulePortItr* _port_iter = nullptr;
+  mutable dbModulePortItr* _port_iter = nullptr;
   // User Code End Fields
 };
 dbIStream& operator>>(dbIStream& stream, _dbModule& obj);

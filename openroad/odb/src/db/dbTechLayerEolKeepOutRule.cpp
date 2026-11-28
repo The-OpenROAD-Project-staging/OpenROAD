@@ -106,7 +106,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbTechLayerEolKeepOutRule& obj)
   return stream;
 }
 
-void _dbTechLayerEolKeepOutRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerEolKeepOutRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

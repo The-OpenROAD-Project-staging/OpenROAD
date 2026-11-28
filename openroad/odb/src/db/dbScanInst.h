@@ -30,7 +30,7 @@ class _dbScanInst : public _dbObject
   bool operator==(const _dbScanInst& rhs) const;
   bool operator!=(const _dbScanInst& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbScanInst& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   uint32_t bits_;
   std::pair<dbId<_dbScanPin>, dbId<_dbScanPin>> access_pins_;

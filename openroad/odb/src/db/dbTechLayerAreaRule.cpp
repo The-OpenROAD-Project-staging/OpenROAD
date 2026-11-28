@@ -108,7 +108,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbTechLayerAreaRule& obj)
   return stream;
 }
 
-void _dbTechLayerAreaRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerAreaRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -49,8 +49,8 @@ struct _dbNetFlags
   uint32_t extracted : 1;
   uint32_t rc_graph : 1;
   uint32_t unused : 1;
-  uint32_t set_io : 1;
-  uint32_t io : 1;
+  uint32_t unused5 : 1;
+  uint32_t unused6 : 1;
   uint32_t dont_touch : 1;
   uint32_t fixed_bump : 1;
   dbSourceType::Value source : 4;
@@ -80,7 +80,7 @@ class _dbNet : public _dbObject
   bool operator==(const _dbNet& rhs) const;
   bool operator!=(const _dbNet& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbNet& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   static void dumpConnectivityRecursive(const dbObject* obj,
                                         int max_level,

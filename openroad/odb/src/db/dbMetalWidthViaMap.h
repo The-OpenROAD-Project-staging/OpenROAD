@@ -31,7 +31,7 @@ class _dbMetalWidthViaMap : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbMetalWidthViaMap& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   bool via_cut_class_;
   dbId<_dbTechLayer> cut_layer_;

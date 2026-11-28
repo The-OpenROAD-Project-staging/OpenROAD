@@ -183,20 +183,20 @@ dbIStream& operator>>(dbIStream& stream, _dbMTerm& mterm)
 //
 ////////////////////////////////////////////////////////////////////
 
-std::string dbMTerm::getName()
+std::string dbMTerm::getName() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   return mterm->name_;
 }
 
-char* dbMTerm::getName(dbInst* inst, char* ttname)
+char* dbMTerm::getName(dbInst* inst, char* ttname) const
 {
   dbBlock* block = (dbBlock*) inst->getImpl()->getOwner();
   dbMaster* master = inst->getMaster();
   return (getName(block, master, ttname));
 }
 
-char* dbMTerm::getName(dbBlock* block, dbMaster* master, char* ttname)
+char* dbMTerm::getName(dbBlock* block, dbMaster* master, char* ttname) const
 {
   char* mtname = (char*) getConstName();
   char blk_left_bus_del, blk_right_bus_del, lib_left_bus_del, lib_right_bus_del;
@@ -225,27 +225,27 @@ char* dbMTerm::getName(dbBlock* block, dbMaster* master, char* ttname)
   return mtname;
 }
 
-const char* dbMTerm::getConstName()
+const char* dbMTerm::getConstName() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   return mterm->name_;
 }
 
-dbSigType dbMTerm::getSigType()
+dbSigType dbMTerm::getSigType() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   return dbSigType(mterm->flags_.sig_type);
 }
 
-dbIoType dbMTerm::getIoType()
+dbIoType dbMTerm::getIoType() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   return dbIoType(mterm->flags_.io_type);
 }
 
-dbMTermShapeType dbMTerm::getShape()
+dbMTermShapeType dbMTerm::getShape() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   return dbMTermShapeType(mterm->flags_.shape_type);
 }
 
@@ -254,9 +254,9 @@ void dbMTerm::setMark(uint32_t v)
   _dbMTerm* mterm = (_dbMTerm*) this;
   mterm->flags_.mark = v;
 }
-bool dbMTerm::isSetMark()
+bool dbMTerm::isSetMark() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   return mterm->flags_.mark > 0;
 }
 
@@ -266,25 +266,25 @@ void dbMTerm::setMustJoinAllPorts(bool v)
   mterm->flags_.must_join_all_ports = v;
 }
 
-bool dbMTerm::isMustJoinAllPorts()
+bool dbMTerm::isMustJoinAllPorts() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   return mterm->flags_.must_join_all_ports;
 }
 
-dbMaster* dbMTerm::getMaster()
+dbMaster* dbMTerm::getMaster() const
 {
   return (dbMaster*) getImpl()->getOwner();
 }
 
-dbSet<dbMPin> dbMTerm::getMPins()
+dbSet<dbMPin> dbMTerm::getMPins() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   _dbMaster* master = (_dbMaster*) mterm->getOwner();
   return dbSet<dbMPin>(mterm, master->mpin_itr_);
 }
 
-Rect dbMTerm::getBBox()
+Rect dbMTerm::getBBox() const
 {
   Rect bbox;
   bbox.mergeInit();
@@ -294,9 +294,9 @@ Rect dbMTerm::getBBox()
   return bbox;
 }
 
-void* dbMTerm::staPort()
+void* dbMTerm::staPort() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   return mterm->sta_port_;
 }
 
@@ -306,9 +306,9 @@ void dbMTerm::staSetPort(void* port)
   mterm->sta_port_ = port;
 }
 
-int dbMTerm::getIndex()
+int dbMTerm::getIndex() const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   return mterm->order_id_;
 }
 
@@ -422,7 +422,7 @@ dbTechAntennaPinModel* dbMTerm::getOxide2AntennaModel() const
 // the master is somehow not yet attached to a lib. Uses _dbLib::getTech
 // (the lib-scoped accessor) instead of dbDatabase::getTech, which is not
 // usable in multi-tech databases.
-static _dbTech* getMTermTech(_dbMTerm* mterm)
+static _dbTech* getMTermTech(const _dbMTerm* mterm)
 {
   _dbMaster* master = (_dbMaster*) mterm->getOwner();
   if (master == nullptr) {
@@ -432,33 +432,34 @@ static _dbTech* getMTermTech(_dbMTerm* mterm)
   return lib != nullptr ? lib->getTech() : nullptr;
 }
 
-void dbMTerm::getDiffArea(std::vector<std::pair<double, dbTechLayer*>>& data)
+void dbMTerm::getDiffArea(
+    std::vector<std::pair<double, dbTechLayer*>>& data) const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   _dbTechAntennaPinModel::getAntennaValues(
       getMTermTech(mterm), mterm->diffarea_, data);
 }
 
 void dbMTerm::getPartialMetalArea(
-    std::vector<std::pair<double, dbTechLayer*>>& data)
+    std::vector<std::pair<double, dbTechLayer*>>& data) const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   _dbTechAntennaPinModel::getAntennaValues(
       getMTermTech(mterm), mterm->par_met_area_, data);
 }
 
 void dbMTerm::getPartialMetalSideArea(
-    std::vector<std::pair<double, dbTechLayer*>>& data)
+    std::vector<std::pair<double, dbTechLayer*>>& data) const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   _dbTechAntennaPinModel::getAntennaValues(
       getMTermTech(mterm), mterm->par_met_sidearea_, data);
 }
 
 void dbMTerm::getPartialCutArea(
-    std::vector<std::pair<double, dbTechLayer*>>& data)
+    std::vector<std::pair<double, dbTechLayer*>>& data) const
 {
-  _dbMTerm* mterm = (_dbMTerm*) this;
+  const _dbMTerm* mterm = (const _dbMTerm*) this;
   _dbTechAntennaPinModel::getAntennaValues(
       getMTermTech(mterm), mterm->par_cut_area_, data);
 }
@@ -502,7 +503,7 @@ dbMTerm* dbMTerm::getMTerm(dbMaster* master_, uint32_t dbid_)
   return (dbMTerm*) master->mterm_tbl_->getPtr(dbid_);
 }
 
-void _dbMTerm::collectMemInfo(MemInfo& info)
+void _dbMTerm::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

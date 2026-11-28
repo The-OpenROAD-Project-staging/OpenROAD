@@ -67,7 +67,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbNetTrack& obj)
   return stream;
 }
 
-void _dbNetTrack::collectMemInfo(MemInfo& info)
+void _dbNetTrack::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

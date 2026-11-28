@@ -96,27 +96,27 @@ dbIStream& operator>>(dbIStream& stream, _dbTechViaGenerateRule& v)
 //
 ////////////////////////////////////////////////////////////////////
 
-std::string dbTechViaGenerateRule::getName()
+std::string dbTechViaGenerateRule::getName() const
 {
-  _dbTechViaGenerateRule* via = (_dbTechViaGenerateRule*) this;
+  const _dbTechViaGenerateRule* via = (const _dbTechViaGenerateRule*) this;
   return via->name_;
 }
 
-bool dbTechViaGenerateRule::isDefault()
+bool dbTechViaGenerateRule::isDefault() const
 {
-  _dbTechViaGenerateRule* rule = (_dbTechViaGenerateRule*) this;
+  const _dbTechViaGenerateRule* rule = (const _dbTechViaGenerateRule*) this;
   return rule->flags_.default_via == 1;
 }
 
-uint32_t dbTechViaGenerateRule::getViaLayerRuleCount()
+uint32_t dbTechViaGenerateRule::getViaLayerRuleCount() const
 {
-  _dbTechViaGenerateRule* rule = (_dbTechViaGenerateRule*) this;
+  const _dbTechViaGenerateRule* rule = (const _dbTechViaGenerateRule*) this;
   return rule->layer_rules_.size();
 }
 
-dbTechViaLayerRule* dbTechViaGenerateRule::getViaLayerRule(uint32_t idx)
+dbTechViaLayerRule* dbTechViaGenerateRule::getViaLayerRule(uint32_t idx) const
 {
-  _dbTechViaGenerateRule* rule = (_dbTechViaGenerateRule*) this;
+  const _dbTechViaGenerateRule* rule = (const _dbTechViaGenerateRule*) this;
   dbTech* tech = (dbTech*) rule->getOwner();
 
   if (idx >= rule->layer_rules_.size()) {
@@ -150,7 +150,7 @@ dbTechViaGenerateRule* dbTechViaGenerateRule::getTechViaGenerateRule(
   return (dbTechViaGenerateRule*) tech->via_generate_rule_tbl_->getPtr(dbid_);
 }
 
-void _dbTechViaGenerateRule::collectMemInfo(MemInfo& info)
+void _dbTechViaGenerateRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

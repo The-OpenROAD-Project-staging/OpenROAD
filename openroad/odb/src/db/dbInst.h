@@ -60,7 +60,7 @@ class _dbInst : public _dbObject
   bool operator==(const _dbInst& rhs) const;
   bool operator!=(const _dbInst& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbInst& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   static void setInstBBox(_dbInst* inst);
 
   _dbInstFlags flags_;

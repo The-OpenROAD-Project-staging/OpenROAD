@@ -28,7 +28,7 @@ class _dbAlignmentMarkerRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbAlignmentMarkerRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbLib> lib_a_;
   dbId<_dbMaster> master_a_;

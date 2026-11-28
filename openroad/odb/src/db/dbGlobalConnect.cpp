@@ -92,7 +92,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbGlobalConnect& obj)
   return stream;
 }
 
-void _dbGlobalConnect::collectMemInfo(MemInfo& info)
+void _dbGlobalConnect::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

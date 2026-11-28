@@ -34,7 +34,7 @@ class _dbTechLayerEolExtensionRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerEolExtensionRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerEolExtensionRuleFlags flags_;
   int spacing_;

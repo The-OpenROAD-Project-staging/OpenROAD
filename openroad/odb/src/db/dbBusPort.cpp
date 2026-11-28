@@ -103,7 +103,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbBusPort& obj)
   return stream;
 }
 
-void _dbBusPort::collectMemInfo(MemInfo& info)
+void _dbBusPort::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -199,7 +199,7 @@ dbModule* dbBusPort::getParent() const
   element is at offset 1 in the array
   b[5:1] element is at offset 4 in the array
  */
-dbModBTerm* dbBusPort::getBusIndexedElement(int index)
+dbModBTerm* dbBusPort::getBusIndexedElement(int index) const
 {
   int offset;
   if (getUpdown()) {
@@ -219,7 +219,7 @@ dbModBTerm* dbBusPort::getBusIndexedElement(int index)
     /* This leads to wrong bus member access outside bus port
     if (obj->flags_ == 0U) {
       _dbBlock* block_ = (_dbBlock*) obj->getOwner();
-      _dbBusPort* obj = (_dbBusPort*) this;
+      const _dbBusPort* obj = (const _dbBusPort*) this;
       return (dbModBTerm*) (block_->_modbterm_tbl->getPtr(obj->getId() + offset
                                                           + 1));
     }
@@ -268,9 +268,9 @@ dbBusPort* dbBusPort::create(dbModule* parentModule,
   return (dbBusPort*) busport;
 }
 
-dbSet<dbModBTerm> dbBusPort::getBusPortMembers()
+dbSet<dbModBTerm> dbBusPort::getBusPortMembers() const
 {
-  _dbBusPort* obj = (_dbBusPort*) this;
+  const _dbBusPort* obj = (const _dbBusPort*) this;
   if (obj->members_iter_ == nullptr) {
     _dbBlock* block = (_dbBlock*) obj->getOwner();
     obj->members_iter_ = new dbModuleBusPortModBTermItr(block->modbterm_tbl_);

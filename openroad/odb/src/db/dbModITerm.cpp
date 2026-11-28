@@ -126,7 +126,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbModITerm& obj)
   return stream;
 }
 
-void _dbModITerm::collectMemInfo(MemInfo& info)
+void _dbModITerm::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

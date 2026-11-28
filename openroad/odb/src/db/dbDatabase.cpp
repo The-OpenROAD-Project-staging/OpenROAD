@@ -547,7 +547,7 @@ dbObjectTable* _dbDatabase::getObjectTable(dbObjectType type)
   }
   return getTable()->getObjectTable(type);
 }
-void _dbDatabase::collectMemInfo(MemInfo& info)
+void _dbDatabase::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -808,13 +808,13 @@ void dbDatabase::setTopChip(dbChip* chip)
   db->chip_ = chip->getImpl()->getOID();
 }
 
-dbSet<dbLib> dbDatabase::getLibs()
+dbSet<dbLib> dbDatabase::getLibs() const
 {
-  _dbDatabase* db = (_dbDatabase*) this;
+  const _dbDatabase* db = (const _dbDatabase*) this;
   return dbSet<dbLib>(db, db->lib_tbl_);
 }
 
-dbLib* dbDatabase::findLib(const char* name)
+dbLib* dbDatabase::findLib(const char* name) const
 {
   for (dbLib* lib : getLibs()) {
     if (strcmp(lib->getConstName(), name) == 0) {
@@ -825,13 +825,13 @@ dbLib* dbDatabase::findLib(const char* name)
   return nullptr;
 }
 
-dbSet<dbTech> dbDatabase::getTechs()
+dbSet<dbTech> dbDatabase::getTechs() const
 {
-  _dbDatabase* db = (_dbDatabase*) this;
+  const _dbDatabase* db = (const _dbDatabase*) this;
   return dbSet<dbTech>(db, db->tech_tbl_);
 }
 
-dbTech* dbDatabase::findTech(const char* name)
+dbTech* dbDatabase::findTech(const char* name) const
 {
   for (auto tech : getTechs()) {
     auto tech_impl = (_dbTech*) tech;
@@ -843,7 +843,7 @@ dbTech* dbDatabase::findTech(const char* name)
   return nullptr;
 }
 
-dbMaster* dbDatabase::findMaster(const char* name)
+dbMaster* dbDatabase::findMaster(const char* name) const
 {
   for (dbLib* lib : getLibs()) {
     dbMaster* master = lib->findMaster(name);
@@ -888,15 +888,15 @@ int dbDatabase::removeUnusedMasters()
   return unused_masters.size();
 }
 
-uint32_t dbDatabase::getNumberOfMasters()
+uint32_t dbDatabase::getNumberOfMasters() const
 {
-  _dbDatabase* db = (_dbDatabase*) this;
+  const _dbDatabase* db = (const _dbDatabase*) this;
   return db->master_id_;
 }
 
-dbChip* dbDatabase::getChip()
+dbChip* dbDatabase::getChip() const
 {
-  _dbDatabase* db = (_dbDatabase*) this;
+  const _dbDatabase* db = (const _dbDatabase*) this;
 
   if (db->chip_ == 0) {
     return nullptr;
@@ -922,7 +922,7 @@ dbUnfoldedChipInst* dbDatabase::findUnfoldedChip(const std::string& path) const
   return nullptr;
 }
 
-dbTech* dbDatabase::getTech()
+dbTech* dbDatabase::getTech() const
 {
   auto techs = getTechs();
 
@@ -935,7 +935,7 @@ dbTech* dbDatabase::getTech()
     return *techs.begin();
   }
 
-  auto impl = (_dbDatabase*) this;
+  const auto* impl = (const _dbDatabase*) this;
   impl->logger_->error(
       utl::ODB, 432, "getTech() is obsolete in a multi-tech db");
 }
@@ -1180,9 +1180,9 @@ dbDatabase* dbObject::getDb() const
   return (dbDatabase*) getImpl()->getDatabase();
 }
 
-void dbDatabase::report()
+void dbDatabase::report() const
 {
-  _dbDatabase* db = (_dbDatabase*) this;
+  const _dbDatabase* db = (const _dbDatabase*) this;
   MemInfo root;
   db->collectMemInfo(root);
   utl::Logger* logger = db->getLogger();

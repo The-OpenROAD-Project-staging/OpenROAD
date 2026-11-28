@@ -26,8 +26,8 @@ class _dbTechLayer;
 
 struct dbGCellGridFlags
 {
-  bool x_grid_valid : 1;
-  bool y_grid_valid : 1;
+  mutable bool x_grid_valid : 1;
+  mutable bool y_grid_valid : 1;
   uint32_t spare_bits : 30;
 };
 
@@ -39,7 +39,7 @@ class _dbGCellGrid : public _dbObject
   bool operator==(const _dbGCellGrid& rhs) const;
   bool operator!=(const _dbGCellGrid& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbGCellGrid& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   dbMatrix<dbGCellGrid::GCellData>& get(const dbId<_dbTechLayer>& lid);
   dbTechLayer* getLayer(const dbId<_dbTechLayer>& lid) const;
@@ -52,8 +52,8 @@ class _dbGCellGrid : public _dbObject
   dbVector<int> y_origin_;
   dbVector<int> y_count_;
   dbVector<int> y_step_;
-  dbVector<int> x_grid_;
-  dbVector<int> y_grid_;
+  mutable dbVector<int> x_grid_;
+  mutable dbVector<int> y_grid_;
   std::map<dbId<_dbTechLayer>, dbMatrix<dbGCellGrid::GCellData>>
       congestion_map_;
 };

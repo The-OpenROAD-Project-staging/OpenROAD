@@ -5,7 +5,7 @@
     struct {{ _struct.name }}
     {
       {% for field in _struct.fields %}
-        {{field.type}} {{field.name}}
+        {% if "mutable" in field.flags %}mutable {% endif %}{{field.type}} {{field.name}}
           {% if field.bits %} : {{field.bits}}{% endif %}
           {% if field.default is not none %} = {{field.default}}{% endif %};
           {% if field.comment %} {{field.comment}}{% endif %}

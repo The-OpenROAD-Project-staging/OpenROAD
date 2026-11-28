@@ -27,7 +27,7 @@ class _dbUnfoldedChipBumpInst : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbUnfoldedChipBumpInst& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbChipBumpInst> chip_bump_inst_;
   dbId<_dbUnfoldedChipRegionInst> parent_region_;

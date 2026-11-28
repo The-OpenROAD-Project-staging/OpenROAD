@@ -73,7 +73,7 @@ dbObjectTable* _dbScanPartition::getObjectTable(dbObjectType type)
   }
   return getTable()->getObjectTable(type);
 }
-void _dbScanPartition::collectMemInfo(MemInfo& info)
+void _dbScanPartition::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

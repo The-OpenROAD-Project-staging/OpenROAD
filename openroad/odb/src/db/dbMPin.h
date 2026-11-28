@@ -27,7 +27,7 @@ class _dbMPin : public _dbObject
 
   bool operator==(const _dbMPin& rhs) const;
   bool operator!=(const _dbMPin& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   void addAccessPoint(uint32_t idx, _dbAccessPoint* ap);
 
   // PERSISTANT-MEMBERS

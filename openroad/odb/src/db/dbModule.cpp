@@ -119,7 +119,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbModule& obj)
   return stream;
 }
 
-void _dbModule::collectMemInfo(MemInfo& info)
+void _dbModule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -196,16 +196,16 @@ const dbModBTerm* dbModule::getHeadDbModBTerm() const
   return (dbModBTerm*) (block_->modbterm_tbl_->getPtr(obj->modbterms_));
 }
 
-int dbModule::getModInstCount()
+int dbModule::getModInstCount() const
 {
-  _dbModule* module = (_dbModule*) this;
+  const _dbModule* module = (const _dbModule*) this;
   _dbBlock* block = (_dbBlock*) module->getOwner();
   return (int) ((dbSet<dbModInst>(module, block->module_modinst_itr_)).size());
 }
 
-int dbModule::getDbInstCount()
+int dbModule::getDbInstCount() const
 {
-  _dbModule* module = (_dbModule*) this;
+  const _dbModule* module = (const _dbModule*) this;
   _dbBlock* block = (_dbBlock*) module->getOwner();
   return (int) (dbSet<dbInst>(module, block->module_inst_itr_).size());
 }
@@ -327,9 +327,9 @@ dbSet<dbModInst> dbModule::getChildren() const
   return dbSet<dbModInst>(module, block->module_modinst_itr_);
 }
 
-dbSet<dbModNet> dbModule::getModNets()
+dbSet<dbModNet> dbModule::getModNets() const
 {
-  _dbModule* module = (_dbModule*) this;
+  const _dbModule* module = (const _dbModule*) this;
   _dbBlock* block = (_dbBlock*) module->getOwner();
   return dbSet<dbModNet>(module, block->module_modnet_itr_);
 }
@@ -359,9 +359,9 @@ dbSet<dbModInst> dbModule::getModInsts() const
 // of the hierarchical objects (busports)
 //
 
-dbSet<dbModBTerm> dbModule::getPorts()
+dbSet<dbModBTerm> dbModule::getPorts() const
 {
-  _dbModule* obj = (_dbModule*) this;
+  const _dbModule* obj = (const _dbModule*) this;
   if (obj->_port_iter == nullptr) {
     _dbBlock* block = (_dbBlock*) obj->getOwner();
     obj->_port_iter = new dbModulePortItr(block->modbterm_tbl_);
@@ -380,9 +380,9 @@ dbSet<dbModBTerm> dbModule::getModBTerms() const
   return dbSet<dbModBTerm>(module, block->module_modbterm_itr_);
 }
 
-dbModBTerm* dbModule::getModBTerm(uint32_t id)
+dbModBTerm* dbModule::getModBTerm(uint32_t id) const
 {
-  _dbModule* module = (_dbModule*) this;
+  const _dbModule* module = (const _dbModule*) this;
   _dbBlock* block = (_dbBlock*) module->getOwner();
   return (dbModBTerm*) (block->modbterm_tbl_->getObject(id));
 }
@@ -545,7 +545,7 @@ dbInst* dbModule::findDbInst(const char* name) const
   return nullptr;
 }
 
-static void getLeafInsts(dbModule* module, std::vector<dbInst*>& insts)
+static void getLeafInsts(const dbModule* module, std::vector<dbInst*>& insts)
 {
   for (dbInst* inst : module->getInsts()) {
     insts.push_back(inst);
@@ -556,7 +556,7 @@ static void getLeafInsts(dbModule* module, std::vector<dbInst*>& insts)
   }
 }
 
-std::vector<dbInst*> dbModule::getLeafInsts()
+std::vector<dbInst*> dbModule::getLeafInsts() const
 {
   std::vector<dbInst*> insts;
   odb::getLeafInsts(this, insts);

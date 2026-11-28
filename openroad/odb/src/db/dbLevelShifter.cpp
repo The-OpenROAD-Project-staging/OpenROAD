@@ -174,7 +174,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbLevelShifter& obj)
   return stream;
 }
 
-void _dbLevelShifter::collectMemInfo(MemInfo& info)
+void _dbLevelShifter::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -419,7 +419,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbTechLayerSpacingEolRule& obj)
   return stream;
 }
 
-void _dbTechLayerSpacingEolRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerSpacingEolRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

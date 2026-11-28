@@ -30,7 +30,7 @@ class _dbDft : public _dbObject
   bool operator!=(const _dbDft& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbDft& rhs) const;
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   void initialize();
   // User Code End Methods

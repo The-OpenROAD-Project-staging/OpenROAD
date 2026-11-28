@@ -259,14 +259,14 @@ class dbWireShapeItr
  public:
   dbWireShapeItr();
 
-  void begin(dbWire* wire);
+  void begin(const dbWire* wire);
   bool next(dbShape& shape);
   int getShapeId();
 
   unsigned char nextOp(int& value);
   unsigned char peekOp();
 
-  _dbWire* wire_;
+  const _dbWire* wire_;
   dbTech* tech_;
   dbBlock* block_;
   int idx_;

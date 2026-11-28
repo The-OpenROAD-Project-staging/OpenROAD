@@ -33,7 +33,7 @@ class _dbChipRegion : public _dbObject
   bool operator!=(const _dbChipRegion& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbChipRegion& rhs) const;
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   std::string name_;
   uint8_t side_;

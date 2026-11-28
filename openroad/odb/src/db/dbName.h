@@ -30,7 +30,7 @@ class _dbName : public _dbObject
   bool operator==(const _dbName& rhs) const;
   bool operator!=(const _dbName& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbName& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   char* name_;

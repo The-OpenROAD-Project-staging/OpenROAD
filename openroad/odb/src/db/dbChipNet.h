@@ -30,7 +30,7 @@ class _dbChipNet : public _dbObject
   bool operator==(const _dbChipNet& rhs) const;
   bool operator!=(const _dbChipNet& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbChipNet& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   std::string name_;
   dbId<_dbChip> chip_;

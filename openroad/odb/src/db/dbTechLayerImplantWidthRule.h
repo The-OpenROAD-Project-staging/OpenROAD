@@ -36,7 +36,7 @@ class _dbTechLayerImplantWidthRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerImplantWidthRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerImplantWidthRuleFlags flags_;
   int min_width_;

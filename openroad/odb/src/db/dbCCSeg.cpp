@@ -103,18 +103,18 @@ void dbCCSeg::adjustCapacitance(float factor)
   }
 }
 
-double dbCCSeg::getCapacitance(int corner)
+double dbCCSeg::getCapacitance(int corner) const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
   assert((corner >= 0) && ((uint32_t) corner < cornerCnt));
   return (*block->cc_val_tbl_)[((seg->getOID() - 1) * cornerCnt) + 1 + corner];
 }
 
-void dbCCSeg::accAllCcCap(double* ttcap, double miller_mult)
+void dbCCSeg::accAllCcCap(double* ttcap, double miller_mult) const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
   for (uint32_t ii = 0; ii < cornerCnt; ii++) {
@@ -124,9 +124,9 @@ void dbCCSeg::accAllCcCap(double* ttcap, double miller_mult)
   }
 }
 
-void dbCCSeg::getAllCcCap(double* ttcap)
+void dbCCSeg::getAllCcCap(double* ttcap) const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
   for (uint32_t ii = 0; ii < cornerCnt; ii++) {
@@ -269,23 +269,23 @@ void dbCCSeg::addCcCapacitance(dbCCSeg* other)
   }
 }
 
-dbCapNode* dbCCSeg::getSourceCapNode()
+dbCapNode* dbCCSeg::getSourceCapNode() const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   _dbCapNode* n = block->cap_node_tbl_->getPtr(seg->cap_node_[0]);
   return (dbCapNode*) n;
 }
 
-dbCapNode* dbCCSeg::getTargetCapNode()
+dbCapNode* dbCCSeg::getTargetCapNode() const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   _dbCapNode* n = block->cap_node_tbl_->getPtr(seg->cap_node_[1]);
   return (dbCapNode*) n;
 }
 
-uint32_t dbCCSeg::getSourceNodeNum()
+uint32_t dbCCSeg::getSourceNodeNum() const
 {
   dbCapNode* n = getSourceCapNode();
   return n->getNode();
@@ -300,7 +300,7 @@ dbCCSeg::setSourceNode( uint32_t source_node )
 }
 */
 
-uint32_t dbCCSeg::getTargetNodeNum()
+uint32_t dbCCSeg::getTargetNodeNum() const
 {
   dbCapNode* n = getTargetCapNode();
   return n->getNode();
@@ -315,21 +315,21 @@ dbCCSeg::setTargetNode( uint32_t target_node )
 }
 */
 
-dbNet* dbCCSeg::getSourceNet()
+dbNet* dbCCSeg::getSourceNet() const
 {
   dbCapNode* node = getSourceCapNode();
   return node->getNet();
 }
 
-dbNet* dbCCSeg::getTargetNet()
+dbNet* dbCCSeg::getTargetNet() const
 {
   dbCapNode* node = getTargetCapNode();
   return node->getNet();
 }
 
-uint32_t dbCCSeg::getInfileCnt()
+uint32_t dbCCSeg::getInfileCnt() const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   return (seg->flags_.inFileCnt);
 }
 
@@ -339,9 +339,9 @@ void dbCCSeg::incrInfileCnt()
   seg->flags_.inFileCnt++;
 }
 
-bool dbCCSeg::isMarked()
+bool dbCCSeg::isMarked() const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   return seg->flags_.mark == 1;
 }
 
@@ -351,9 +351,9 @@ void dbCCSeg::setMark(bool value)
   seg->flags_.mark = (value) ? 1 : 0;
 }
 
-void dbCCSeg::printCapnCC(uint32_t capn)
+void dbCCSeg::printCapnCC(uint32_t capn) const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   uint32_t sidx;
   if (capn == seg->cap_node_[0]) {
     sidx = 0;
@@ -388,9 +388,9 @@ void dbCCSeg::printCapnCC(uint32_t capn)
   nseg->printCapnCC(capn);
 }
 
-bool dbCCSeg::checkCapnCC(uint32_t capn)
+bool dbCCSeg::checkCapnCC(uint32_t capn) const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   uint32_t sidx;
   if (capn == seg->cap_node_[0]) {
     sidx = 0;
@@ -763,11 +763,12 @@ void dbCCSeg::swapCapnode(dbCapNode* orig_, dbCapNode* new_)
   }
 }
 
-dbCapNode* dbCCSeg::getTheOtherCapn(dbCapNode* oneCap, uint32_t& cid)
+dbCapNode* dbCCSeg::getTheOtherCapn(const dbCapNode* oneCap,
+                                    uint32_t& cid) const
 {
-  _dbCCSeg* seg = (_dbCCSeg*) this;
+  const _dbCCSeg* seg = (const _dbCCSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
-  cid = ((_dbCapNode*) oneCap)->getOID() == seg->cap_node_[1] ? 0 : 1;
+  cid = ((const _dbCapNode*) oneCap)->getOID() == seg->cap_node_[1] ? 0 : 1;
   _dbCapNode* n = block->cap_node_tbl_->getPtr(seg->cap_node_[cid]);
   return (dbCapNode*) n;
 }
@@ -778,7 +779,7 @@ dbCCSeg* dbCCSeg::getCCSeg(dbBlock* block_, uint32_t dbid_)
   return (dbCCSeg*) block->cc_seg_tbl_->getPtr(dbid_);
 }
 
-void _dbCCSeg::collectMemInfo(MemInfo& info)
+void _dbCCSeg::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

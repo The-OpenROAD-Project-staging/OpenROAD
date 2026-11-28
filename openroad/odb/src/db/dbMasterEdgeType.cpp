@@ -76,7 +76,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbMasterEdgeType& obj)
   return stream;
 }
 
-void _dbMasterEdgeType::collectMemInfo(MemInfo& info)
+void _dbMasterEdgeType::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

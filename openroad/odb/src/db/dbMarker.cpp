@@ -203,7 +203,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbMarker& obj)
   return stream;
 }
 
-void _dbMarker::collectMemInfo(MemInfo& info)
+void _dbMarker::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

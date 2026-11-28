@@ -24,7 +24,7 @@ class _dbChipRSeg : public _dbObject
   bool operator==(const _dbChipRSeg& rhs) const;
   bool operator!=(const _dbChipRSeg& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbChipRSeg& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbChipNet> chip_net_;
   dbId<_dbChipRSeg> next_chip_net_r_seg_;

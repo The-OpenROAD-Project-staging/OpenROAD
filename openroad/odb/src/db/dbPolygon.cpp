@@ -108,7 +108,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbPolygon& obj)
   return stream;
 }
 
-void _dbPolygon::collectMemInfo(MemInfo& info)
+void _dbPolygon::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -143,9 +143,9 @@ int dbPolygon::getMinSpacing() const
 }
 
 // User Code Begin dbPolygonPublicMethods
-dbTechLayer* dbPolygon::getTechLayer()
+dbTechLayer* dbPolygon::getTechLayer() const
 {
-  _dbPolygon* box = (_dbPolygon*) this;
+  const _dbPolygon* box = (const _dbPolygon*) this;
   _dbMaster* master = (_dbMaster*) getImpl()->getOwner();
   _dbLib* lib = (_dbLib*) master->getOwner();
   _dbTech* tech = lib->getTech();
@@ -236,9 +236,9 @@ void _dbPolygon::decompose()
   }
 }
 
-dbSet<dbBox> dbPolygon::getGeometry()
+dbSet<dbBox> dbPolygon::getGeometry() const
 {
-  _dbPolygon* pbox = (_dbPolygon*) this;
+  const _dbPolygon* pbox = (const _dbPolygon*) this;
   _dbMaster* master = (_dbMaster*) pbox->getOwner();
   return dbSet<dbBox>(pbox, master->pbox_box_itr_);
 }

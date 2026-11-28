@@ -27,7 +27,7 @@ class _dbNameCache
 
   bool operator==(const _dbNameCache& rhs) const;
   bool operator!=(const _dbNameCache& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // Find the name, returns 0 if the name does not exists.
   uint32_t findName(const char* name);

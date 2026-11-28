@@ -143,9 +143,9 @@ dbGDSStructure* dbGDSLib::findGDSStructure(const char* name) const
   return (dbGDSStructure*) obj->gdsstructure_hash_.find(name);
 }
 
-dbSet<dbGDSStructure> dbGDSLib::getGDSStructures()
+dbSet<dbGDSStructure> dbGDSLib::getGDSStructures() const
 {
-  _dbGDSLib* obj = (_dbGDSLib*) this;
+  const _dbGDSLib* obj = (const _dbGDSLib*) this;
   return dbSet<dbGDSStructure>(obj, obj->gdsstructure_tbl_);
 }
 
@@ -164,7 +164,7 @@ void dbGDSLib::destroy(dbGDSLib* lib)
   db->gds_lib_tbl_->destroy(obj);
 }
 
-void _dbGDSLib::collectMemInfo(MemInfo& info)
+void _dbGDSLib::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

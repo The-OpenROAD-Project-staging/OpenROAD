@@ -188,7 +188,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerCutSpacingTableDefRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerCutSpacingTableDefRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -779,10 +779,10 @@ void dbTechLayerCutSpacingTableDefRule::setSpacingTable(
 void dbTechLayerCutSpacingTableDefRule::getSpacingTable(
     std::vector<std::vector<std::pair<int, int>>>& table,
     std::map<std::string, uint32_t>& row_map,
-    std::map<std::string, uint32_t>& col_map)
+    std::map<std::string, uint32_t>& col_map) const
 {
-  _dbTechLayerCutSpacingTableDefRule* obj
-      = (_dbTechLayerCutSpacingTableDefRule*) this;
+  const _dbTechLayerCutSpacingTableDefRule* obj
+      = (const _dbTechLayerCutSpacingTableDefRule*) this;
   row_map = obj->row_map_;
   col_map = obj->col_map_;
   table.clear();
@@ -828,10 +828,10 @@ int dbTechLayerCutSpacingTableDefRule::getMaxSpacing(
 
 bool dbTechLayerCutSpacingTableDefRule::isCenterToCenter(
     const std::string& cutClass1,
-    const std::string& cutClass2)
+    const std::string& cutClass2) const
 {
-  _dbTechLayerCutSpacingTableDefRule* obj
-      = (_dbTechLayerCutSpacingTableDefRule*) this;
+  const _dbTechLayerCutSpacingTableDefRule* obj
+      = (const _dbTechLayerCutSpacingTableDefRule*) this;
   for (auto& [class1, class2] : obj->center_to_center_tbl_) {
     if ((class1 == cutClass1 || class1 == "ALL")
         && (class2 == cutClass2 || class2 == "ALL")) {
@@ -860,10 +860,10 @@ int dbTechLayerCutSpacingTableDefRule::getExactAlignedSpacing(
 
 bool dbTechLayerCutSpacingTableDefRule::isPrlForAlignedCutClasses(
     const std::string& cutClass1,
-    const std::string& cutClass2)
+    const std::string& cutClass2) const
 {
-  _dbTechLayerCutSpacingTableDefRule* obj
-      = (_dbTechLayerCutSpacingTableDefRule*) this;
+  const _dbTechLayerCutSpacingTableDefRule* obj
+      = (const _dbTechLayerCutSpacingTableDefRule*) this;
   for (auto& [class1, class2] : obj->prl_for_aligned_cut_tbl_) {
     if ((class1 == cutClass1 || class1 == "ALL")
         && (class2 == cutClass2 || class2 == "ALL")) {
@@ -873,11 +873,12 @@ bool dbTechLayerCutSpacingTableDefRule::isPrlForAlignedCutClasses(
   return false;
 }
 
-int dbTechLayerCutSpacingTableDefRule::getPrlEntry(const std::string& cutClass1,
-                                                   const std::string& cutClass2)
+int dbTechLayerCutSpacingTableDefRule::getPrlEntry(
+    const std::string& cutClass1,
+    const std::string& cutClass2) const
 {
-  _dbTechLayerCutSpacingTableDefRule* obj
-      = (_dbTechLayerCutSpacingTableDefRule*) this;
+  const _dbTechLayerCutSpacingTableDefRule* obj
+      = (const _dbTechLayerCutSpacingTableDefRule*) this;
   for (const auto& [class1, class2, prl] : obj->prl_tbl_) {
     if ((class1 == cutClass1 || class1 == "ALL")
         && (class2 == cutClass2 || class2 == "ALL")) {
@@ -893,10 +894,10 @@ int dbTechLayerCutSpacingTableDefRule::getPrlEntry(const std::string& cutClass1,
 
 bool dbTechLayerCutSpacingTableDefRule::isCenterAndEdge(
     const std::string& cutClass1,
-    const std::string& cutClass2)
+    const std::string& cutClass2) const
 {
-  _dbTechLayerCutSpacingTableDefRule* obj
-      = (_dbTechLayerCutSpacingTableDefRule*) this;
+  const _dbTechLayerCutSpacingTableDefRule* obj
+      = (const _dbTechLayerCutSpacingTableDefRule*) this;
   for (auto& [class1, class2] : obj->center_and_edge_tbl_) {
     if ((class1 == cutClass1 || class1 == "ALL")
         && (class2 == cutClass2 || class2 == "ALL")) {

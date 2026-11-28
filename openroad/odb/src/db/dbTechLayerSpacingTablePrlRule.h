@@ -38,7 +38,7 @@ class _dbTechLayerSpacingTablePrlRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerSpacingTablePrlRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
 
   uint32_t getWidthIdx(int width) const;

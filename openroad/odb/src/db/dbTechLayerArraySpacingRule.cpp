@@ -100,7 +100,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerArraySpacingRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerArraySpacingRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

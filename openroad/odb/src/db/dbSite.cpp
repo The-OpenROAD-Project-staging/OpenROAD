@@ -144,15 +144,15 @@ std::string dbSite::getName() const
   return site->name_;
 }
 
-const char* dbSite::getConstName()
+const char* dbSite::getConstName() const
 {
-  _dbSite* site = (_dbSite*) this;
+  const _dbSite* site = (const _dbSite*) this;
   return site->name_;
 }
 
-int dbSite::getWidth()
+int dbSite::getWidth() const
 {
-  _dbSite* site = (_dbSite*) this;
+  const _dbSite* site = (const _dbSite*) this;
   return site->width_;
 }
 
@@ -180,9 +180,9 @@ void dbSite::setSymmetryX()
   site->flags_.x_symmetry = 1;
 }
 
-bool dbSite::getSymmetryX()
+bool dbSite::getSymmetryX() const
 {
-  _dbSite* site = (_dbSite*) this;
+  const _dbSite* site = (const _dbSite*) this;
   return site->flags_.x_symmetry != 0;
 }
 
@@ -192,9 +192,9 @@ void dbSite::setSymmetryY()
   site->flags_.y_symmetry = 1;
 }
 
-bool dbSite::getSymmetryY()
+bool dbSite::getSymmetryY() const
 {
-  _dbSite* site = (_dbSite*) this;
+  const _dbSite* site = (const _dbSite*) this;
   return site->flags_.y_symmetry != 0;
 }
 
@@ -204,15 +204,15 @@ void dbSite::setSymmetryR90()
   site->flags_.R90_symmetry = 1;
 }
 
-bool dbSite::getSymmetryR90()
+bool dbSite::getSymmetryR90() const
 {
-  _dbSite* site = (_dbSite*) this;
+  const _dbSite* site = (const _dbSite*) this;
   return site->flags_.R90_symmetry != 0;
 }
 
-dbSiteClass dbSite::getClass()
+dbSiteClass dbSite::getClass() const
 {
-  _dbSite* site = (_dbSite*) this;
+  const _dbSite* site = (const _dbSite*) this;
   return dbSiteClass(site->flags_.site_class);
 }
 
@@ -247,9 +247,9 @@ bool dbSite::isHybrid() const
   return site->flags_.is_hybrid != 0;
 }
 
-dbSite::RowPattern dbSite::getRowPattern()
+dbSite::RowPattern dbSite::getRowPattern() const
 {
-  _dbSite* site = (_dbSite*) this;
+  const _dbSite* site = (const _dbSite*) this;
   dbDatabase* db = (dbDatabase*) site->getDatabase();
   auto& rp = site->row_pattern_;
 
@@ -264,7 +264,7 @@ dbSite::RowPattern dbSite::getRowPattern()
   return row_pattern;
 }
 
-dbLib* dbSite::getLib()
+dbLib* dbSite::getLib() const
 {
   return (dbLib*) getImpl()->getOwner();
 }
@@ -288,7 +288,7 @@ dbSite* dbSite::getSite(dbLib* lib, uint32_t oid)
   return (dbSite*) lib_impl->site_tbl_->getPtr(oid);
 }
 
-void _dbSite::collectMemInfo(MemInfo& info)
+void _dbSite::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

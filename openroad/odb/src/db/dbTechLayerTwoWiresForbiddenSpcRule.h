@@ -31,7 +31,7 @@ class _dbTechLayerTwoWiresForbiddenSpcRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerTwoWiresForbiddenSpcRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerTwoWiresForbiddenSpcRuleFlags flags_;
   int min_spacing_;

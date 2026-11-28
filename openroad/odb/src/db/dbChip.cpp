@@ -397,7 +397,7 @@ dbObjectTable* _dbChip::getObjectTable(dbObjectType type)
   }
   return getTable()->getObjectTable(type);
 }
-void _dbChip::collectMemInfo(MemInfo& info)
+void _dbChip::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -684,9 +684,9 @@ dbChip::ChipType dbChip::getChipType() const
   return (dbChip::ChipType) obj->type_;
 }
 
-dbBlock* dbChip::getBlock()
+dbBlock* dbChip::getBlock() const
 {
-  _dbChip* chip = (_dbChip*) this;
+  const _dbChip* chip = (const _dbChip*) this;
 
   if (chip->top_ == 0) {
     return nullptr;

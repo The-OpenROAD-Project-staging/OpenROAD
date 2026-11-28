@@ -43,9 +43,9 @@ inline unsigned char dbWireShapeItr::peekOp()
   return wire_->opcodes_[idx_];
 }
 
-void dbWireShapeItr::begin(dbWire* wire)
+void dbWireShapeItr::begin(const dbWire* wire)
 {
-  wire_ = (_dbWire*) wire;
+  wire_ = (const _dbWire*) wire;
   block_ = wire->getBlock();
   tech_ = block_->getTech();
   idx_ = 0;

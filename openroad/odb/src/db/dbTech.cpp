@@ -390,9 +390,9 @@ dbIStream& operator>>(dbIStream& stream, _dbTech& tech)
   return stream;
 }
 
-std::string dbTech::getName()
+std::string dbTech::getName() const
 {
-  auto tech = (_dbTech*) this;
+  const auto* tech = (const _dbTech*) this;
   return tech->name_;
 }
 
@@ -466,13 +466,13 @@ dbObjectTable* _dbTech::getObjectTable(dbObjectType type)
 //
 ////////////////////////////////////////////////////////////////////
 
-dbSet<dbTechLayer> dbTech::getLayers()
+dbSet<dbTechLayer> dbTech::getLayers() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return dbSet<dbTechLayer>(tech, tech->layer_itr_);
 }
 
-dbTechLayer* dbTech::findLayer(const char* name)
+dbTechLayer* dbTech::findLayer(const char* name) const
 {
   for (dbTechLayer* layer : getLayers()) {
     if (strcmp(layer->getConstName(), name) == 0) {
@@ -483,7 +483,7 @@ dbTechLayer* dbTech::findLayer(const char* name)
   return nullptr;
 }
 
-dbTechLayer* dbTech::findLayer(int layer_number)
+dbTechLayer* dbTech::findLayer(int layer_number) const
 {
   for (dbTechLayer* layer : getLayers()) {
     if (layer->getNumber() == layer_number) {
@@ -494,7 +494,7 @@ dbTechLayer* dbTech::findLayer(int layer_number)
   return nullptr;
 }
 
-dbTechLayer* dbTech::findRoutingLayer(int level_number)
+dbTechLayer* dbTech::findRoutingLayer(int level_number) const
 {
   for (dbTechLayer* layer : getLayers()) {
     if (layer->getRoutingLevel() == level_number) {
@@ -505,7 +505,7 @@ dbTechLayer* dbTech::findRoutingLayer(int level_number)
   return nullptr;
 }
 
-dbTechLayer* dbTech::firstFrontsideRoutingLayer()
+dbTechLayer* dbTech::firstFrontsideRoutingLayer() const
 {
   const int n = getRoutingLayerCount();
   for (int level = 1; level <= n; ++level) {
@@ -517,7 +517,7 @@ dbTechLayer* dbTech::firstFrontsideRoutingLayer()
   return nullptr;
 }
 
-dbTechLayer* dbTech::firstBacksideRoutingLayer()
+dbTechLayer* dbTech::firstBacksideRoutingLayer() const
 {
   // Backside layers appear before frontside layers in the LEF, ordered
   // outward from the substrate (BPR ... BM1 ... BRDL). Iterate top-down
@@ -532,26 +532,26 @@ dbTechLayer* dbTech::firstBacksideRoutingLayer()
   return nullptr;
 }
 
-int dbTech::getDbUnitsPerMicron()
+int dbTech::getDbUnitsPerMicron() const
 {
   return getDb()->getDbuPerMicron();
 }
 
-dbSet<dbTechVia> dbTech::getVias()
+dbSet<dbTechVia> dbTech::getVias() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return dbSet<dbTechVia>(tech, tech->via_tbl_);
 }
 
-dbTechVia* dbTech::findVia(const char* name)
+dbTechVia* dbTech::findVia(const char* name) const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return (dbTechVia*) tech->via_hash_.find(name);
 }
 
-int dbTech::getLefUnits()
+int dbTech::getLefUnits() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return tech->lef_units_;
 }
 
@@ -692,32 +692,32 @@ void dbTech::setManufacturingGrid(int ingrd)
   tech->manufacturing_grid_ = ingrd;
 }
 
-int dbTech::getLayerCount()
+int dbTech::getLayerCount() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return tech->layer_cnt_;
 }
 
-int dbTech::getRoutingLayerCount()
+int dbTech::getRoutingLayerCount() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return tech->rlayer_cnt_;
 }
 
-int dbTech::getViaCount()
+int dbTech::getViaCount() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return tech->via_cnt_;
 }
 
-dbSet<dbTechNonDefaultRule> dbTech::getNonDefaultRules()
+dbSet<dbTechNonDefaultRule> dbTech::getNonDefaultRules() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   dbSet<dbTechNonDefaultRule> ndr(tech, tech->non_default_rule_tbl_);
   return ndr;
 }
 
-dbTechNonDefaultRule* dbTech::findNonDefaultRule(const char* name)
+dbTechNonDefaultRule* dbTech::findNonDefaultRule(const char* name) const
 {
   for (dbTechNonDefaultRule* r : getNonDefaultRules()) {
     if (strcmp(r->getConstName(), name) == 0) {
@@ -728,9 +728,10 @@ dbTechNonDefaultRule* dbTech::findNonDefaultRule(const char* name)
   return nullptr;
 }
 
-dbTechSameNetRule* dbTech::findSameNetRule(dbTechLayer* l1_, dbTechLayer* l2_)
+dbTechSameNetRule* dbTech::findSameNetRule(dbTechLayer* l1_,
+                                           dbTechLayer* l2_) const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   _dbTechLayer* l1 = (_dbTechLayer*) l1_;
   _dbTechLayer* l2 = (_dbTechLayer*) l2_;
   dbId<_dbTechSameNetRule> rule
@@ -743,9 +744,9 @@ dbTechSameNetRule* dbTech::findSameNetRule(dbTechLayer* l1_, dbTechLayer* l2_)
   return (dbTechSameNetRule*) tech->samenet_rule_tbl_->getPtr(rule);
 }
 
-void dbTech::getSameNetRules(std::vector<dbTechSameNetRule*>& rules)
+void dbTech::getSameNetRules(std::vector<dbTechSameNetRule*>& rules) const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   rules.clear();
 
   for (const auto& r : tech->samenet_rules_) {
@@ -753,31 +754,31 @@ void dbTech::getSameNetRules(std::vector<dbTechSameNetRule*>& rules)
   }
 }
 
-dbSet<dbTechViaRule> dbTech::getViaRules()
+dbSet<dbTechViaRule> dbTech::getViaRules() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return dbSet<dbTechViaRule>(tech, tech->via_rule_tbl_);
 }
 
-dbSet<dbTechViaGenerateRule> dbTech::getViaGenerateRules()
+dbSet<dbTechViaGenerateRule> dbTech::getViaGenerateRules() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return dbSet<dbTechViaGenerateRule>(tech, tech->via_generate_rule_tbl_);
 }
 
-dbSet<dbMetalWidthViaMap> dbTech::getMetalWidthViaMap()
+dbSet<dbMetalWidthViaMap> dbTech::getMetalWidthViaMap() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return dbSet<dbMetalWidthViaMap>(tech, tech->metal_width_via_map_tbl_);
 }
 
-dbSet<dbCellEdgeSpacing> dbTech::getCellEdgeSpacingTable()
+dbSet<dbCellEdgeSpacing> dbTech::getCellEdgeSpacingTable() const
 {
-  _dbTech* tech = (_dbTech*) this;
+  const _dbTech* tech = (const _dbTech*) this;
   return dbSet<dbCellEdgeSpacing>(tech, tech->cell_edge_spacing_tbl_);
 }
 
-dbTechViaRule* dbTech::findViaRule(const char* name)
+dbTechViaRule* dbTech::findViaRule(const char* name) const
 {
   for (dbTechViaRule* rule : getViaRules()) {
     if (rule->getName() == name) {
@@ -788,7 +789,7 @@ dbTechViaRule* dbTech::findViaRule(const char* name)
   return nullptr;
 }
 
-dbTechViaGenerateRule* dbTech::findViaGenerateRule(const char* name)
+dbTechViaGenerateRule* dbTech::findViaGenerateRule(const char* name) const
 {
   for (dbTechViaGenerateRule* rule : getViaGenerateRules()) {
     if (rule->getName() == name) {
@@ -802,7 +803,7 @@ dbTechViaGenerateRule* dbTech::findViaGenerateRule(const char* name)
 void dbTech::checkLayer(bool typeChk,
                         bool widthChk,
                         bool pitchChk,
-                        bool spacingChk)
+                        bool spacingChk) const
 {
   if (!typeChk && !widthChk && !pitchChk && !spacingChk) {
     typeChk = true;
@@ -879,7 +880,7 @@ void dbTech::destroy(dbTech* tech_)
   db->tech_tbl_->destroy(tech);
 }
 
-void _dbTech::collectMemInfo(MemInfo& info)
+void _dbTech::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

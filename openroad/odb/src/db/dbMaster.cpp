@@ -348,9 +348,9 @@ const char* dbMaster::getConstName() const
   return master->name_;
 }
 
-Point dbMaster::getOrigin()
+Point dbMaster::getOrigin() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return {master->x_, master->y_};
 }
 
@@ -361,9 +361,9 @@ void dbMaster::setOrigin(int x, int y)
   master->y_ = y;
 }
 
-void* dbMaster::staCell()
+void* dbMaster::staCell() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->sta_cell_;
 }
 
@@ -414,9 +414,9 @@ void dbMaster::setType(dbMasterType type)
   master->flags_.type = type.getValue();
 }
 
-dbMaster* dbMaster::getLEQ()
+dbMaster* dbMaster::getLEQ() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
 
   if (master->leq_ == 0) {
     return nullptr;
@@ -432,9 +432,9 @@ void dbMaster::setLEQ(dbMaster* leq)
   master->leq_ = leq->getImpl()->getOID();
 }
 
-dbMaster* dbMaster::getEEQ()
+dbMaster* dbMaster::getEEQ() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
 
   if (master->eeq_ == 0) {
     return nullptr;
@@ -450,15 +450,15 @@ void dbMaster::setEEQ(dbMaster* eeq)
   master->eeq_ = eeq->getImpl()->getOID();
 }
 
-dbSet<dbMTerm> dbMaster::getMTerms()
+dbSet<dbMTerm> dbMaster::getMTerms() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return dbSet<dbMTerm>(master, master->mterm_tbl_);
 }
 
-dbSet<dbMasterEdgeType> dbMaster::getEdgeTypes()
+dbSet<dbMasterEdgeType> dbMaster::getEdgeTypes() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return dbSet<dbMasterEdgeType>(master, master->edge_types_tbl_);
 }
 
@@ -471,13 +471,13 @@ void dbMaster::clearPinAccess(int pin_access_idx)
   }
 }
 
-dbMTerm* dbMaster::findMTerm(const char* name)
+dbMTerm* dbMaster::findMTerm(const char* name) const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return (dbMTerm*) master->mterm_hash_.find(name);
 }
 
-dbMTerm* dbMaster::findMTerm(dbBlock* block, const char* name)
+dbMTerm* dbMaster::findMTerm(dbBlock* block, const char* name) const
 {
   dbMTerm* mterm = findMTerm(name);
   if (mterm) {
@@ -511,35 +511,35 @@ dbMTerm* dbMaster::findMTerm(dbBlock* block, const char* name)
   return mterm;
 }
 
-dbLib* dbMaster::getLib()
+dbLib* dbMaster::getLib() const
 {
   return (dbLib*) getImpl()->getOwner();
 }
 
-dbSet<dbBox> dbMaster::getObstructions(bool include_decomposed_polygons)
+dbSet<dbBox> dbMaster::getObstructions(bool include_decomposed_polygons) const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   if (include_decomposed_polygons) {
     return dbSet<dbBox>(master, master->box_itr_);
   }
   return dbSet<dbBox>(master, master->pbox_box_itr_);
 }
 
-dbSet<dbPolygon> dbMaster::getPolygonObstructions()
+dbSet<dbPolygon> dbMaster::getPolygonObstructions() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return dbSet<dbPolygon>(master, master->pbox_itr_);
 }
 
-bool dbMaster::isFrozen()
+bool dbMaster::isFrozen() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->flags_.frozen != 0;
 }
 
-int dbMaster::getMTermCount()
+int dbMaster::getMTermCount() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->mterm_cnt_;
 }
 
@@ -550,9 +550,9 @@ void dbMaster::setSite(dbSite* site)
   master->site_ = site->getImpl()->getOID();
 }
 
-dbSite* dbMaster::getSite()
+dbSite* dbMaster::getSite() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
 
   if (master->site_ == 0) {
     return nullptr;
@@ -570,9 +570,9 @@ void dbMaster::setSymmetryX()
   master->flags_.x_symmetry = 1;
 }
 
-bool dbMaster::getSymmetryX()
+bool dbMaster::getSymmetryX() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->flags_.x_symmetry != 0;
 }
 
@@ -582,9 +582,9 @@ void dbMaster::setSymmetryY()
   master->flags_.y_symmetry = 1;
 }
 
-bool dbMaster::getSymmetryY()
+bool dbMaster::getSymmetryY() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->flags_.y_symmetry != 0;
 }
 
@@ -594,9 +594,9 @@ void dbMaster::setSymmetryR90()
   master->flags_.R90_symmetry = 1;
 }
 
-bool dbMaster::getSymmetryR90()
+bool dbMaster::getSymmetryR90() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->flags_.R90_symmetry != 0;
 }
 
@@ -624,9 +624,9 @@ void dbMaster::setSequential(bool v)
   master->flags_.sequential = v;
 }
 
-bool dbMaster::isSequential()
+bool dbMaster::isSequential() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->flags_.sequential;
 }
 void dbMaster::setMark(uint32_t mark)
@@ -635,9 +635,9 @@ void dbMaster::setMark(uint32_t mark)
   master->flags_.mark = mark;
 }
 
-uint32_t dbMaster::isMarked()
+uint32_t dbMaster::isMarked() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->flags_.mark;
 }
 
@@ -659,15 +659,15 @@ bool dbMaster::isBacksideBridge() const
   return master->flags_.is_backside_bridge == 1;
 }
 
-bool dbMaster::isSpecialPower()
+bool dbMaster::isSpecialPower() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->flags_.special_power == 1;
 }
 
-void dbMaster::getPlacementBoundary(Rect& r)
+void dbMaster::getPlacementBoundary(Rect& r) const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   r = Rect(0, 0, master->width_, master->height_);
   dbTransform t(Point(-master->x_, -master->y_));
   t.apply(r);
@@ -688,9 +688,9 @@ void dbMaster::transform(dbTransform& t)
   }
 }
 
-int dbMaster::getMasterId()
+int dbMaster::getMasterId() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
   return master->id_;
 }
 
@@ -736,9 +736,9 @@ dbMaster* dbMaster::getMaster(dbLib* lib_, uint32_t dbid_)
   return (dbMaster*) lib->master_tbl_->getPtr(dbid_);
 }
 
-bool dbMaster::isFiller()
+bool dbMaster::isFiller() const
 {
-  _dbMaster* master = (_dbMaster*) this;
+  const _dbMaster* master = (const _dbMaster*) this;
 
   switch (master->flags_.type) {
     case dbMasterType::CORE_SPACER:
@@ -787,7 +787,7 @@ bool dbMaster::isFiller()
   return false;
 }
 
-bool dbMaster::isCoreAutoPlaceable()
+bool dbMaster::isCoreAutoPlaceable() const
 {
   // Use switch so if new types are added we get a compiler warning.
   switch (getType().getValue()) {
@@ -838,7 +838,7 @@ bool dbMaster::isCoreAutoPlaceable()
   return false;
 }
 
-void _dbMaster::collectMemInfo(MemInfo& info)
+void _dbMaster::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -89,7 +89,7 @@ class _dbTechLayer : public _dbObject
   bool operator!=(const _dbTechLayer& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbTechLayer& rhs) const;
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   uint32_t getV55RowIdx(const int& rowVal) const;
   uint32_t getV55ColIdx(const int& colVal) const;

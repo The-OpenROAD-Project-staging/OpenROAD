@@ -149,7 +149,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerCornerSpacingRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerCornerSpacingRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -508,15 +508,17 @@ void dbTechLayerCornerSpacingRule::addSpacing(uint32_t width,
 }
 
 void dbTechLayerCornerSpacingRule::getSpacingTable(
-    std::vector<std::pair<int, int>>& tbl)
+    std::vector<std::pair<int, int>>& tbl) const
 {
-  _dbTechLayerCornerSpacingRule* obj = (_dbTechLayerCornerSpacingRule*) this;
+  const _dbTechLayerCornerSpacingRule* obj
+      = (const _dbTechLayerCornerSpacingRule*) this;
   tbl = obj->spacing_tbl_;
 }
 
-void dbTechLayerCornerSpacingRule::getWidthTable(std::vector<int>& tbl)
+void dbTechLayerCornerSpacingRule::getWidthTable(std::vector<int>& tbl) const
 {
-  _dbTechLayerCornerSpacingRule* obj = (_dbTechLayerCornerSpacingRule*) this;
+  const _dbTechLayerCornerSpacingRule* obj
+      = (const _dbTechLayerCornerSpacingRule*) this;
   tbl = obj->width_tbl_;
 }
 

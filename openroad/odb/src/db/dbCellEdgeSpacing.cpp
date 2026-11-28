@@ -84,7 +84,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbCellEdgeSpacing& obj)
   return stream;
 }
 
-void _dbCellEdgeSpacing::collectMemInfo(MemInfo& info)
+void _dbCellEdgeSpacing::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

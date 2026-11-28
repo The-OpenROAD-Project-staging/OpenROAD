@@ -92,7 +92,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbMetalWidthViaMap& obj)
   return stream;
 }
 
-void _dbMetalWidthViaMap::collectMemInfo(MemInfo& info)
+void _dbMetalWidthViaMap::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

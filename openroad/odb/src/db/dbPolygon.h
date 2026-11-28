@@ -34,7 +34,7 @@ class _dbPolygon : public _dbObject
   bool operator==(const _dbPolygon& rhs) const;
   bool operator!=(const _dbPolygon& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbPolygon& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   static Polygon checkPolygon(const std::vector<Point>& polygon);
   void decompose();

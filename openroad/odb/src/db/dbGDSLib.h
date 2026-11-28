@@ -28,7 +28,7 @@ class _dbGDSLib : public _dbObject
   bool operator==(const _dbGDSLib& rhs) const;
   bool operator!=(const _dbGDSLib& rhs) const { return !operator==(rhs); }
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   _dbGDSStructure* findStructure(const char* name);
 

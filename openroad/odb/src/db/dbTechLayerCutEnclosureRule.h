@@ -55,7 +55,7 @@ class _dbTechLayerCutEnclosureRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerCutEnclosureRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerCutEnclosureRuleFlags flags_;
   dbId<_dbTechLayerCutClassRule> cut_class_;

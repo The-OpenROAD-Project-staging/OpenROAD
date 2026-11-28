@@ -43,7 +43,7 @@ class _dbTechMinCutRule : public _dbObject
   {
     return !operator==(rhs);
   }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   Flags flags_;
   uint32_t num_cuts_;
@@ -102,7 +102,7 @@ class _dbTechMinEncRule : public _dbObject
   {
     return !operator==(rhs);
   }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 };
 
 inline _dbTechMinEncRule::_dbTechMinEncRule(_dbDatabase* /* unused: db */,

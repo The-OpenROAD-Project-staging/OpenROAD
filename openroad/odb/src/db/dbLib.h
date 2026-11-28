@@ -28,8 +28,8 @@ class _dbLib : public _dbObject
   bool operator==(const _dbLib& rhs) const;
   bool operator!=(const _dbLib& rhs) const { return !operator==(rhs); }
   dbObjectTable* getObjectTable(dbObjectType type);
-  _dbTech* getTech();
-  void collectMemInfo(MemInfo& info);
+  _dbTech* getTech() const;
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   int lef_units_;

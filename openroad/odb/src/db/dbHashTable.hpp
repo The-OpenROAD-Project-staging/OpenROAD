@@ -165,7 +165,7 @@ void dbHashTable<T, page_size>::insert(T* object)
 }
 
 template <class T, uint32_t page_size>
-T* dbHashTable<T, page_size>::find(const char* name)
+T* dbHashTable<T, page_size>::find(const char* name) const
 {
   uint32_t sz = hash_tbl_.size();
 
@@ -190,7 +190,7 @@ T* dbHashTable<T, page_size>::find(const char* name)
 }
 
 template <class T, uint32_t page_size>
-int dbHashTable<T, page_size>::hasMember(const char* name)
+int dbHashTable<T, page_size>::hasMember(const char* name) const
 {
   uint32_t sz = hash_tbl_.size();
 

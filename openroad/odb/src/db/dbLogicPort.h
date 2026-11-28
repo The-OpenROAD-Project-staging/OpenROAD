@@ -26,7 +26,7 @@ class _dbLogicPort : public _dbObject
   bool operator==(const _dbLogicPort& rhs) const;
   bool operator!=(const _dbLogicPort& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbLogicPort& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   dbId<_dbLogicPort> next_entry_;

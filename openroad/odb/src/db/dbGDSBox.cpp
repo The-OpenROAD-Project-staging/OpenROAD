@@ -67,7 +67,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbGDSBox& obj)
   return stream;
 }
 
-void _dbGDSBox::collectMemInfo(MemInfo& info)
+void _dbGDSBox::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

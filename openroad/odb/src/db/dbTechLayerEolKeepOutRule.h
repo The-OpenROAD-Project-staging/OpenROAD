@@ -33,7 +33,7 @@ class _dbTechLayerEolKeepOutRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerEolKeepOutRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerEolKeepOutRuleFlags flags_;
   int eol_width_;

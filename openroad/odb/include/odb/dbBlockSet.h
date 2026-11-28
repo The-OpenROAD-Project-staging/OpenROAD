@@ -99,6 +99,13 @@ class dbSet<dbBlock>
     itr_ = itr;
   }
 
+  // A set is a handle into the database, like the object pointers that const
+  // getters return, so a const parent still yields a modifiable set.
+  dbSet(const dbObject* parent, dbIterator* itr)
+      : dbSet(const_cast<dbObject*>(parent), itr)
+  {
+  }
+
   dbSet(const dbSet<dbBlock>& c)
   {
     itr_ = c.itr_;

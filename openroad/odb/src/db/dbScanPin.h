@@ -25,7 +25,7 @@ class _dbScanPin : public _dbObject
   bool operator==(const _dbScanPin& rhs) const;
   bool operator!=(const _dbScanPin& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbScanPin& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   std::variant<dbId<_dbBTerm>, dbId<_dbITerm>> pin_;
 };

@@ -128,7 +128,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbTechLayerKeepOutZoneRule& obj)
   return stream;
 }
 
-void _dbTechLayerKeepOutZoneRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerKeepOutZoneRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

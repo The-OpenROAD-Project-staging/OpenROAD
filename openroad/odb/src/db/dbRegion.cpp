@@ -139,15 +139,15 @@ dbIStream& operator>>(dbIStream& stream, _dbRegion& r)
   return stream;
 }
 
-std::string dbRegion::getName()
+std::string dbRegion::getName() const
 {
-  _dbRegion* region = (_dbRegion*) this;
+  const _dbRegion* region = (const _dbRegion*) this;
   return region->name_;
 }
 
-dbRegionType dbRegion::getRegionType()
+dbRegionType dbRegion::getRegionType() const
 {
-  _dbRegion* region = (_dbRegion*) this;
+  const _dbRegion* region = (const _dbRegion*) this;
   dbRegionType t(region->flags_.type);
   return t;
 }
@@ -158,9 +158,9 @@ void dbRegion::setInvalid(bool v)
   region->flags_.invalid = v;
 }
 
-bool dbRegion::isInvalid()
+bool dbRegion::isInvalid() const
 {
-  _dbRegion* region = (_dbRegion*) this;
+  const _dbRegion* region = (const _dbRegion*) this;
   return region->flags_.invalid == 1;
 }
 
@@ -170,21 +170,21 @@ void dbRegion::setRegionType(dbRegionType type)
   region->flags_.type = type;
 }
 
-dbSet<dbInst> dbRegion::getRegionInsts()
+dbSet<dbInst> dbRegion::getRegionInsts() const
 {
-  _dbRegion* region = (_dbRegion*) this;
+  const _dbRegion* region = (const _dbRegion*) this;
   _dbBlock* block = (_dbBlock*) region->getOwner();
   return dbSet<dbInst>(region, block->region_inst_itr_);
 }
 
-dbSet<dbBox> dbRegion::getBoundaries()
+dbSet<dbBox> dbRegion::getBoundaries() const
 {
-  _dbRegion* region = (_dbRegion*) this;
+  const _dbRegion* region = (const _dbRegion*) this;
   _dbBlock* block = (_dbBlock*) region->getOwner();
   return dbSet<dbBox>(region, block->box_itr_);
 }
 
-int64_t dbRegion::getOverlapArea(const Rect& r)
+int64_t dbRegion::getOverlapArea(const Rect& r) const
 {
   auto boundaries = getBoundaries();
   std::vector<Rect> intersections;
@@ -297,7 +297,7 @@ void dbRegion::removeGroup(dbGroup* group)
   _group->region_ = 0;
 }
 
-dbBlock* dbRegion::getBlock()
+dbBlock* dbRegion::getBlock() const
 {
   return (dbBlock*) getImpl()->getOwner();
 }
@@ -319,9 +319,9 @@ void dbRegion::addGroup(dbGroup* group)
   _region->groups_ = _group->getOID();
 }
 
-dbSet<dbGroup> dbRegion::getGroups()
+dbSet<dbGroup> dbRegion::getGroups() const
 {
-  _dbRegion* _region = (_dbRegion*) this;
+  const _dbRegion* _region = (const _dbRegion*) this;
   _dbBlock* _block = (_dbBlock*) _region->getOwner();
 
   dbSet<dbGroup> groups(_region, _block->region_group_itr_);
@@ -398,7 +398,7 @@ dbRegion* dbRegion::getRegion(dbBlock* block_, uint32_t dbid_)
   return (dbRegion*) block->region_tbl_->getPtr(dbid_);
 }
 
-void _dbRegion::collectMemInfo(MemInfo& info)
+void _dbRegion::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

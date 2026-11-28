@@ -61,7 +61,7 @@ class _dbBTerm : public _dbObject
   bool operator==(const _dbBTerm& rhs) const;
   bool operator!=(const _dbBTerm& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbBTerm& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbBTermFlags flags_;

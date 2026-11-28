@@ -76,17 +76,17 @@ bool _dbTrackGrid::operator==(const _dbTrackGrid& rhs) const
 // dbTrackGrid - Methods
 //
 ////////////////////////////////////////////////////////////////////
-dbTechLayer* dbTrackGrid::getTechLayer()
+dbTechLayer* dbTrackGrid::getTechLayer() const
 {
-  _dbTrackGrid* grid = (_dbTrackGrid*) this;
+  const _dbTrackGrid* grid = (const _dbTrackGrid*) this;
   _dbBlock* block = (_dbBlock*) grid->getOwner();
   _dbTech* tech = block->getTech();
   return (dbTechLayer*) tech->layer_tbl_->getPtr(grid->layer_);
 }
 
-const std::vector<int>& dbTrackGrid::getGridX()
+const std::vector<int>& dbTrackGrid::getGridX() const
 {
-  _dbTrackGrid* grid = (_dbTrackGrid*) this;
+  const _dbTrackGrid* grid = (const _dbTrackGrid*) this;
 
   if (grid->grid_x_.empty()) {
     uint32_t i;
@@ -115,7 +115,7 @@ const std::vector<int>& dbTrackGrid::getGridX()
   return grid->grid_x_;
 }
 
-void dbTrackGrid::getGridX(std::vector<int>& x_grid)
+void dbTrackGrid::getGridX(std::vector<int>& x_grid) const
 {
   const std::vector<int>& grid = getGridX();
   x_grid.clear();
@@ -123,9 +123,9 @@ void dbTrackGrid::getGridX(std::vector<int>& x_grid)
   x_grid.insert(x_grid.end(), grid.begin(), grid.end());
 }
 
-const std::vector<int>& dbTrackGrid::getGridY()
+const std::vector<int>& dbTrackGrid::getGridY() const
 {
-  _dbTrackGrid* grid = (_dbTrackGrid*) this;
+  const _dbTrackGrid* grid = (const _dbTrackGrid*) this;
 
   if (grid->grid_y_.empty()) {
     uint32_t i;
@@ -154,7 +154,7 @@ const std::vector<int>& dbTrackGrid::getGridY()
   return grid->grid_y_;
 }
 
-void dbTrackGrid::getGridY(std::vector<int>& y_grid)
+void dbTrackGrid::getGridY(std::vector<int>& y_grid) const
 {
   const std::vector<int>& grid = getGridY();
   y_grid.clear();
@@ -162,7 +162,7 @@ void dbTrackGrid::getGridY(std::vector<int>& y_grid)
   y_grid.insert(y_grid.end(), grid.begin(), grid.end());
 }
 
-dbBlock* dbTrackGrid::getBlock()
+dbBlock* dbTrackGrid::getBlock() const
 {
   return (dbBlock*) getImpl()->getOwner();
 }
@@ -199,24 +199,24 @@ void dbTrackGrid::addGridPatternY(int origin_y,
   grid->grid_y_.clear();
 }
 
-int dbTrackGrid::getNumGridPatternsX()
+int dbTrackGrid::getNumGridPatternsX() const
 {
-  _dbTrackGrid* grid = (_dbTrackGrid*) this;
+  const _dbTrackGrid* grid = (const _dbTrackGrid*) this;
   return grid->x_origin_.size();
 }
 
-int dbTrackGrid::getNumGridPatternsY()
+int dbTrackGrid::getNumGridPatternsY() const
 {
-  _dbTrackGrid* grid = (_dbTrackGrid*) this;
+  const _dbTrackGrid* grid = (const _dbTrackGrid*) this;
   return grid->y_origin_.size();
 }
 
 void dbTrackGrid::getGridPatternX(int i,
                                   int& origin_x,
                                   int& line_count,
-                                  int& step)
+                                  int& step) const
 {
-  _dbTrackGrid* grid = (_dbTrackGrid*) this;
+  const _dbTrackGrid* grid = (const _dbTrackGrid*) this;
   assert(i < (int) grid->x_origin_.size());
   origin_x = grid->x_origin_[i];
   line_count = grid->x_count_[i];
@@ -228,9 +228,9 @@ void dbTrackGrid::getGridPatternX(int i,
                                   int& line_count,
                                   int& step,
                                   int& first_mask,
-                                  bool& samemask)
+                                  bool& samemask) const
 {
-  _dbTrackGrid* grid = (_dbTrackGrid*) this;
+  const _dbTrackGrid* grid = (const _dbTrackGrid*) this;
   assert(i < (int) grid->x_origin_.size());
   origin_x = grid->x_origin_[i];
   line_count = grid->x_count_[i];
@@ -242,9 +242,9 @@ void dbTrackGrid::getGridPatternX(int i,
 void dbTrackGrid::getGridPatternY(int i,
                                   int& origin_y,
                                   int& line_count,
-                                  int& step)
+                                  int& step) const
 {
-  _dbTrackGrid* grid = (_dbTrackGrid*) this;
+  const _dbTrackGrid* grid = (const _dbTrackGrid*) this;
   assert(i < (int) grid->y_origin_.size());
   origin_y = grid->y_origin_[i];
   line_count = grid->y_count_[i];
@@ -256,9 +256,9 @@ void dbTrackGrid::getGridPatternY(int i,
                                   int& line_count,
                                   int& step,
                                   int& first_mask,
-                                  bool& samemask)
+                                  bool& samemask) const
 {
-  _dbTrackGrid* grid = (_dbTrackGrid*) this;
+  const _dbTrackGrid* grid = (const _dbTrackGrid*) this;
   assert(i < (int) grid->y_origin_.size());
   origin_y = grid->y_origin_[i];
   line_count = grid->y_count_[i];
@@ -269,7 +269,7 @@ void dbTrackGrid::getGridPatternY(int i,
 
 void dbTrackGrid::getAverageTrackSpacing(int& track_step,
                                          int& track_init,
-                                         int& num_tracks)
+                                         int& num_tracks) const
 {
   auto layer = getTechLayer();
   if (layer == nullptr) {
@@ -280,7 +280,7 @@ void dbTrackGrid::getAverageTrackSpacing(int& track_step,
     if (getNumGridPatternsY() == 1) {
       getGridPatternY(0, track_init, num_tracks, track_step);
     } else if (getNumGridPatternsY() > 1) {
-      _dbTrackGrid* track_grid = (_dbTrackGrid*) this;
+      const _dbTrackGrid* track_grid = (const _dbTrackGrid*) this;
       track_grid->getAverageTrackPattern(
           false, track_init, num_tracks, track_step);
     } else {
@@ -293,7 +293,7 @@ void dbTrackGrid::getAverageTrackSpacing(int& track_step,
     if (getNumGridPatternsX() == 1) {
       getGridPatternX(0, track_init, num_tracks, track_step);
     } else if (getNumGridPatternsX() > 1) {
-      _dbTrackGrid* track_grid = (_dbTrackGrid*) this;
+      const _dbTrackGrid* track_grid = (const _dbTrackGrid*) this;
       track_grid->getAverageTrackPattern(
           true, track_init, num_tracks, track_step);
     } else {
@@ -334,7 +334,7 @@ void dbTrackGrid::destroy(dbTrackGrid* grid_)
   block->track_grid_tbl_->destroy(grid);
 }
 
-void _dbTrackGrid::collectMemInfo(MemInfo& info)
+void _dbTrackGrid::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -352,10 +352,10 @@ void _dbTrackGrid::collectMemInfo(MemInfo& info)
 void _dbTrackGrid::getAverageTrackPattern(bool is_x,
                                           int& track_init,
                                           int& num_tracks,
-                                          int& track_step)
+                                          int& track_step) const
 {
   std::vector<int> coordinates;
-  dbTrackGrid* track_grid = (dbTrackGrid*) this;
+  const dbTrackGrid* track_grid = (const dbTrackGrid*) this;
   if (is_x) {
     track_grid->getGridX(coordinates);
   } else {

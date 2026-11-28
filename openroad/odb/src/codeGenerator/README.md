@@ -180,6 +180,7 @@ templates.
 | `no-meminfo` | Exclude from generated `collectMemInfo()` accounting (handle it in the User Code block — e.g. a vector of strings that needs element-level accounting). |
 | `no-template` | Don't forward-declare the field's template arguments. |
 | `no-destruct` | Don't free a `char*` field in the destructor. |
+| `mutable` | Declare the member `mutable`, so const methods can update it (e.g. a lazily built cache). |
 
 ### Relations
 

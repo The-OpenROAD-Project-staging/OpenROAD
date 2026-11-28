@@ -37,7 +37,7 @@ class _dbTechLayerImplantSpacingRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerImplantSpacingRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerImplantSpacingRuleFlags flags_;
   int min_spacing_;

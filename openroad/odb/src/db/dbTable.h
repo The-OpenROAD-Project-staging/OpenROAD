@@ -61,7 +61,7 @@ class dbTable final : public dbObjectTable, public dbIterator
 
   bool validId(dbId<T> id) const;
 
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   bool operator==(const dbTable<T, page_size>& rhs) const;
   bool operator!=(const dbTable<T, page_size>& table) const;

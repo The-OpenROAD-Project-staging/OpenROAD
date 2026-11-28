@@ -34,7 +34,7 @@ class _dbTechLayerAreaRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerAreaRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerAreaRuleFlags flags_;
   int64_t area_;

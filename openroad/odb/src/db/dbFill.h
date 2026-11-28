@@ -37,7 +37,7 @@ class _dbFill : public _dbObject
   bool operator==(const _dbFill& rhs) const;
   bool operator!=(const _dbFill& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbFill& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   dbFillFlags flags_;

@@ -125,7 +125,7 @@ dbObjectTable* _dbMarkerCategory::getObjectTable(dbObjectType type)
   }
   return getTable()->getObjectTable(type);
 }
-void _dbMarkerCategory::collectMemInfo(MemInfo& info)
+void _dbMarkerCategory::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

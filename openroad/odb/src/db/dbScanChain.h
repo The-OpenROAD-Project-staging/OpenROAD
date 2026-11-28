@@ -36,7 +36,7 @@ class _dbScanChain : public _dbObject
   bool operator!=(const _dbScanChain& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbScanChain& rhs) const;
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   std::variant<dbBTerm*, dbITerm*> getPin(const dbId<_dbScanPin>& scan_pin_id);
   void setPin(dbId<_dbScanPin> _dbScanChain::* field, dbBTerm* pin);

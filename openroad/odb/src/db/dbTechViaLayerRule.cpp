@@ -189,9 +189,9 @@ dbIStream& operator>>(dbIStream& stream, _dbTechViaLayerRule& v)
 //
 ////////////////////////////////////////////////////////////////////
 
-dbTechLayer* dbTechViaLayerRule::getLayer()
+dbTechLayer* dbTechViaLayerRule::getLayer() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
 
   if (rule->layer_ == 0) {
     return nullptr;
@@ -201,9 +201,9 @@ dbTechLayer* dbTechViaLayerRule::getLayer()
   return (dbTechLayer*) tech->layer_tbl_->getPtr(rule->layer_);
 }
 
-dbTechLayerDir dbTechViaLayerRule::getDirection()
+dbTechLayerDir dbTechViaLayerRule::getDirection() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   dbTechLayerDir d((dbTechLayerDir::Value) rule->flags_.direction);
   return d;
 }
@@ -214,15 +214,15 @@ void dbTechViaLayerRule::setDirection(dbTechLayerDir dir)
   rule->flags_.direction = dir.getValue();
 }
 
-bool dbTechViaLayerRule::hasWidth()
+bool dbTechViaLayerRule::hasWidth() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->flags_.has_width == 1;
 }
 
-void dbTechViaLayerRule::getWidth(int& minWidth, int& maxWidth)
+void dbTechViaLayerRule::getWidth(int& minWidth, int& maxWidth) const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   minWidth = rule->min_width_;
   maxWidth = rule->max_width_;
 }
@@ -235,15 +235,15 @@ void dbTechViaLayerRule::setWidth(int minWidth, int maxWidth)
   rule->max_width_ = maxWidth;
 }
 
-bool dbTechViaLayerRule::hasEnclosure()
+bool dbTechViaLayerRule::hasEnclosure() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->flags_.has_enclosure == 1;
 }
 
-void dbTechViaLayerRule::getEnclosure(int& overhang1, int& overhang2)
+void dbTechViaLayerRule::getEnclosure(int& overhang1, int& overhang2) const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   overhang1 = rule->overhang1_;
   overhang2 = rule->overhang2_;
 }
@@ -256,15 +256,15 @@ void dbTechViaLayerRule::setEnclosure(int overhang1, int overhang2)
   rule->overhang2_ = overhang2;
 }
 
-bool dbTechViaLayerRule::hasOverhang()
+bool dbTechViaLayerRule::hasOverhang() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->flags_.has_overhang == 1;
 }
 
-int dbTechViaLayerRule::getOverhang()
+int dbTechViaLayerRule::getOverhang() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->overhang_;
 }
 
@@ -275,15 +275,15 @@ void dbTechViaLayerRule::setOverhang(int overhang)
   rule->overhang_ = overhang;
 }
 
-bool dbTechViaLayerRule::hasMetalOverhang()
+bool dbTechViaLayerRule::hasMetalOverhang() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->flags_.has_metal_overhang == 1;
 }
 
-int dbTechViaLayerRule::getMetalOverhang()
+int dbTechViaLayerRule::getMetalOverhang() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->metal_overhang_;
 }
 
@@ -294,15 +294,15 @@ void dbTechViaLayerRule::setMetalOverhang(int overhang)
   rule->metal_overhang_ = overhang;
 }
 
-bool dbTechViaLayerRule::hasSpacing()
+bool dbTechViaLayerRule::hasSpacing() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->flags_.has_spacing == 1;
 }
 
-void dbTechViaLayerRule::getSpacing(int& spacing_x, int& spacing_y)
+void dbTechViaLayerRule::getSpacing(int& spacing_x, int& spacing_y) const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   spacing_x = rule->spacing_x_;
   spacing_y = rule->spacing_y_;
 }
@@ -315,15 +315,15 @@ void dbTechViaLayerRule::setSpacing(int spacing_x, int spacing_y)
   rule->spacing_y_ = spacing_y;
 }
 
-bool dbTechViaLayerRule::hasRect()
+bool dbTechViaLayerRule::hasRect() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->flags_.has_rect == 1;
 }
 
-void dbTechViaLayerRule::getRect(Rect& r)
+void dbTechViaLayerRule::getRect(Rect& r) const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   r = rule->rect_;
 }
 
@@ -334,9 +334,9 @@ void dbTechViaLayerRule::setRect(const Rect& r)
   rule->rect_ = r;
 }
 
-bool dbTechViaLayerRule::hasResistance()
+bool dbTechViaLayerRule::hasResistance() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->flags_.has_resistance == 1;
 }
 
@@ -347,9 +347,9 @@ void dbTechViaLayerRule::setResistance(double r)
   rule->resistance_ = r;
 }
 
-double dbTechViaLayerRule::getResistance()
+double dbTechViaLayerRule::getResistance() const
 {
-  _dbTechViaLayerRule* rule = (_dbTechViaLayerRule*) this;
+  const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
   return rule->resistance_;
 }
 
@@ -384,7 +384,7 @@ dbTechViaLayerRule* dbTechViaLayerRule::getTechViaLayerRule(dbTech* tech_,
   return (dbTechViaLayerRule*) tech->via_layer_rule_tbl_->getPtr(dbid_);
 }
 
-void _dbTechViaLayerRule::collectMemInfo(MemInfo& info)
+void _dbTechViaLayerRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

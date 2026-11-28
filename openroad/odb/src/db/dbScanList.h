@@ -23,7 +23,7 @@ class _dbScanList : public _dbObject
   bool operator==(const _dbScanList& rhs) const;
   bool operator!=(const _dbScanList& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbScanList& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // As the elements of a free dbTable are 12 bytes long, we need this
   // additional member in order to make _dbScanList big enough to allow safe

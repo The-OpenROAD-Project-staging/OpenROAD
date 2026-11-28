@@ -28,7 +28,7 @@ class _dbGDSBoundary : public _dbObject
   bool operator==(const _dbGDSBoundary& rhs) const;
   bool operator!=(const _dbGDSBoundary& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbGDSBoundary& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   int16_t layer_;
   int16_t datatype_;

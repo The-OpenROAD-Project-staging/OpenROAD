@@ -57,7 +57,7 @@ class _dbTechLayerSpacingRule : public _dbObject
   {
     return !operator==(rhs);
   }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTENT-MEMBERS
   Flags flags_;
@@ -128,7 +128,7 @@ class _dbTechV55InfluenceEntry : public _dbObject
   {
     return !operator==(rhs);
   }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 };
 
 inline _dbTechV55InfluenceEntry::_dbTechV55InfluenceEntry(

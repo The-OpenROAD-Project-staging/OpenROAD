@@ -30,7 +30,7 @@ class _dbLevelShifter : public _dbObject
   bool operator==(const _dbLevelShifter& rhs) const;
   bool operator!=(const _dbLevelShifter& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbLevelShifter& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   dbId<_dbLevelShifter> next_entry_;

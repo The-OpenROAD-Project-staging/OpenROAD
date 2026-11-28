@@ -126,14 +126,14 @@ dbBTerm* dbBPin::getBTerm() const
   return (dbBTerm*) block->bterm_tbl_->getPtr(pin->bterm_);
 }
 
-dbSet<dbBox> dbBPin::getBoxes()
+dbSet<dbBox> dbBPin::getBoxes() const
 {
-  _dbBPin* pin = (_dbBPin*) this;
+  const _dbBPin* pin = (const _dbBPin*) this;
   _dbBlock* block = (_dbBlock*) pin->getOwner();
   return dbSet<dbBox>(pin, block->box_itr_);
 }
 
-Rect dbBPin::getBBox()
+Rect dbBPin::getBBox() const
 {
   Rect bbox;
   bbox.mergeInit();
@@ -288,7 +288,7 @@ dbBPin* dbBPin::getBPin(dbBlock* block_, uint32_t dbid_)
   return (dbBPin*) block->bpin_tbl_->getPtr(dbid_);
 }
 
-void _dbBPin::collectMemInfo(MemInfo& info)
+void _dbBPin::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

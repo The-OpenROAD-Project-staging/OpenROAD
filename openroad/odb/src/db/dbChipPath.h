@@ -28,7 +28,7 @@ class _dbChipPath : public _dbObject
   bool operator==(const _dbChipPath& rhs) const;
   bool operator!=(const _dbChipPath& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbChipPath& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   std::vector<

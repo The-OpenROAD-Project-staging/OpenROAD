@@ -39,7 +39,7 @@ class _dbTechLayerMinStepRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerMinStepRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerMinStepRuleFlags flags_;
   int min_step_length_;

@@ -51,7 +51,7 @@ class _dbITerm : public _dbObject
   bool operator==(const _dbITerm& rhs) const;
   bool operator!=(const _dbITerm& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbITerm& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   _dbMTerm* getMTerm() const;
   _dbInst* getInst() const;

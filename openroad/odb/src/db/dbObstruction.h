@@ -37,7 +37,7 @@ class _dbObstruction : public _dbObject
   bool operator==(const _dbObstruction& rhs) const;
   bool operator!=(const _dbObstruction& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbObstruction& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   _dbObstructionFlags flags_;
   dbId<_dbInst> inst_;

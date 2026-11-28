@@ -355,7 +355,7 @@ class _dbDatabase : public _dbObject
   bool operator!=(const _dbDatabase& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbDatabase& rhs) const;
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   _dbDatabase(_dbDatabase* db, int id);
   utl::Logger* getLogger() const;

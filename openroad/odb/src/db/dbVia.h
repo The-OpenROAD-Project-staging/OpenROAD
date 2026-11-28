@@ -46,8 +46,8 @@ class _dbVia : public _dbObject
     return strcmp(name_, rhs.name_) < 0;
   }
 
-  _dbTech* getTech();
-  void collectMemInfo(MemInfo& info);
+  _dbTech* getTech() const;
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbViaFlags flags_;  // 5.6 DEF

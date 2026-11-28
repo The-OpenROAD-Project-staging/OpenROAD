@@ -66,7 +66,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbLogicPort& obj)
   return stream;
 }
 
-void _dbLogicPort::collectMemInfo(MemInfo& info)
+void _dbLogicPort::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

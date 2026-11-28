@@ -174,7 +174,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbGCellGrid& obj)
   return stream;
 }
 
-void _dbGCellGrid::collectMemInfo(MemInfo& info)
+void _dbGCellGrid::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -271,9 +271,9 @@ dbTechLayer* _dbGCellGrid::getLayer(const dbId<_dbTechLayer>& lid) const
 
 // User Code Begin dbGCellGridPublicMethods
 
-void dbGCellGrid::getGridX(std::vector<int>& x_grid)
+void dbGCellGrid::getGridX(std::vector<int>& x_grid) const
 {
-  _dbGCellGrid* grid = (_dbGCellGrid*) this;
+  const _dbGCellGrid* grid = (const _dbGCellGrid*) this;
   if (grid->flags_.x_grid_valid) {
     x_grid = grid->x_grid_;
     return;
@@ -304,9 +304,9 @@ void dbGCellGrid::getGridX(std::vector<int>& x_grid)
   x_grid = grid->x_grid_;
 }
 
-void dbGCellGrid::getGridY(std::vector<int>& y_grid)
+void dbGCellGrid::getGridY(std::vector<int>& y_grid) const
 {
-  _dbGCellGrid* grid = (_dbGCellGrid*) this;
+  const _dbGCellGrid* grid = (const _dbGCellGrid*) this;
   if (grid->flags_.y_grid_valid) {
     y_grid = grid->y_grid_;
     return;
@@ -339,7 +339,7 @@ void dbGCellGrid::getGridY(std::vector<int>& y_grid)
   y_grid = grid->y_grid_;
 }
 
-dbBlock* dbGCellGrid::getBlock()
+dbBlock* dbGCellGrid::getBlock() const
 {
   return (dbBlock*) getImpl()->getOwner();
 }
@@ -364,24 +364,24 @@ void dbGCellGrid::addGridPatternY(int origin_y, int line_count, int step)
   resetCongestionMap();
 }
 
-int dbGCellGrid::getNumGridPatternsX()
+int dbGCellGrid::getNumGridPatternsX() const
 {
-  _dbGCellGrid* grid = (_dbGCellGrid*) this;
+  const _dbGCellGrid* grid = (const _dbGCellGrid*) this;
   return grid->x_origin_.size();
 }
 
-int dbGCellGrid::getNumGridPatternsY()
+int dbGCellGrid::getNumGridPatternsY() const
 {
-  _dbGCellGrid* grid = (_dbGCellGrid*) this;
+  const _dbGCellGrid* grid = (const _dbGCellGrid*) this;
   return grid->y_origin_.size();
 }
 
 void dbGCellGrid::getGridPatternX(int i,
                                   int& origin_x,
                                   int& line_count,
-                                  int& step)
+                                  int& step) const
 {
-  _dbGCellGrid* grid = (_dbGCellGrid*) this;
+  const _dbGCellGrid* grid = (const _dbGCellGrid*) this;
   assert(i < (int) grid->x_origin_.size());
   origin_x = grid->x_origin_[i];
   line_count = grid->x_count_[i];
@@ -391,9 +391,9 @@ void dbGCellGrid::getGridPatternX(int i,
 void dbGCellGrid::getGridPatternY(int i,
                                   int& origin_y,
                                   int& line_count,
-                                  int& step)
+                                  int& step) const
 {
-  _dbGCellGrid* grid = (_dbGCellGrid*) this;
+  const _dbGCellGrid* grid = (const _dbGCellGrid*) this;
   assert(i < (int) grid->y_origin_.size());
   origin_y = grid->y_origin_[i];
   line_count = grid->y_count_[i];
@@ -419,7 +419,7 @@ dbGCellGrid* dbGCellGrid::getGCellGrid(dbBlock* block_, uint32_t dbid_)
   return (dbGCellGrid*) block->gcell_grid_tbl_->getPtr(dbid_);
 }
 
-uint32_t dbGCellGrid::getXIdx(int x)
+uint32_t dbGCellGrid::getXIdx(int x) const
 {
   std::vector<int> grid;
   getGridX(grid);
@@ -430,7 +430,7 @@ uint32_t dbGCellGrid::getXIdx(int x)
   return (int) std::distance(grid.begin(), pos);
 }
 
-uint32_t dbGCellGrid::getYIdx(int y)
+uint32_t dbGCellGrid::getYIdx(int y) const
 {
   std::vector<int> grid;
   getGridY(grid);
@@ -502,9 +502,9 @@ void dbGCellGrid::resetGrid()
 }
 
 dbMatrix<dbGCellGrid::GCellData> dbGCellGrid::getLayerCongestionMap(
-    dbTechLayer* layer)
+    dbTechLayer* layer) const
 {
-  _dbGCellGrid* _grid = (_dbGCellGrid*) this;
+  const _dbGCellGrid* _grid = (const _dbGCellGrid*) this;
   const auto& cmap = _grid->congestion_map_;
   if (cmap.find(layer->getId()) != cmap.end()) {
     return cmap.at(layer->getId());
@@ -513,9 +513,9 @@ dbMatrix<dbGCellGrid::GCellData> dbGCellGrid::getLayerCongestionMap(
 }
 
 dbMatrix<dbGCellGrid::GCellData> dbGCellGrid::getDirectionCongestionMap(
-    const dbTechLayerDir& direction)
+    const dbTechLayerDir& direction) const
 {
-  _dbGCellGrid* _grid = (_dbGCellGrid*) this;
+  const _dbGCellGrid* _grid = (const _dbGCellGrid*) this;
   const auto& cmap = _grid->congestion_map_;
   auto iter = cmap.begin();
   if (iter == cmap.end()) {

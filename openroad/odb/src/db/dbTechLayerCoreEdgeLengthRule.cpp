@@ -85,7 +85,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerCoreEdgeLengthRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerCoreEdgeLengthRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

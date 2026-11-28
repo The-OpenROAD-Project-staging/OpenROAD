@@ -27,7 +27,7 @@ class _dbModITerm : public _dbObject
   bool operator==(const _dbModITerm& rhs) const;
   bool operator!=(const _dbModITerm& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbModITerm& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   dbId<_dbModInst> parent_;

@@ -223,16 +223,16 @@ bool _dbObstruction::operator<(const _dbObstruction& rhs) const
 //
 ////////////////////////////////////////////////////////////////////
 
-dbBox* dbObstruction::getBBox()
+dbBox* dbObstruction::getBBox() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   _dbBlock* block = (_dbBlock*) obs->getOwner();
   return (dbBox*) block->box_tbl_->getPtr(obs->bbox_);
 }
 
-dbInst* dbObstruction::getInstance()
+dbInst* dbObstruction::getInstance() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
 
   if (obs->inst_ == 0) {
     return nullptr;
@@ -248,9 +248,9 @@ void dbObstruction::setSlotObstruction()
   obs->flags_.slot_obs = 1;
 }
 
-bool dbObstruction::isSlotObstruction()
+bool dbObstruction::isSlotObstruction() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   return obs->flags_.slot_obs == 1;
 }
 
@@ -260,9 +260,9 @@ void dbObstruction::setFillObstruction()
   obs->flags_.fill_obs = 1;
 }
 
-bool dbObstruction::isFillObstruction()
+bool dbObstruction::isFillObstruction() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   return obs->flags_.fill_obs == 1;
 }
 
@@ -272,9 +272,9 @@ void dbObstruction::setExceptPGNetsObstruction()
   obs->flags_.except_pg_nets = 1;
 }
 
-bool dbObstruction::isExceptPGNetsObstruction()
+bool dbObstruction::isExceptPGNetsObstruction() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   return obs->flags_.except_pg_nets == 1;
 }
 
@@ -284,15 +284,15 @@ void dbObstruction::setPushedDown()
   obs->flags_.pushed_down = 1;
 }
 
-bool dbObstruction::isPushedDown()
+bool dbObstruction::isPushedDown() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   return obs->flags_.pushed_down == 1;
 }
 
-bool dbObstruction::hasEffectiveWidth()
+bool dbObstruction::hasEffectiveWidth() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   return obs->flags_.has_effective_width == 1U;
 }
 
@@ -303,15 +303,15 @@ void dbObstruction::setEffectiveWidth(int w)
   obs->effective_width_ = w;
 }
 
-int dbObstruction::getEffectiveWidth()
+int dbObstruction::getEffectiveWidth() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   return obs->effective_width_;
 }
 
-bool dbObstruction::hasMinSpacing()
+bool dbObstruction::hasMinSpacing() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   return obs->flags_.has_min_spacing == 1U;
 }
 
@@ -322,20 +322,20 @@ void dbObstruction::setMinSpacing(int w)
   obs->min_spacing_ = w;
 }
 
-int dbObstruction::getMinSpacing()
+int dbObstruction::getMinSpacing() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   return obs->min_spacing_;
 }
 
-dbBlock* dbObstruction::getBlock()
+dbBlock* dbObstruction::getBlock() const
 {
   return (dbBlock*) getImpl()->getOwner();
 }
 
-bool dbObstruction::isSystemReserved()
+bool dbObstruction::isSystemReserved() const
 {
-  _dbObstruction* obs = (_dbObstruction*) this;
+  const _dbObstruction* obs = (const _dbObstruction*) this;
   return obs->flags_.is_system_reserved;
 }
 
@@ -417,7 +417,7 @@ dbObstruction* dbObstruction::getObstruction(dbBlock* block_, uint32_t dbid_)
   return (dbObstruction*) block->obstruction_tbl_->getPtr(dbid_);
 }
 
-void _dbObstruction::collectMemInfo(MemInfo& info)
+void _dbObstruction::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

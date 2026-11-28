@@ -96,7 +96,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerSpacingTablePrlRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerSpacingTablePrlRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -241,10 +241,10 @@ void dbTechLayerSpacingTablePrlRule::getTable(
     std::vector<int>& width_tbl,
     std::vector<int>& length_tbl,
     std::vector<std::vector<int>>& spacing_tbl,
-    std::map<uint32_t, std::pair<int, int>>& excluded_map)
+    std::map<uint32_t, std::pair<int, int>>& excluded_map) const
 {
-  _dbTechLayerSpacingTablePrlRule* obj
-      = (_dbTechLayerSpacingTablePrlRule*) this;
+  const _dbTechLayerSpacingTablePrlRule* obj
+      = (const _dbTechLayerSpacingTablePrlRule*) this;
   width_tbl = obj->width_tbl_;
   length_tbl = obj->length_tbl_;
   excluded_map = obj->_within_tbl_;

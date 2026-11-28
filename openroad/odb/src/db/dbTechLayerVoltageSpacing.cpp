@@ -81,7 +81,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbTechLayerVoltageSpacing& obj)
   return stream;
 }
 
-void _dbTechLayerVoltageSpacing::collectMemInfo(MemInfo& info)
+void _dbTechLayerVoltageSpacing::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

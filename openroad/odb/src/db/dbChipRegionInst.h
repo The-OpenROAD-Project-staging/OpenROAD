@@ -28,7 +28,7 @@ class _dbChipRegionInst : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbChipRegionInst& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbChipRegion> region_;
   dbId<_dbChipInst> parent_chipinst_;

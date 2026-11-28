@@ -24,7 +24,7 @@ class _dbChipBumpInst : public _dbObject
   bool operator==(const _dbChipBumpInst& rhs) const;
   bool operator!=(const _dbChipBumpInst& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbChipBumpInst& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbChipBump> chip_bump_;
   dbId<_dbChipRegionInst> chip_region_inst_;

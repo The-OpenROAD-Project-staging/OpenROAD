@@ -55,7 +55,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerCutSpacingTableOrthRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerCutSpacingTableOrthRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

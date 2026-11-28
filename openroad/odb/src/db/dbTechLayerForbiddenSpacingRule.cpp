@@ -71,7 +71,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerForbiddenSpacingRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerForbiddenSpacingRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -161,31 +161,31 @@ int dbTechLayerForbiddenSpacingRule::getTwoEdges() const
 
 // User Code Begin dbTechLayerForbiddenSpacingRulePublicMethods
 
-bool dbTechLayerForbiddenSpacingRule::hasWidth()
+bool dbTechLayerForbiddenSpacingRule::hasWidth() const
 {
-  _dbTechLayerForbiddenSpacingRule* obj
-      = (_dbTechLayerForbiddenSpacingRule*) this;
+  const _dbTechLayerForbiddenSpacingRule* obj
+      = (const _dbTechLayerForbiddenSpacingRule*) this;
   return obj->width_ != 0;
 }
 
-bool dbTechLayerForbiddenSpacingRule::hasWithin()
+bool dbTechLayerForbiddenSpacingRule::hasWithin() const
 {
-  _dbTechLayerForbiddenSpacingRule* obj
-      = (_dbTechLayerForbiddenSpacingRule*) this;
+  const _dbTechLayerForbiddenSpacingRule* obj
+      = (const _dbTechLayerForbiddenSpacingRule*) this;
   return obj->within_ != 0;
 }
 
-bool dbTechLayerForbiddenSpacingRule::hasPrl()
+bool dbTechLayerForbiddenSpacingRule::hasPrl() const
 {
-  _dbTechLayerForbiddenSpacingRule* obj
-      = (_dbTechLayerForbiddenSpacingRule*) this;
+  const _dbTechLayerForbiddenSpacingRule* obj
+      = (const _dbTechLayerForbiddenSpacingRule*) this;
   return obj->prl_ != 0;
 }
 
-bool dbTechLayerForbiddenSpacingRule::hasTwoEdges()
+bool dbTechLayerForbiddenSpacingRule::hasTwoEdges() const
 {
-  _dbTechLayerForbiddenSpacingRule* obj
-      = (_dbTechLayerForbiddenSpacingRule*) this;
+  const _dbTechLayerForbiddenSpacingRule* obj
+      = (const _dbTechLayerForbiddenSpacingRule*) this;
   return obj->two_edges_ != 0;
 }
 

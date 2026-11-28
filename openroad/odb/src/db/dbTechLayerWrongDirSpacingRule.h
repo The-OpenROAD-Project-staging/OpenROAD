@@ -31,7 +31,7 @@ class _dbTechLayerWrongDirSpacingRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerWrongDirSpacingRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerWrongDirSpacingRuleFlags flags_;
   int wrongdir_space_;

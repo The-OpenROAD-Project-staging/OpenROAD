@@ -27,7 +27,7 @@ class _dbTechLayerCoreEdgeLengthRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerCoreEdgeLengthRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   int min_length_;
   int max_length_;

@@ -48,7 +48,7 @@ class _dbTechLayerCornerSpacingRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerCornerSpacingRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerCornerSpacingRuleFlags flags_;
   int within_;

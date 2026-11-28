@@ -113,7 +113,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbPowerDomain& obj)
   return stream;
 }
 
-void _dbPowerDomain::collectMemInfo(MemInfo& info)
+void _dbPowerDomain::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -233,9 +233,9 @@ void dbPowerDomain::setGroup(dbGroup* group)
   obj->group_ = _group->getOID();
 }
 
-std::vector<std::string> dbPowerDomain::getElements()
+std::vector<std::string> dbPowerDomain::getElements() const
 {
-  _dbPowerDomain* obj = (_dbPowerDomain*) this;
+  const _dbPowerDomain* obj = (const _dbPowerDomain*) this;
   return obj->elements_;
 }
 
@@ -256,9 +256,9 @@ void dbPowerDomain::addLevelShifter(dbLevelShifter* shifter)
   obj->levelshifters_.push_back(shifter->getImpl()->getOID());
 }
 
-std::vector<dbPowerSwitch*> dbPowerDomain::getPowerSwitches()
+std::vector<dbPowerSwitch*> dbPowerDomain::getPowerSwitches() const
 {
-  _dbPowerDomain* obj = (_dbPowerDomain*) this;
+  const _dbPowerDomain* obj = (const _dbPowerDomain*) this;
   _dbBlock* par = (_dbBlock*) obj->getOwner();
 
   std::vector<dbPowerSwitch*> switches;
@@ -270,9 +270,9 @@ std::vector<dbPowerSwitch*> dbPowerDomain::getPowerSwitches()
   return switches;
 }
 
-std::vector<dbIsolation*> dbPowerDomain::getIsolations()
+std::vector<dbIsolation*> dbPowerDomain::getIsolations() const
 {
-  _dbPowerDomain* obj = (_dbPowerDomain*) this;
+  const _dbPowerDomain* obj = (const _dbPowerDomain*) this;
   _dbBlock* par = (_dbBlock*) obj->getOwner();
 
   std::vector<dbIsolation*> isolations;
@@ -284,9 +284,9 @@ std::vector<dbIsolation*> dbPowerDomain::getIsolations()
   return isolations;
 }
 
-std::vector<dbLevelShifter*> dbPowerDomain::getLevelShifters()
+std::vector<dbLevelShifter*> dbPowerDomain::getLevelShifters() const
 {
-  _dbPowerDomain* obj = (_dbPowerDomain*) this;
+  const _dbPowerDomain* obj = (const _dbPowerDomain*) this;
   _dbBlock* par = (_dbBlock*) obj->getOwner();
 
   std::vector<dbLevelShifter*> levelshifters;
@@ -305,9 +305,9 @@ void dbPowerDomain::setArea(const Rect& area)
   obj->area_ = area;
 }
 
-bool dbPowerDomain::getArea(Rect& area)
+bool dbPowerDomain::getArea(Rect& area) const
 {
-  _dbPowerDomain* obj = (_dbPowerDomain*) this;
+  const _dbPowerDomain* obj = (const _dbPowerDomain*) this;
   if (obj->area_.isInverted()) {  // area unset
     return false;
   }

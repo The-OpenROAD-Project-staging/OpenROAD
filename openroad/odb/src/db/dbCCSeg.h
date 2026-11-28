@@ -47,7 +47,7 @@ class _dbCCSeg : public _dbObject
 
   bool operator==(const _dbCCSeg& rhs) const;
   bool operator!=(const _dbCCSeg& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   bool operator<(const _dbCCSeg& rhs) const
   {

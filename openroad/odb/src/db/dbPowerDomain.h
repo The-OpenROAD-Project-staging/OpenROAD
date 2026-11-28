@@ -34,7 +34,7 @@ class _dbPowerDomain : public _dbObject
   bool operator==(const _dbPowerDomain& rhs) const;
   bool operator!=(const _dbPowerDomain& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbPowerDomain& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   dbId<_dbPowerDomain> next_entry_;

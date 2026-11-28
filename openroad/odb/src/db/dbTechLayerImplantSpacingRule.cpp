@@ -103,7 +103,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerImplantSpacingRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerImplantSpacingRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -91,27 +91,27 @@ _dbTechLayer* _dbFill::getTechLayer() const
 //
 ////////////////////////////////////////////////////////////////////
 
-void dbFill::getRect(Rect& rect)
+void dbFill::getRect(Rect& rect) const
 {
-  _dbFill* fill = (_dbFill*) this;
+  const _dbFill* fill = (const _dbFill*) this;
   rect = fill->rect_;
 }
 
-bool dbFill::needsOPC()
+bool dbFill::needsOPC() const
 {
-  _dbFill* fill = (_dbFill*) this;
+  const _dbFill* fill = (const _dbFill*) this;
   return fill->flags_.opc;
 }
 
-uint32_t dbFill::maskNumber()
+uint32_t dbFill::maskNumber() const
 {
-  _dbFill* fill = (_dbFill*) this;
+  const _dbFill* fill = (const _dbFill*) this;
   return fill->flags_.mask_id;
 }
 
-dbTechLayer* dbFill::getTechLayer()
+dbTechLayer* dbFill::getTechLayer() const
 {
-  _dbFill* fill = (_dbFill*) this;
+  const _dbFill* fill = (const _dbFill*) this;
   return (dbTechLayer*) fill->getTechLayer();
 }
 
@@ -160,7 +160,7 @@ dbFill* dbFill::getFill(dbBlock* block_, uint32_t dbid_)
   return (dbFill*) block->fill_tbl_->getPtr(dbid_);
 }
 
-void _dbFill::collectMemInfo(MemInfo& info)
+void _dbFill::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

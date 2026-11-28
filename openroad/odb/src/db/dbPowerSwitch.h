@@ -33,7 +33,7 @@ class _dbPowerSwitch : public _dbObject
   bool operator==(const _dbPowerSwitch& rhs) const;
   bool operator!=(const _dbPowerSwitch& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbPowerSwitch& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   dbId<_dbPowerSwitch> next_entry_;

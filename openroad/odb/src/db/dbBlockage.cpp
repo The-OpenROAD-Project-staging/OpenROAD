@@ -28,7 +28,7 @@ _dbBox* _dbBlockage::getBBox() const
   return block->box_tbl_->getPtr(bbox_);
 }
 
-_dbInst* _dbBlockage::getInst()
+_dbInst* _dbBlockage::getInst() const
 {
   if (inst_ == 0) {
     return nullptr;
@@ -127,15 +127,15 @@ bool _dbBlockage::operator<(const _dbBlockage& rhs) const
 //
 ////////////////////////////////////////////////////////////////////
 
-dbBox* dbBlockage::getBBox()
+dbBox* dbBlockage::getBBox() const
 {
-  _dbBlockage* bkg = (_dbBlockage*) this;
+  const _dbBlockage* bkg = (const _dbBlockage*) this;
   return (dbBox*) bkg->getBBox();
 }
 
-dbInst* dbBlockage::getInstance()
+dbInst* dbBlockage::getInstance() const
 {
-  _dbBlockage* bkg = (_dbBlockage*) this;
+  const _dbBlockage* bkg = (const _dbBlockage*) this;
   return (dbInst*) bkg->getInst();
 }
 
@@ -145,9 +145,9 @@ void dbBlockage::setPushedDown()
   bkg->flags_.pushed_down = 1;
 }
 
-bool dbBlockage::isPushedDown()
+bool dbBlockage::isPushedDown() const
 {
-  _dbBlockage* bkg = (_dbBlockage*) this;
+  const _dbBlockage* bkg = (const _dbBlockage*) this;
   return bkg->flags_.pushed_down == 1;
 }
 
@@ -157,9 +157,9 @@ void dbBlockage::setSoft()
   bkg->flags_.soft = 1;
 }
 
-bool dbBlockage::isSoft()
+bool dbBlockage::isSoft() const
 {
-  _dbBlockage* bkg = (_dbBlockage*) this;
+  const _dbBlockage* bkg = (const _dbBlockage*) this;
   return bkg->flags_.soft == 1;
 }
 
@@ -169,20 +169,20 @@ void dbBlockage::setMaxDensity(float max_density)
   bkg->max_density_ = max_density;
 }
 
-float dbBlockage::getMaxDensity()
+float dbBlockage::getMaxDensity() const
 {
-  _dbBlockage* bkg = (_dbBlockage*) this;
+  const _dbBlockage* bkg = (const _dbBlockage*) this;
   return bkg->max_density_;
 }
 
-dbBlock* dbBlockage::getBlock()
+dbBlock* dbBlockage::getBlock() const
 {
   return (dbBlock*) getImpl()->getOwner();
 }
 
-bool dbBlockage::isSystemReserved()
+bool dbBlockage::isSystemReserved() const
 {
-  _dbBlockage* bkg = (_dbBlockage*) this;
+  const _dbBlockage* bkg = (const _dbBlockage*) this;
   return bkg->flags_.is_system_reserved;
 }
 
@@ -254,7 +254,7 @@ dbBlockage* dbBlockage::getBlockage(dbBlock* block_, uint32_t dbid_)
   return (dbBlockage*) block->blockage_tbl_->getPtr(dbid_);
 }
 
-void _dbBlockage::collectMemInfo(MemInfo& info)
+void _dbBlockage::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

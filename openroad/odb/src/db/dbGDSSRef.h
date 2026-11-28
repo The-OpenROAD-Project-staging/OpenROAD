@@ -31,7 +31,7 @@ class _dbGDSSRef : public _dbObject
   bool operator==(const _dbGDSSRef& rhs) const;
   bool operator!=(const _dbGDSSRef& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbGDSSRef& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   Point origin_;
   std::vector<std::pair<std::int16_t, std::string>> propattr_;

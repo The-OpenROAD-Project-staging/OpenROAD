@@ -18,13 +18,13 @@ namespace odb {
 template class dbTable<_dbTechMinCutRule>;
 template class dbTable<_dbTechMinEncRule>;
 
-void _dbTechMinCutRule::collectMemInfo(MemInfo& info)
+void _dbTechMinCutRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
 }
 
-void _dbTechMinEncRule::collectMemInfo(MemInfo& info)
+void _dbTechMinEncRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

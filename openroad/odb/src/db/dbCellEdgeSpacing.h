@@ -35,7 +35,7 @@ class _dbCellEdgeSpacing : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbCellEdgeSpacing& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbCellEdgeSpacingFlags flags_;
   std::string first_edge_type_;

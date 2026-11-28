@@ -35,7 +35,7 @@ class _dbTechSameNetRule : public _dbObject
   {
     return !operator==(rhs);
   }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbTechSameNetRuleFlags flags_;

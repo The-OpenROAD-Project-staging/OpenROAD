@@ -64,7 +64,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbTechLayerWidthTableRule& obj)
   return stream;
 }
 
-void _dbTechLayerWidthTableRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerWidthTableRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

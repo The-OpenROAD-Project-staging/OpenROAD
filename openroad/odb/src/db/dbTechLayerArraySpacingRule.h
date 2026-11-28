@@ -36,7 +36,7 @@ class _dbTechLayerArraySpacingRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerArraySpacingRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerArraySpacingRuleFlags flags_;
   int via_width_;

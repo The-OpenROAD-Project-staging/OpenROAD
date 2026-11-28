@@ -145,7 +145,7 @@ bool _dbTechNonDefaultRule::operator==(const _dbTechNonDefaultRule& rhs) const
   return true;
 }
 
-_dbTech* _dbTechNonDefaultRule::getTech()
+_dbTech* _dbTechNonDefaultRule::getTech() const
 {
   if (flags_.block_rule == 0) {
     return (_dbTech*) getOwner();
@@ -154,13 +154,13 @@ _dbTech* _dbTechNonDefaultRule::getTech()
   return getBlock()->getTech();
 }
 
-_dbBlock* _dbTechNonDefaultRule::getBlock()
+_dbBlock* _dbTechNonDefaultRule::getBlock() const
 {
   assert(flags_.block_rule == 1);
   return (_dbBlock*) getOwner();
 }
 
-void _dbTechNonDefaultRule::collectMemInfo(MemInfo& info)
+void _dbTechNonDefaultRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -187,27 +187,27 @@ bool _dbTechNonDefaultRule::operator<(const _dbTechNonDefaultRule& rhs) const
 //
 ////////////////////////////////////////////////////////////////////
 
-std::string dbTechNonDefaultRule::getName()
+std::string dbTechNonDefaultRule::getName() const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
   return rule->name_;
 }
 
-const char* dbTechNonDefaultRule::getConstName()
+const char* dbTechNonDefaultRule::getConstName() const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
   return rule->name_;
 }
 
-bool dbTechNonDefaultRule::isBlockRule()
+bool dbTechNonDefaultRule::isBlockRule() const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
   return rule->flags_.block_rule == 1;
 }
 
-dbTechLayerRule* dbTechNonDefaultRule::getLayerRule(dbTechLayer* layer_)
+dbTechLayerRule* dbTechNonDefaultRule::getLayerRule(dbTechLayer* layer_) const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
   _dbTechLayer* layer = (_dbTechLayer*) layer_;
   dbId<_dbTechLayerRule> id = rule->layer_rules_[layer->number_];
 
@@ -222,9 +222,9 @@ dbTechLayerRule* dbTechNonDefaultRule::getLayerRule(dbTechLayer* layer_)
 }
 
 void dbTechNonDefaultRule::getLayerRules(
-    std::vector<dbTechLayerRule*>& layer_rules)
+    std::vector<dbTechLayerRule*>& layer_rules) const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
 
   layer_rules.clear();
 
@@ -243,9 +243,9 @@ void dbTechNonDefaultRule::getLayerRules(
   }
 }
 
-void dbTechNonDefaultRule::getVias(std::vector<dbTechVia*>& vias)
+void dbTechNonDefaultRule::getVias(std::vector<dbTechVia*>& vias) const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
 
   vias.clear();
 
@@ -261,9 +261,9 @@ void dbTechNonDefaultRule::getVias(std::vector<dbTechVia*>& vias)
 }
 
 dbTechSameNetRule* dbTechNonDefaultRule::findSameNetRule(dbTechLayer* l1_,
-                                                         dbTechLayer* l2_)
+                                                         dbTechLayer* l2_) const
 {
-  _dbTechNonDefaultRule* ndrule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* ndrule = (const _dbTechNonDefaultRule*) this;
 
   if (ndrule->flags_.block_rule == 1) {  // not supported on block rules
     return nullptr;
@@ -283,9 +283,9 @@ dbTechSameNetRule* dbTechNonDefaultRule::findSameNetRule(dbTechLayer* l1_,
 }
 
 void dbTechNonDefaultRule::getSameNetRules(
-    std::vector<dbTechSameNetRule*>& rules)
+    std::vector<dbTechSameNetRule*>& rules) const
 {
-  _dbTechNonDefaultRule* ndrule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* ndrule = (const _dbTechNonDefaultRule*) this;
 
   rules.clear();
 
@@ -300,9 +300,9 @@ void dbTechNonDefaultRule::getSameNetRules(
   }
 }
 
-bool dbTechNonDefaultRule::getHardSpacing()
+bool dbTechNonDefaultRule::getHardSpacing() const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
   return rule->flags_.hard_spacing == 1;
 }
 
@@ -318,9 +318,9 @@ void dbTechNonDefaultRule::addUseVia(dbTechVia* via)
   rule->use_vias_.push_back(via->getId());
 }
 
-void dbTechNonDefaultRule::getUseVias(std::vector<dbTechVia*>& vias)
+void dbTechNonDefaultRule::getUseVias(std::vector<dbTechVia*>& vias) const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
   _dbTech* tech = rule->getTech();
 
   for (const auto& vid : rule->use_vias_) {
@@ -336,9 +336,9 @@ void dbTechNonDefaultRule::addUseViaRule(dbTechViaGenerateRule* gen_rule)
 }
 
 void dbTechNonDefaultRule::getUseViaRules(
-    std::vector<dbTechViaGenerateRule*>& rules)
+    std::vector<dbTechViaGenerateRule*>& rules) const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
   _dbTech* tech = rule->getTech();
 
   for (const auto& rid : rule->use_rules_) {
@@ -367,9 +367,9 @@ void dbTechNonDefaultRule::setMinCuts(dbTechLayer* cut_layer, const int count)
   rule->min_cuts_.push_back(count);
 }
 
-bool dbTechNonDefaultRule::getMinCuts(dbTechLayer* cut_layer, int& count)
+bool dbTechNonDefaultRule::getMinCuts(dbTechLayer* cut_layer, int& count) const
 {
-  _dbTechNonDefaultRule* rule = (_dbTechNonDefaultRule*) this;
+  const _dbTechNonDefaultRule* rule = (const _dbTechNonDefaultRule*) this;
 
   const uint32_t id = cut_layer->getId();
   uint32_t idx = 0;

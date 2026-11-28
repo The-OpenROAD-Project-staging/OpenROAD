@@ -33,7 +33,7 @@ class _dbScanPartition : public _dbObject
   }
   bool operator<(const _dbScanPartition& rhs) const;
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   std::string name_;
   dbTable<_dbScanList>* scan_lists_;

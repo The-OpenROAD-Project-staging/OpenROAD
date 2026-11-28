@@ -147,7 +147,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbGroup& obj)
   return stream;
 }
 
-void _dbGroup::collectMemInfo(MemInfo& info)
+void _dbGroup::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -269,9 +269,9 @@ void dbGroup::removeModInst(dbModInst* modinst)
   }
 }
 
-dbSet<dbModInst> dbGroup::getModInsts()
+dbSet<dbModInst> dbGroup::getModInsts() const
 {
-  _dbGroup* _group = (_dbGroup*) this;
+  const _dbGroup* _group = (const _dbGroup*) this;
   _dbBlock* block = (_dbBlock*) _group->getOwner();
   return dbSet<dbModInst>(_group, block->group_modinst_itr_);
 }
@@ -322,9 +322,9 @@ void dbGroup::removeInst(dbInst* inst)
   }
 }
 
-dbSet<dbInst> dbGroup::getInsts()
+dbSet<dbInst> dbGroup::getInsts() const
 {
-  _dbGroup* _group = (_dbGroup*) this;
+  const _dbGroup* _group = (const _dbGroup*) this;
   _dbBlock* block = (_dbBlock*) _group->getOwner();
   return dbSet<dbInst>(_group, block->group_inst_itr_);
 }
@@ -375,9 +375,9 @@ void dbGroup::removeGroup(dbGroup* child)
   }
 }
 
-dbSet<dbGroup> dbGroup::getGroups()
+dbSet<dbGroup> dbGroup::getGroups() const
 {
-  _dbGroup* _group = (_dbGroup*) this;
+  const _dbGroup* _group = (const _dbGroup*) this;
   _dbBlock* block = (_dbBlock*) _group->getOwner();
   return dbSet<dbGroup>(_group, block->group_itr_);
 }
@@ -450,16 +450,16 @@ void dbGroup::removeNet(dbNet* net)
   }
 }
 
-dbSet<dbNet> dbGroup::getPowerNets()
+dbSet<dbNet> dbGroup::getPowerNets() const
 {
-  _dbGroup* _group = (_dbGroup*) this;
+  const _dbGroup* _group = (const _dbGroup*) this;
   _dbBlock* _block = (_dbBlock*) _group->getOwner();
   return dbSet<dbNet>(_group, _block->group_power_net_itr_);
 }
 
-dbSet<dbNet> dbGroup::getGroundNets()
+dbSet<dbNet> dbGroup::getGroundNets() const
 {
-  _dbGroup* _group = (_dbGroup*) this;
+  const _dbGroup* _group = (const _dbGroup*) this;
   _dbBlock* _block = (_dbBlock*) _group->getOwner();
   return dbSet<dbNet>(_group, _block->group_ground_net_itr_);
 }

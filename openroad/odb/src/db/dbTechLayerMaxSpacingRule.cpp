@@ -71,7 +71,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbTechLayerMaxSpacingRule& obj)
   return stream;
 }
 
-void _dbTechLayerMaxSpacingRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerMaxSpacingRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -78,7 +78,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbAlignmentMarkerRule& obj)
   return stream;
 }
 
-void _dbAlignmentMarkerRule::collectMemInfo(MemInfo& info)
+void _dbAlignmentMarkerRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

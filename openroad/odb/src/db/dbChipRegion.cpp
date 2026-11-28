@@ -109,7 +109,7 @@ dbObjectTable* _dbChipRegion::getObjectTable(dbObjectType type)
   }
   return getTable()->getObjectTable(type);
 }
-void _dbChipRegion::collectMemInfo(MemInfo& info)
+void _dbChipRegion::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

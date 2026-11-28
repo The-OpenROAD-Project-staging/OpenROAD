@@ -351,9 +351,9 @@ const char* dbInst::getConstName() const
   return inst->name_;
 }
 
-bool dbInst::isNamed(const char* name)
+bool dbInst::isNamed(const char* name) const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return strcmp(inst->name_, name) == 0;
 }
 
@@ -398,9 +398,9 @@ bool dbInst::rename(const char* name)
   return true;
 }
 
-Point dbInst::getOrigin()
+Point dbInst::getOrigin() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return {inst->x_, inst->y_};
 }
 
@@ -492,16 +492,16 @@ void dbInst::setLocation(int x, int y)
   setOrigin(x - bbox.xMin(), y - bbox.yMin());
 }
 
-dbBox* dbInst::getBBox()
+dbBox* dbInst::getBBox() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   _dbBlock* block = (_dbBlock*) inst->getOwner();
   return (dbBox*) block->box_tbl_->getPtr(inst->bbox_);
 }
 
-dbOrientType dbInst::getOrient()
+dbOrientType dbInst::getOrient() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return dbOrientType(inst->flags_.orient);
 }
 
@@ -547,9 +547,9 @@ void dbInst::setOrient(dbOrientType orient)
   }
 }
 
-dbPlacementStatus dbInst::getPlacementStatus()
+dbPlacementStatus dbInst::getPlacementStatus() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return dbPlacementStatus(inst->flags_.status);
 }
 
@@ -584,9 +584,9 @@ void dbInst::setPlacementStatus(dbPlacementStatus status)
   }
 }
 
-dbTransform dbInst::getTransform()
+dbTransform dbInst::getTransform() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return dbTransform(inst->flags_.orient, Point(inst->x_, inst->y_));
 }
 
@@ -597,7 +597,7 @@ void dbInst::setTransform(const dbTransform& t)
   setOrigin(offset.x(), offset.y());
 }
 
-static void getParentTransform(dbInst* inst, dbTransform& t)
+static void getParentTransform(const dbInst* inst, dbTransform& t)
 {
   dbInst* parent = inst->getParent();
 
@@ -611,7 +611,7 @@ static void getParentTransform(dbInst* inst, dbTransform& t)
   }
 }
 
-void dbInst::getHierTransform(dbTransform& t)
+void dbInst::getHierTransform(dbTransform& t) const
 {
   getParentTransform(this, t);
   dbTransform x = getTransform();
@@ -619,9 +619,9 @@ void dbInst::getHierTransform(dbTransform& t)
   t = x;
 }
 
-bool dbInst::getEcoCreate()
+bool dbInst::getEcoCreate() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return inst->flags_.eco_create;
 }
 void dbInst::setEcoCreate(bool v)
@@ -635,9 +635,9 @@ void dbInst::setEcoCreate(bool v)
     inst->flags_.eco_create = 0;
   }
 }
-bool dbInst::getEcoDestroy()
+bool dbInst::getEcoDestroy() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return inst->flags_.eco_destroy;
 }
 void dbInst::setEcoDestroy(bool v)
@@ -651,9 +651,9 @@ void dbInst::setEcoDestroy(bool v)
     inst->flags_.eco_destroy = 0;
   }
 }
-bool dbInst::getEcoModify()
+bool dbInst::getEcoModify() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return inst->flags_.eco_modify;
 }
 void dbInst::setEcoModify(bool v)
@@ -667,9 +667,9 @@ void dbInst::setEcoModify(bool v)
     inst->flags_.eco_modify = 0;
   }
 }
-bool dbInst::getUserFlag1()
+bool dbInst::getUserFlag1() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return inst->flags_.user_flag_1 == 1;
 }
 
@@ -699,9 +699,9 @@ void dbInst::clearUserFlag1()
   }
 }
 
-bool dbInst::getUserFlag2()
+bool dbInst::getUserFlag2() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return inst->flags_.user_flag_2 == 1;
 }
 
@@ -731,9 +731,9 @@ void dbInst::clearUserFlag2()
   }
 }
 
-bool dbInst::getUserFlag3()
+bool dbInst::getUserFlag3() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return inst->flags_.user_flag_3 == 1;
 }
 
@@ -769,9 +769,9 @@ void dbInst::setDoNotTouch(bool v)
   inst->flags_.dont_touch = v;
 }
 
-bool dbInst::isDoNotTouch()
+bool dbInst::isDoNotTouch() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return inst->flags_.dont_touch == 1;
 }
 
@@ -833,9 +833,9 @@ dbSet<dbITerm> dbInst::getITerms() const
   return dbSet<dbITerm>(inst, block->inst_iterm_itr_);
 }
 
-dbITerm* dbInst::findITerm(const char* name)
+dbITerm* dbInst::findITerm(const char* name) const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   _dbBlock* block = (_dbBlock*) inst->getOwner();
   dbMaster* master = getMaster();
   _dbMTerm* mterm = (_dbMTerm*) master->findMTerm((dbBlock*) block, name);
@@ -856,9 +856,9 @@ dbITerm* dbInst::findITerm(const char* name)
   return (dbITerm*) block->iterm_tbl_->getPtr(id);
 }
 
-dbRegion* dbInst::getRegion()
+dbRegion* dbInst::getRegion() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
 
   if (inst->region_ == 0) {
     return nullptr;
@@ -869,9 +869,9 @@ dbRegion* dbInst::getRegion()
   return (dbRegion*) r;
 }
 
-dbModule* dbInst::getModule()
+dbModule* dbInst::getModule() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
 
   if (inst->module_ == 0) {
     return nullptr;
@@ -882,9 +882,9 @@ dbModule* dbInst::getModule()
   return (dbModule*) module;
 }
 
-dbGroup* dbInst::getGroup()
+dbGroup* dbInst::getGroup() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
 
   if (inst->group_ == 0) {
     return nullptr;
@@ -895,9 +895,9 @@ dbGroup* dbInst::getGroup()
   return (dbGroup*) group;
 }
 
-dbBox* dbInst::getHalo()
+dbBox* dbInst::getHalo() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
 
   if (inst->halo_ == 0) {
     return nullptr;
@@ -909,9 +909,9 @@ dbBox* dbInst::getHalo()
   return (dbBox*) b;
 }
 
-Rect dbInst::getTransformedHalo()
+Rect dbInst::getTransformedHalo() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   Rect halo = Rect();
 
   if (inst->halo_ == 0) {
@@ -949,7 +949,7 @@ void dbInst::setHalo(int left, int bottom, int right, int top, bool is_soft)
 }
 
 void dbInst::getConnectivity(std::vector<dbInst*>& result,
-                             dbSigType::Value type)
+                             dbSigType::Value type) const
 {
   for (dbITerm* iterm : getITerms()) {
     dbNet* net = iterm->getNet();
@@ -1054,9 +1054,9 @@ void dbInst::unbindBlock()
   }
 }
 
-dbBlock* dbInst::getChild()
+dbBlock* dbInst::getChild() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
 
   if (inst->hierarchy_ == 0) {
     return nullptr;
@@ -1069,26 +1069,26 @@ dbBlock* dbInst::getChild()
   return (dbBlock*) child;
 }
 
-bool dbInst::isHierarchical()
+bool dbInst::isHierarchical() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return inst->hierarchy_ != 0;
 }
 
-bool dbInst::isPhysicalOnly()
+bool dbInst::isPhysicalOnly() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
 
   return inst->module_ == 0;
 }
 
-dbInst* dbInst::getParent()
+dbInst* dbInst::getParent() const
 {
   dbBlock* block = (dbBlock*) getImpl()->getOwner();
   return block->getParentInst();
 }
 
-dbSet<dbInst> dbInst::getChildren()
+dbSet<dbInst> dbInst::getChildren() const
 {
   dbBlock* child = getChild();
 
@@ -1099,9 +1099,9 @@ dbSet<dbInst> dbInst::getChildren()
   return child->getInsts();
 }
 
-int dbInst::getWeight()
+int dbInst::getWeight() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   return inst->weight_;
 }
 
@@ -1111,9 +1111,9 @@ void dbInst::setWeight(int weight)
   inst->weight_ = weight;
 }
 
-dbSourceType dbInst::getSourceType()
+dbSourceType dbInst::getSourceType() const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   dbSourceType t(inst->flags_.source);
   return t;
 }
@@ -1124,17 +1124,17 @@ void dbInst::setSourceType(dbSourceType type)
   inst->flags_.source = type;
 }
 
-dbITerm* dbInst::getITerm(dbMTerm* mterm_)
+dbITerm* dbInst::getITerm(dbMTerm* mterm_) const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   _dbBlock* block = (_dbBlock*) inst->getOwner();
   _dbMTerm* mterm = (_dbMTerm*) mterm_;
   _dbITerm* iterm = block->iterm_tbl_->getPtr(inst->iterms_[mterm->order_id_]);
   return (dbITerm*) iterm;
 }
-dbITerm* dbInst::getITerm(uint32_t mterm_order_id)
+dbITerm* dbInst::getITerm(uint32_t mterm_order_id) const
 {
-  _dbInst* inst = (_dbInst*) this;
+  const _dbInst* inst = (const _dbInst*) this;
   _dbBlock* block = (_dbBlock*) inst->getOwner();
   _dbITerm* iterm = block->iterm_tbl_->getPtr(inst->iterms_[mterm_order_id]);
   return (dbITerm*) iterm;
@@ -1706,7 +1706,7 @@ dbITerm* dbInst::getFirstOutput() const
   return nullptr;
 }
 
-void _dbInst::collectMemInfo(MemInfo& info)
+void _dbInst::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

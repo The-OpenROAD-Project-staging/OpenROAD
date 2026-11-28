@@ -189,7 +189,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbPowerSwitch& obj)
   return stream;
 }
 
-void _dbPowerSwitch::collectMemInfo(MemInfo& info)
+void _dbPowerSwitch::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -372,39 +372,41 @@ void dbPowerSwitch::addPortMap(const std::string& model_port, dbMTerm* mterm)
 }
 
 std::vector<dbPowerSwitch::UPFControlPort> dbPowerSwitch::getControlPorts()
+    const
 {
-  _dbPowerSwitch* obj = (_dbPowerSwitch*) this;
+  const _dbPowerSwitch* obj = (const _dbPowerSwitch*) this;
   return obj->control_port_;
 }
 
 std::vector<dbPowerSwitch::UPFIOSupplyPort> dbPowerSwitch::getInputSupplyPorts()
+    const
 {
-  _dbPowerSwitch* obj = (_dbPowerSwitch*) this;
+  const _dbPowerSwitch* obj = (const _dbPowerSwitch*) this;
   return obj->in_supply_port_;
 }
 
-dbPowerSwitch::UPFIOSupplyPort dbPowerSwitch::getOutputSupplyPort()
+dbPowerSwitch::UPFIOSupplyPort dbPowerSwitch::getOutputSupplyPort() const
 {
-  _dbPowerSwitch* obj = (_dbPowerSwitch*) this;
+  const _dbPowerSwitch* obj = (const _dbPowerSwitch*) this;
   return UPFIOSupplyPort{obj->out_supply_port_};
 }
 
 std::vector<dbPowerSwitch::UPFAcknowledgePort>
-dbPowerSwitch::getAcknowledgePorts()
+dbPowerSwitch::getAcknowledgePorts() const
 {
-  _dbPowerSwitch* obj = (_dbPowerSwitch*) this;
+  const _dbPowerSwitch* obj = (const _dbPowerSwitch*) this;
   return obj->acknowledge_port_;
 }
 
-std::vector<dbPowerSwitch::UPFOnState> dbPowerSwitch::getOnStates()
+std::vector<dbPowerSwitch::UPFOnState> dbPowerSwitch::getOnStates() const
 {
-  _dbPowerSwitch* obj = (_dbPowerSwitch*) this;
+  const _dbPowerSwitch* obj = (const _dbPowerSwitch*) this;
   return obj->on_state_;
 }
 
-dbMaster* dbPowerSwitch::getLibCell()
+dbMaster* dbPowerSwitch::getLibCell() const
 {
-  _dbPowerSwitch* obj = (_dbPowerSwitch*) this;
+  const _dbPowerSwitch* obj = (const _dbPowerSwitch*) this;
   if (!obj->lib_.isValid()) {
     return nullptr;
   }
@@ -413,9 +415,9 @@ dbMaster* dbPowerSwitch::getLibCell()
       obj->lib_cell_);
 }
 
-std::map<std::string, dbMTerm*> dbPowerSwitch::getPortMap()
+std::map<std::string, dbMTerm*> dbPowerSwitch::getPortMap() const
 {
-  _dbPowerSwitch* obj = (_dbPowerSwitch*) this;
+  const _dbPowerSwitch* obj = (const _dbPowerSwitch*) this;
   std::map<std::string, dbMTerm*> port_mapping;
 
   dbMaster* cell = getLibCell();

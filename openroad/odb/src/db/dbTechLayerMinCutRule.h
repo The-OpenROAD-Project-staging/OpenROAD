@@ -40,7 +40,7 @@ class _dbTechLayerMinCutRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerMinCutRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerMinCutRuleFlags flags_;
   int num_cuts_;

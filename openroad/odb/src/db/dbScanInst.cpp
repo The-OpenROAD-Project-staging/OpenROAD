@@ -96,7 +96,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbScanInst& obj)
   return stream;
 }
 
-void _dbScanInst::collectMemInfo(MemInfo& info)
+void _dbScanInst::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -150,7 +150,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbAccessPoint& obj)
   return stream;
 }
 
-void _dbAccessPoint::collectMemInfo(MemInfo& info)
+void _dbAccessPoint::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -40,12 +40,12 @@ class _dbTrackGrid : public _dbObject
     return false;
   }
 
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   void getAverageTrackPattern(bool is_x,
                               int& track_init,
                               int& num_tracks,
-                              int& track_step);
+                              int& track_step) const;
 
   dbId<_dbTechLayer> layer_;
   dbVector<int> x_origin_;
@@ -59,8 +59,8 @@ class _dbTrackGrid : public _dbObject
   dbId<_dbTechLayer> next_grid_;
 
   // Transient
-  std::vector<int> grid_x_;
-  std::vector<int> grid_y_;
+  mutable std::vector<int> grid_x_;
+  mutable std::vector<int> grid_y_;
 };
 
 inline _dbTrackGrid::_dbTrackGrid(_dbDatabase*, const _dbTrackGrid& g)

@@ -31,7 +31,7 @@ class _dbUnfoldedChipInst : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbUnfoldedChipInst& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   std::string name_;
   dbVector<dbId<_dbChipInst>> chip_inst_path_;

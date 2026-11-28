@@ -46,7 +46,7 @@ class _dbRSeg : public _dbObject
 
   bool operator==(const _dbRSeg& rhs) const;
   bool operator!=(const _dbRSeg& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   bool operator<(const _dbRSeg& rhs) const
   {
     _dbRSeg* o1 = (_dbRSeg*) this;

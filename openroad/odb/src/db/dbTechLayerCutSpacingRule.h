@@ -71,7 +71,7 @@ class _dbTechLayerCutSpacingRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerCutSpacingRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerCutSpacingRuleFlags flags_;
   int cut_spacing_;

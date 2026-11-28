@@ -45,7 +45,7 @@ class _dbTechViaLayerRule : public _dbObject
   {
     return !operator==(rhs);
   }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbTechViaLayerRuleFlags flags_;

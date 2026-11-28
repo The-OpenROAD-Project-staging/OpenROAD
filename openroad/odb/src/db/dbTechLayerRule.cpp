@@ -110,7 +110,7 @@ bool _dbTechLayerRule::operator==(const _dbTechLayerRule& rhs) const
   return true;
 }
 
-_dbTech* _dbTechLayerRule::getTech()
+_dbTech* _dbTechLayerRule::getTech() const
 {
   if (flags_.block_rule == 0) {
     return (_dbTech*) getOwner();
@@ -119,7 +119,7 @@ _dbTech* _dbTechLayerRule::getTech()
   return getBlock()->getTech();
 }
 
-_dbBlock* _dbTechLayerRule::getBlock()
+_dbBlock* _dbTechLayerRule::getBlock() const
 {
   assert(flags_.block_rule == 1);
   return (_dbBlock*) getOwner();
@@ -131,16 +131,16 @@ _dbBlock* _dbTechLayerRule::getBlock()
 //
 ////////////////////////////////////////////////////////////////////
 
-dbTechLayer* dbTechLayerRule::getLayer()
+dbTechLayer* dbTechLayerRule::getLayer() const
 {
-  _dbTechLayerRule* rule = (_dbTechLayerRule*) this;
+  const _dbTechLayerRule* rule = (const _dbTechLayerRule*) this;
   _dbTech* tech = rule->getTech();
   return (dbTechLayer*) tech->layer_tbl_->getPtr(rule->layer_);
 }
 
-dbTechNonDefaultRule* dbTechLayerRule::getNonDefaultRule()
+dbTechNonDefaultRule* dbTechLayerRule::getNonDefaultRule() const
 {
-  _dbTechLayerRule* rule = (_dbTechLayerRule*) this;
+  const _dbTechLayerRule* rule = (const _dbTechLayerRule*) this;
 
   if (rule->non_default_rule_ == 0) {
     return nullptr;
@@ -156,15 +156,15 @@ dbTechNonDefaultRule* dbTechLayerRule::getNonDefaultRule()
       rule->non_default_rule_);
 }
 
-bool dbTechLayerRule::isBlockRule()
+bool dbTechLayerRule::isBlockRule() const
 {
-  _dbTechLayerRule* rule = (_dbTechLayerRule*) this;
+  const _dbTechLayerRule* rule = (const _dbTechLayerRule*) this;
   return rule->flags_.block_rule == 1;
 }
 
-int dbTechLayerRule::getWidth()
+int dbTechLayerRule::getWidth() const
 {
-  _dbTechLayerRule* rule = (_dbTechLayerRule*) this;
+  const _dbTechLayerRule* rule = (const _dbTechLayerRule*) this;
   return rule->width_;
 }
 
@@ -174,9 +174,9 @@ void dbTechLayerRule::setWidth(int width)
   rule->width_ = width;
 }
 
-int dbTechLayerRule::getSpacing()
+int dbTechLayerRule::getSpacing() const
 {
-  _dbTechLayerRule* rule = (_dbTechLayerRule*) this;
+  const _dbTechLayerRule* rule = (const _dbTechLayerRule*) this;
   return rule->spacing_;
 }
 
@@ -186,9 +186,9 @@ void dbTechLayerRule::setSpacing(int spacing)
   rule->spacing_ = spacing;
 }
 
-double dbTechLayerRule::getEdgeCapacitance()
+double dbTechLayerRule::getEdgeCapacitance() const
 {
-  _dbTechLayerRule* rule = (_dbTechLayerRule*) this;
+  const _dbTechLayerRule* rule = (const _dbTechLayerRule*) this;
   return rule->edge_capacitance_;
 }
 
@@ -198,9 +198,9 @@ void dbTechLayerRule::setEdgeCapacitance(double cap)
   rule->edge_capacitance_ = cap;
 }
 
-uint32_t dbTechLayerRule::getWireExtension()
+uint32_t dbTechLayerRule::getWireExtension() const
 {
-  _dbTechLayerRule* rule = (_dbTechLayerRule*) this;
+  const _dbTechLayerRule* rule = (const _dbTechLayerRule*) this;
   return rule->wire_extension_;
 }
 
@@ -210,9 +210,9 @@ void dbTechLayerRule::setWireExtension(uint32_t ext)
   rule->wire_extension_ = ext;
 }
 
-double dbTechLayerRule::getResistance()
+double dbTechLayerRule::getResistance() const
 {
-  _dbTechLayerRule* rule = (_dbTechLayerRule*) this;
+  const _dbTechLayerRule* rule = (const _dbTechLayerRule*) this;
   return rule->resistance_;
 }
 
@@ -222,9 +222,9 @@ void dbTechLayerRule::setResistance(double resistance)
   rule->resistance_ = resistance;
 }
 
-double dbTechLayerRule::getCapacitance()
+double dbTechLayerRule::getCapacitance() const
 {
-  _dbTechLayerRule* rule = (_dbTechLayerRule*) this;
+  const _dbTechLayerRule* rule = (const _dbTechLayerRule*) this;
   return rule->capacitance_;
 }
 
@@ -275,7 +275,7 @@ dbTechLayerRule* dbTechLayerRule::getTechLayerRule(dbBlock* block_,
   return (dbTechLayerRule*) block->layer_rule_tbl_->getPtr(dbid_);
 }
 
-void _dbTechLayerRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

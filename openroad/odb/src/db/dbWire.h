@@ -38,11 +38,11 @@ class _dbWire : public _dbObject
   {
   }
 
-  uint32_t length() { return opcodes_.size(); }
+  uint32_t length() const { return opcodes_.size(); }
 
   bool operator==(const _dbWire& rhs) const;
   bool operator!=(const _dbWire& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   _dbWireFlags flags_;
   dbVector<int> data_;

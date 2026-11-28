@@ -51,7 +51,7 @@ class _dbMaster : public _dbObject
   bool operator==(const _dbMaster& rhs) const;
   bool operator!=(const _dbMaster& rhs) const { return !operator==(rhs); }
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   dbMasterFlags flags_;

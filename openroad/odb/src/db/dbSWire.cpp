@@ -122,14 +122,14 @@ void _dbSWire::removeSBox(_dbSBox* box)
   }
 }
 
-dbBlock* dbSWire::getBlock()
+dbBlock* dbSWire::getBlock() const
 {
   return (dbBlock*) getImpl()->getOwner();
 }
 
-dbNet* dbSWire::getNet()
+dbNet* dbSWire::getNet() const
 {
-  _dbSWire* wire = (_dbSWire*) this;
+  const _dbSWire* wire = (const _dbSWire*) this;
   _dbBlock* block = (_dbBlock*) wire->getOwner();
   return (dbNet*) block->net_tbl_->getPtr(wire->net_);
 }
@@ -140,15 +140,15 @@ void dbSWire::setWireType(dbWireType type)
   wire->flags_.wire_type = type.getValue();
 }
 
-dbWireType dbSWire::getWireType()
+dbWireType dbSWire::getWireType() const
 {
-  _dbSWire* wire = (_dbSWire*) this;
+  const _dbSWire* wire = (const _dbSWire*) this;
   return wire->flags_.wire_type;
 }
 
-dbNet* dbSWire::getShield()
+dbNet* dbSWire::getShield() const
 {
-  _dbSWire* wire = (_dbSWire*) this;
+  const _dbSWire* wire = (const _dbSWire*) this;
 
   if (wire->shield_ == 0) {
     return nullptr;
@@ -158,9 +158,9 @@ dbNet* dbSWire::getShield()
   return (dbNet*) block->net_tbl_->getPtr(wire->shield_);
 }
 
-dbSet<dbSBox> dbSWire::getWires()
+dbSet<dbSBox> dbSWire::getWires() const
 {
-  _dbSWire* wire = (_dbSWire*) this;
+  const _dbSWire* wire = (const _dbSWire*) this;
   _dbBlock* block = (_dbBlock*) wire->getOwner();
   return dbSet<dbSBox>(wire, block->sbox_itr_);
 }
@@ -254,7 +254,7 @@ dbSWire* dbSWire::getSWire(dbBlock* block_, uint32_t dbid_)
   return (dbSWire*) block->swire_tbl_->getPtr(dbid_);
 }
 
-void _dbSWire::collectMemInfo(MemInfo& info)
+void _dbSWire::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

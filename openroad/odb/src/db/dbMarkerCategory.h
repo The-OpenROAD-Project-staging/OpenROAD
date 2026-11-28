@@ -43,7 +43,7 @@ class _dbMarkerCategory : public _dbObject
   }
   bool operator<(const _dbMarkerCategory& rhs) const;
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   using PropertyTree = boost::property_tree::ptree;
   bool isTopCategory() const;

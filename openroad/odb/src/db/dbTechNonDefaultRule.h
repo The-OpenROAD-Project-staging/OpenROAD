@@ -38,8 +38,8 @@ class _dbTechNonDefaultRule : public _dbObject
   _dbTechNonDefaultRule(_dbDatabase*, const _dbTechNonDefaultRule& r);
   ~_dbTechNonDefaultRule();
 
-  _dbTech* getTech();
-  _dbBlock* getBlock();
+  _dbTech* getTech() const;
+  _dbBlock* getBlock() const;
 
   bool operator==(const _dbTechNonDefaultRule& rhs) const;
   bool operator!=(const _dbTechNonDefaultRule& rhs) const
@@ -47,7 +47,7 @@ class _dbTechNonDefaultRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechNonDefaultRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbTechNonDefaultRuleFlags flags_;

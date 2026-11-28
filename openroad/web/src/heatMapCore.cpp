@@ -1067,7 +1067,7 @@ std::pair<double, double> GlobalRoutingDataSource::getReportableXYGrid() const
 
   auto grid_mode = [gcell_grid](int num_grids,
                                 void (odb::dbGCellGrid::*get_grid)(
-                                    int, int&, int&, int&)) -> int {
+                                    int, int&, int&, int&) const) -> int {
     std::map<int, int> grid_pitch_count;
     for (int i = 0; i < num_grids; i++) {
       int origin;

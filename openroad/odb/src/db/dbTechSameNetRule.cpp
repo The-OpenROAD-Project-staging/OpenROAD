@@ -45,23 +45,23 @@ bool _dbTechSameNetRule::operator==(const _dbTechSameNetRule& rhs) const
 //
 ////////////////////////////////////////////////////////////////////
 
-dbTechLayer* dbTechSameNetRule::getLayer1()
+dbTechLayer* dbTechSameNetRule::getLayer1() const
 {
-  _dbTechSameNetRule* rule = (_dbTechSameNetRule*) this;
+  const _dbTechSameNetRule* rule = (const _dbTechSameNetRule*) this;
   _dbTech* tech = (_dbTech*) rule->getOwner();
   return (dbTechLayer*) tech->layer_tbl_->getPtr(rule->layer_1_);
 }
 
-dbTechLayer* dbTechSameNetRule::getLayer2()
+dbTechLayer* dbTechSameNetRule::getLayer2() const
 {
-  _dbTechSameNetRule* rule = (_dbTechSameNetRule*) this;
+  const _dbTechSameNetRule* rule = (const _dbTechSameNetRule*) this;
   _dbTech* tech = (_dbTech*) rule->getOwner();
   return (dbTechLayer*) tech->layer_tbl_->getPtr(rule->layer_2_);
 }
 
-int dbTechSameNetRule::getSpacing()
+int dbTechSameNetRule::getSpacing() const
 {
-  _dbTechSameNetRule* rule = (_dbTechSameNetRule*) this;
+  const _dbTechSameNetRule* rule = (const _dbTechSameNetRule*) this;
   return rule->spacing_;
 }
 
@@ -82,9 +82,9 @@ void dbTechSameNetRule::setAllowStackedVias(bool value)
   }
 }
 
-bool dbTechSameNetRule::getAllowStackedVias()
+bool dbTechSameNetRule::getAllowStackedVias() const
 {
-  _dbTechSameNetRule* rule = (_dbTechSameNetRule*) this;
+  const _dbTechSameNetRule* rule = (const _dbTechSameNetRule*) this;
   return rule->flags_.stack == 1;
 }
 
@@ -148,7 +148,7 @@ dbTechSameNetRule* dbTechSameNetRule::getTechSameNetRule(dbTech* tech_,
   return (dbTechSameNetRule*) tech->samenet_rule_tbl_->getPtr(dbid_);
 }
 
-void _dbTechSameNetRule::collectMemInfo(MemInfo& info)
+void _dbTechSameNetRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

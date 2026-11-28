@@ -32,7 +32,7 @@ class _dbBusPort : public _dbObject
   bool operator==(const _dbBusPort& rhs) const;
   bool operator!=(const _dbBusPort& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbBusPort& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   int size() { return abs(from_ - to_) + 1; }
   // User Code End Methods
@@ -46,7 +46,7 @@ class _dbBusPort : public _dbObject
   dbId<_dbModule> parent_;
 
   // User Code Begin Fields
-  dbModuleBusPortModBTermItr* members_iter_ = nullptr;
+  mutable dbModuleBusPortModBTermItr* members_iter_ = nullptr;
   // User Code End Fields
 };
 dbIStream& operator>>(dbIStream& stream, _dbBusPort& obj);

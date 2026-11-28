@@ -35,7 +35,7 @@ class _dbTechLayerKeepOutZoneRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerKeepOutZoneRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerKeepOutZoneRuleFlags flags_;
   std::string first_cut_class_;

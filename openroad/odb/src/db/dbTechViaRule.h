@@ -39,7 +39,7 @@ class _dbTechViaRule : public _dbObject
     return strcmp(name_, rhs.name_) < 0;
   }
 
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbTechViaRuleFlags flags_;

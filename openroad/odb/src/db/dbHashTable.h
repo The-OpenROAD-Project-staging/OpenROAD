@@ -41,8 +41,8 @@ class dbHashTable
   }
 
   void setTable(dbTable<T, page_size>* table) { obj_tbl_ = table; }
-  T* find(const char* name);
-  int hasMember(const char* name);
+  T* find(const char* name) const;
+  int hasMember(const char* name) const;
   void insert(T* object);
   void remove(T* object);
 

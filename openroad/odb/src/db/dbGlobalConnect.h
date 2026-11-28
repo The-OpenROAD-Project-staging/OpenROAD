@@ -48,7 +48,7 @@ class _dbGlobalConnect : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbGlobalConnect& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   void setupRegex();
   static void testRegex(utl::Logger* logger,

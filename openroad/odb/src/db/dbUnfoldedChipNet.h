@@ -28,7 +28,7 @@ class _dbUnfoldedChipNet : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbUnfoldedChipNet& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbChipNet> chip_net_;
   dbVector<dbId<_dbUnfoldedChipBumpInst>> connected_bumps_;

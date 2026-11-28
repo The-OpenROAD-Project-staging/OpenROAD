@@ -209,63 +209,63 @@ dbObjectTable* _dbLib::getObjectTable(dbObjectType type)
 //
 ////////////////////////////////////////////////////////////////////
 
-std::string dbLib::getName()
+std::string dbLib::getName() const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   return lib->name_;
 }
 
-const char* dbLib::getConstName()
+const char* dbLib::getConstName() const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   return lib->name_;
 }
 
-dbTech* dbLib::getTech()
+dbTech* dbLib::getTech() const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   return (dbTech*) lib->getTech();
 }
 
-_dbTech* _dbLib::getTech()
+_dbTech* _dbLib::getTech() const
 {
   _dbDatabase* db = getDatabase();
   return db->tech_tbl_->getPtr(tech_);
 }
 
-int dbLib::getDbUnitsPerMicron()
+int dbLib::getDbUnitsPerMicron() const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   return lib->dbu_per_micron_;
 }
 
-dbSet<dbMaster> dbLib::getMasters()
+dbSet<dbMaster> dbLib::getMasters() const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   return dbSet<dbMaster>(lib, lib->master_tbl_);
 }
 
-dbMaster* dbLib::findMaster(const char* name)
+dbMaster* dbLib::findMaster(const char* name) const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   return (dbMaster*) lib->master_hash_.find(name);
 }
 
-dbSet<dbSite> dbLib::getSites()
+dbSet<dbSite> dbLib::getSites() const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   return dbSet<dbSite>(lib, lib->site_tbl_);
 }
 
-dbSite* dbLib::findSite(const char* name)
+dbSite* dbLib::findSite(const char* name) const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   return (dbSite*) lib->site_hash_.find(name);
 }
 
-int dbLib::getLefUnits()
+int dbLib::getLefUnits() const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   return lib->lef_units_;
 }
 
@@ -288,9 +288,9 @@ void dbLib::setBusDelimiters(char left, char right)
   lib->right_bus_delimiter_ = right;
 }
 
-void dbLib::getBusDelimiters(char& left, char& right)
+void dbLib::getBusDelimiters(char& left, char& right) const
 {
-  _dbLib* lib = (_dbLib*) this;
+  const _dbLib* lib = (const _dbLib*) this;
   left = lib->left_bus_delimiter_;
   right = lib->right_bus_delimiter_;
 }
@@ -330,7 +330,7 @@ void dbLib::destroy(dbLib* lib_)
   db->lib_tbl_->destroy(lib);
 }
 
-void _dbLib::collectMemInfo(MemInfo& info)
+void _dbLib::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

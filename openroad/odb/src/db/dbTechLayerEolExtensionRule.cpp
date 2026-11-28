@@ -75,7 +75,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerEolExtensionRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerEolExtensionRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

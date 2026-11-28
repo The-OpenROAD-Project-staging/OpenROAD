@@ -70,7 +70,7 @@ class _dbTechLayerSpacingEolRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerSpacingEolRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerSpacingEolRuleFlags flags_;
   int eol_space_;

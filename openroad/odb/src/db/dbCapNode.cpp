@@ -85,7 +85,7 @@ bool _dbCapNode::operator==(const _dbCapNode& rhs) const
 //
 ////////////////////////////////////////////////////////////////////
 
-bool dbCapNode::needAdjustCC(double ccThreshHold)
+bool dbCapNode::needAdjustCC(double ccThreshHold) const
 {
   const uint32_t cornerCnt
       = ((dbBlock*) getImpl()->getOwner())->getCornerCount();
@@ -207,9 +207,9 @@ void dbCapNode::adjustCapacitance(float factor)
   }
 }
 
-double dbCapNode::getCapacitance(uint32_t corner)
+double dbCapNode::getCapacitance(uint32_t corner) const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
 
@@ -220,9 +220,9 @@ double dbCapNode::getCapacitance(uint32_t corner)
   return 0.0;
 }
 
-void dbCapNode::getGndCap(double* gndcap, double* totalcap)
+void dbCapNode::getGndCap(double* gndcap, double* totalcap) const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   if (seg->flags_.foreign == 0) {
     return;
   }
@@ -260,7 +260,7 @@ void dbCapNode::addGndCap(double* gndcap, double* totalcap)
   }
 }
 
-void dbCapNode::accAllCcCap(double* totalcap, double miller_mult)
+void dbCapNode::accAllCcCap(double* totalcap, double miller_mult) const
 {
   if (totalcap == nullptr || miller_mult == 0) {
     return;
@@ -272,7 +272,7 @@ void dbCapNode::accAllCcCap(double* totalcap, double miller_mult)
 
 void dbCapNode::getGndTotalCap(double* gndcap,
                                double* totalcap,
-                               double miller_mult)
+                               double miller_mult) const
 {
   getGndCap(gndcap, totalcap);
   accAllCcCap(totalcap, miller_mult);
@@ -286,9 +286,9 @@ void dbCapNode::addGndTotalCap(double* gndcap,
   accAllCcCap(totalcap, miller_mult);
 }
 
-void dbCapNode::getCapTable(double* cap)
+void dbCapNode::getCapTable(double* cap) const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
 
@@ -395,58 +395,58 @@ void dbCapNode::addCapacitance(double cap, int corner)
   }
 }
 
-bool dbCapNode::isSelect()
+bool dbCapNode::isSelect() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   return seg->flags_.select > 0;
 }
-bool dbCapNode::isForeign()
+bool dbCapNode::isForeign() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   return seg->flags_.foreign > 0;
 }
-bool dbCapNode::isInternal()
+bool dbCapNode::isInternal() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   return seg->flags_.internal > 0;
 }
-bool dbCapNode::isTreeNode()
+bool dbCapNode::isTreeNode() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   uint32_t flags = seg->flags_.branch + seg->flags_.iterm + seg->flags_.bterm;
   return flags > 0;
 }
-bool dbCapNode::isBranch()
+bool dbCapNode::isBranch() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   return seg->flags_.branch > 0;
 }
-bool dbCapNode::isDangling()
+bool dbCapNode::isDangling() const
 {
   return getChildrenCnt() <= 1 && !isTreeNode();
 }
 
-dbITerm* dbCapNode::getITerm(dbBlock* mblock)
+dbITerm* dbCapNode::getITerm(dbBlock* mblock) const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   dbBlock* block = mblock ? mblock : (dbBlock*) seg->getOwner();
   if (!seg->flags_.iterm) {
     return nullptr;
   }
   return dbITerm::getITerm(block, seg->node_num_);
 }
-dbBTerm* dbCapNode::getBTerm(dbBlock* mblock)
+dbBTerm* dbCapNode::getBTerm(dbBlock* mblock) const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   dbBlock* block = mblock ? mblock : (dbBlock*) seg->getOwner();
   if (!seg->flags_.bterm) {
     return nullptr;
   }
   return dbBTerm::getBTerm(block, seg->node_num_);
 }
-bool dbCapNode::isSourceTerm(dbBlock* mblock)
+bool dbCapNode::isSourceTerm(dbBlock* mblock) const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   dbBlock* block = mblock ? mblock : (dbBlock*) seg->getOwner();
   dbIoType iotype;
   if (seg->flags_.iterm) {
@@ -461,9 +461,9 @@ bool dbCapNode::isSourceTerm(dbBlock* mblock)
   }
   return false;
 }
-bool dbCapNode::isInoutTerm(dbBlock* mblock)
+bool dbCapNode::isInoutTerm(dbBlock* mblock) const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   dbBlock* block = mblock ? mblock : (dbBlock*) seg->getOwner();
   if (seg->flags_.iterm) {
     dbITerm* iterm = dbITerm::getITerm(block, seg->node_num_);
@@ -475,19 +475,19 @@ bool dbCapNode::isInoutTerm(dbBlock* mblock)
   }
   return false;
 }
-bool dbCapNode::isITerm()
+bool dbCapNode::isITerm() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   return seg->flags_.iterm > 0;
 }
-bool dbCapNode::isName()
+bool dbCapNode::isName() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   return seg->flags_.name > 0;
 }
-bool dbCapNode::isBTerm()
+bool dbCapNode::isBTerm() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   return seg->flags_.bterm > 0;
 }
 
@@ -663,9 +663,9 @@ uint32_t dbCapNode::incrChildrenCnt()
   }
   return seg->flags_.childrenCnt;
 }
-uint32_t dbCapNode::getChildrenCnt()
+uint32_t dbCapNode::getChildrenCnt() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   return seg->flags_.childrenCnt;
 }
 void dbCapNode::setChildrenCnt(uint32_t cnt)
@@ -776,15 +776,15 @@ void dbCapNode::setNode(uint32_t node)
     block->journal_->updateField(this, _dbCapNode::kNodeNum, prev_node, node);
   }
 }
-uint32_t dbCapNode::getNode()
+uint32_t dbCapNode::getNode() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   return seg->node_num_;
 }
 
-uint32_t dbCapNode::getShapeId()
+uint32_t dbCapNode::getShapeId() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   dbBlock* block = (dbBlock*) seg->getOwner();
   if (seg->flags_.internal > 0) {
     return seg->node_num_;
@@ -810,9 +810,9 @@ void dbCapNode::setSortIndex(uint32_t idx)
   seg->flags_.sort_index = idx;
 }
 
-uint32_t dbCapNode::getSortIndex()
+uint32_t dbCapNode::getSortIndex() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   //_dbBlock * block = (_dbBlock *) getOwner();
   return seg->flags_.sort_index;
 }
@@ -831,9 +831,9 @@ uint32_t dbCapNode::getSortIndex()
 //    y = seg->_ycoord;
 //}
 
-bool dbCapNode::getTermCoords(int& x, int& y, dbBlock* mblock)
+bool dbCapNode::getTermCoords(int& x, int& y, dbBlock* mblock) const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   dbBlock* block = mblock ? mblock : (dbBlock*) seg->getOwner();
   if (seg->flags_.iterm > 0) {
     dbITerm* iterm = dbITerm::getITerm(block, seg->node_num_);
@@ -846,9 +846,9 @@ bool dbCapNode::getTermCoords(int& x, int& y, dbBlock* mblock)
   return false;
 }
 
-dbSet<dbCCSeg> dbCapNode::getCCSegs()
+dbSet<dbCCSeg> dbCapNode::getCCSegs() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   return dbSet<dbCCSeg>(seg, block->cc_seg_itr_);
 }
@@ -1023,16 +1023,16 @@ dbSet<dbCapNode>::iterator dbCapNode::destroy(dbSet<dbCapNode>::iterator& itr)
   destroy(bt);
   return next;
 }
-dbNet* dbCapNode::getNet()
+dbNet* dbCapNode::getNet() const
 {
-  _dbCapNode* seg = (_dbCapNode*) this;
+  const _dbCapNode* seg = (const _dbCapNode*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   return dbNet::getNet((dbBlock*) block, seg->net_);
 }
 
-void dbCapNode::printCC()
+void dbCapNode::printCC() const
 {
-  _dbCapNode* node = (_dbCapNode*) this;
+  const _dbCapNode* node = (const _dbCapNode*) this;
   dbBlock* block = (dbBlock*) node->getOwner();
   uint32_t ccn = node->cc_segs_;
   if (ccn == 0) {
@@ -1043,9 +1043,9 @@ void dbCapNode::printCC()
   ccs->printCapnCC(getId());
 }
 
-bool dbCapNode::checkCC()
+bool dbCapNode::checkCC() const
 {
-  _dbCapNode* node = (_dbCapNode*) this;
+  const _dbCapNode* node = (const _dbCapNode*) this;
   dbBlock* block = (dbBlock*) node->getOwner();
   uint32_t ccn = node->cc_segs_;
   if (ccn == 0) {
@@ -1062,7 +1062,7 @@ dbCapNode* dbCapNode::getCapNode(dbBlock* block_, uint32_t dbid_)
   return (dbCapNode*) block->cap_node_tbl_->getPtr(dbid_);
 }
 
-void _dbCapNode::collectMemInfo(MemInfo& info)
+void _dbCapNode::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

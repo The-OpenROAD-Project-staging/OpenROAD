@@ -37,7 +37,7 @@ class _dbRegion : public _dbObject
   bool operator!=(const _dbRegion& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbRegion& rhs) const;
 
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbRegionFlags flags_;

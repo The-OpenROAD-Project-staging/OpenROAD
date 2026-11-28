@@ -32,7 +32,7 @@ class _dbTechLayerWidthTableRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerWidthTableRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerWidthTableRuleFlags flags_;
   dbVector<int> width_tbl_;

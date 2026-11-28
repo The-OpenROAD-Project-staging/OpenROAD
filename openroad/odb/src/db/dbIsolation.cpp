@@ -95,7 +95,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbIsolation& obj)
   return stream;
 }
 
-void _dbIsolation::collectMemInfo(MemInfo& info)
+void _dbIsolation::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -239,9 +239,9 @@ void dbIsolation::addIsolationCell(const std::string& master)
   obj->isolation_cells_.push_back(master);
 }
 
-std::vector<dbMaster*> dbIsolation::getIsolationCells()
+std::vector<dbMaster*> dbIsolation::getIsolationCells() const
 {
-  _dbIsolation* obj = (_dbIsolation*) this;
+  const _dbIsolation* obj = (const _dbIsolation*) this;
   std::vector<dbMaster*> masters;
 
   for (const auto& cell : obj->isolation_cells_) {
@@ -251,9 +251,9 @@ std::vector<dbMaster*> dbIsolation::getIsolationCells()
   return masters;
 }
 
-bool dbIsolation::appliesTo(const dbIoType& io)
+bool dbIsolation::appliesTo(const dbIoType& io) const
 {
-  _dbIsolation* obj = (_dbIsolation*) this;
+  const _dbIsolation* obj = (const _dbIsolation*) this;
 
   if (io == dbIoType::OUTPUT) {
     if (obj->applies_to_ == "inputs") {

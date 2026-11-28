@@ -67,7 +67,7 @@ bool _dbName::operator<(const _dbName& rhs) const
   return strcmp(name_, rhs.name_) < 0;
 }
 
-void _dbName::collectMemInfo(MemInfo& info)
+void _dbName::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -178,7 +178,7 @@ dbIStream& operator>>(dbIStream& stream, _dbNameCache& cache)
   return stream;
 }
 
-void _dbNameCache::collectMemInfo(MemInfo& info)
+void _dbNameCache::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -24,7 +24,7 @@ class _dbChipCapNode : public _dbObject
   bool operator==(const _dbChipCapNode& rhs) const;
   bool operator!=(const _dbChipCapNode& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbChipCapNode& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbChipNet> chip_net_;
   dbId<_dbChipCapNode> next_chip_net_cap_node_;

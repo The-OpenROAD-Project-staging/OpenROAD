@@ -27,7 +27,7 @@ class _dbIsolation : public _dbObject
   bool operator==(const _dbIsolation& rhs) const;
   bool operator!=(const _dbIsolation& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbIsolation& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   dbId<_dbIsolation> next_entry_;

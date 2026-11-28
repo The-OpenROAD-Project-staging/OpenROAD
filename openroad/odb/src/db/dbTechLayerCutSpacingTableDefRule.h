@@ -64,7 +64,7 @@ class _dbTechLayerCutSpacingTableDefRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerCutSpacingTableDefRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerCutSpacingTableDefRuleFlags flags_;
   int default_;

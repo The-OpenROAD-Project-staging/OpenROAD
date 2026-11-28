@@ -35,7 +35,7 @@ class _dbGroup : public _dbObject
   bool operator==(const _dbGroup& rhs) const;
   bool operator!=(const _dbGroup& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbGroup& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbGroupFlags flags_;
   char* name_;

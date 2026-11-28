@@ -33,13 +33,13 @@ class _dbBlockage : public _dbObject
   _dbBlockage(_dbDatabase* db);
   _dbBlockage(_dbDatabase* db, const _dbBlockage& b);
 
-  _dbInst* getInst();
+  _dbInst* getInst() const;
   _dbBox* getBBox() const;
 
   bool operator==(const _dbBlockage& rhs) const;
   bool operator!=(const _dbBlockage& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbBlockage& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   _dbBlockageFlags flags_;
   dbId<_dbInst> inst_;

@@ -48,7 +48,7 @@ class _dbSite : public _dbObject
 
   bool operator==(const _dbSite& rhs) const;
   bool operator!=(const _dbSite& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   dbSiteFlags flags_;

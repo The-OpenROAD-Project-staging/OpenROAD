@@ -31,8 +31,8 @@ class _dbTechLayerRule : public _dbObject
   _dbTechLayerRule(_dbDatabase*);
   _dbTechLayerRule(_dbDatabase*, const _dbTechLayerRule& r);
 
-  _dbTech* getTech();
-  _dbBlock* getBlock();
+  _dbTech* getTech() const;
+  _dbBlock* getBlock() const;
 
   bool operator==(const _dbTechLayerRule& rhs) const;
   bool operator!=(const _dbTechLayerRule& rhs) const
@@ -52,7 +52,7 @@ class _dbTechLayerRule : public _dbObject
     return non_default_rule_ < rhs.non_default_rule_;
   }
 
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbTechLayerRuleFlags flags_;

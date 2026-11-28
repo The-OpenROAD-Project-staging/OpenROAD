@@ -28,7 +28,7 @@ class _dbTechLayerCutSpacingTableOrthRule : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerCutSpacingTableOrthRule& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   //{cutWithin, orthoSpacing}
   dbVector<std::pair<int, int>> spacing_tbl_;

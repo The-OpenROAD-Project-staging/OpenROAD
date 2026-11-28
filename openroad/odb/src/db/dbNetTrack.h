@@ -27,7 +27,7 @@ class _dbNetTrack : public _dbObject
   bool operator==(const _dbNetTrack& rhs) const;
   bool operator!=(const _dbNetTrack& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbNetTrack& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbNet> net_;
   Rect box_;

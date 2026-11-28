@@ -716,36 +716,36 @@ void _dbTechAntennaPinModel::getAntennaValues(
 }
 
 void dbTechAntennaPinModel::getGateArea(
-    std::vector<std::pair<double, dbTechLayer*>>& data)
+    std::vector<std::pair<double, dbTechLayer*>>& data) const
 {
-  _dbTechAntennaPinModel* xmod = (_dbTechAntennaPinModel*) this;
+  const _dbTechAntennaPinModel* xmod = (const _dbTechAntennaPinModel*) this;
   _dbMaster* master = (_dbMaster*) xmod->getOwner();
   _dbTech* tech = ((_dbLib*) master->getOwner())->getTech();
   _dbTechAntennaPinModel::getAntennaValues(tech, xmod->gate_area_, data);
 }
 
 void dbTechAntennaPinModel::getMaxAreaCAR(
-    std::vector<std::pair<double, dbTechLayer*>>& data)
+    std::vector<std::pair<double, dbTechLayer*>>& data) const
 {
-  _dbTechAntennaPinModel* xmod = (_dbTechAntennaPinModel*) this;
+  const _dbTechAntennaPinModel* xmod = (const _dbTechAntennaPinModel*) this;
   _dbMaster* master = (_dbMaster*) xmod->getOwner();
   _dbTech* tech = ((_dbLib*) master->getOwner())->getTech();
   _dbTechAntennaPinModel::getAntennaValues(tech, xmod->max_area_car_, data);
 }
 
 void dbTechAntennaPinModel::getMaxSideAreaCAR(
-    std::vector<std::pair<double, dbTechLayer*>>& data)
+    std::vector<std::pair<double, dbTechLayer*>>& data) const
 {
-  _dbTechAntennaPinModel* xmod = (_dbTechAntennaPinModel*) this;
+  const _dbTechAntennaPinModel* xmod = (const _dbTechAntennaPinModel*) this;
   _dbMaster* master = (_dbMaster*) xmod->getOwner();
   _dbTech* tech = ((_dbLib*) master->getOwner())->getTech();
   _dbTechAntennaPinModel::getAntennaValues(tech, xmod->max_sidearea_car_, data);
 }
 
 void dbTechAntennaPinModel::getMaxCutCAR(
-    std::vector<std::pair<double, dbTechLayer*>>& data)
+    std::vector<std::pair<double, dbTechLayer*>>& data) const
 {
-  _dbTechAntennaPinModel* xmod = (_dbTechAntennaPinModel*) this;
+  const _dbTechAntennaPinModel* xmod = (const _dbTechAntennaPinModel*) this;
   _dbMaster* master = (_dbMaster*) xmod->getOwner();
   _dbTech* tech = ((_dbLib*) master->getOwner())->getTech();
   _dbTechAntennaPinModel::getAntennaValues(tech, xmod->max_cut_car_, data);
@@ -759,13 +759,13 @@ dbTechAntennaPinModel* dbTechAntennaPinModel::getAntennaPinModel(
   return (dbTechAntennaPinModel*) master->antenna_pin_model_tbl_->getPtr(dbid);
 }
 
-void _dbTechLayerAntennaRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerAntennaRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
 }
 
-void _dbTechAntennaPinModel::collectMemInfo(MemInfo& info)
+void _dbTechAntennaPinModel::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

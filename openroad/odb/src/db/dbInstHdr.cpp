@@ -184,7 +184,7 @@ void dbInstHdr::destroy(dbInstHdr* inst_hdr_)
   block->inst_hdr_tbl_->destroy(inst_hdr);
 }
 
-void _dbInstHdr::collectMemInfo(MemInfo& info)
+void _dbInstHdr::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -83,7 +83,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbChipNet& obj)
   return stream;
 }
 
-void _dbChipNet::collectMemInfo(MemInfo& info)
+void _dbChipNet::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

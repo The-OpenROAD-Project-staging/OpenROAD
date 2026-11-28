@@ -27,7 +27,7 @@ class _dbChipConn : public _dbObject
   bool operator==(const _dbChipConn& rhs) const;
   bool operator!=(const _dbChipConn& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbChipConn& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   std::string name_;
   int thickness_;

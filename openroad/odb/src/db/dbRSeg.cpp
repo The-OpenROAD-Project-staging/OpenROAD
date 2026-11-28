@@ -66,9 +66,9 @@ bool _dbRSeg::operator==(const _dbRSeg& rhs) const
 //
 ////////////////////////////////////////////////////////////////////
 
-double dbRSeg::getResistance(int corner)
+double dbRSeg::getResistance(int corner) const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
 
@@ -76,9 +76,9 @@ double dbRSeg::getResistance(int corner)
   return (*block->r_val_tbl_)[((seg->getOID() - 1) * cornerCnt) + 1 + corner];
 }
 
-void dbRSeg::getAllRes(double* res)
+void dbRSeg::getAllRes(double* res) const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
 
@@ -103,15 +103,15 @@ bool dbRSeg::updatedCap()
   _dbRSeg* seg = (_dbRSeg*) this;
   return (seg->flags_.update_cap == 1);
 }
-bool dbRSeg::allocatedCap()
+bool dbRSeg::allocatedCap() const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   return (seg->flags_.allocated_cap == 1);
 }
 
-bool dbRSeg::pathLowToHigh()
+bool dbRSeg::pathLowToHigh() const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   return (seg->flags_.path_dir == 0);
 }
 
@@ -363,9 +363,9 @@ void dbRSeg::adjustCapacitance(float factor)
   }
 }
 
-double dbRSeg::getGroundCapacitance(int corner)
+double dbRSeg::getGroundCapacitance(int corner) const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
 
@@ -378,14 +378,14 @@ double dbRSeg::getGroundCapacitance(int corner)
   return (*block->c_val_tbl_)[((seg->getOID() - 1) * cornerCnt) + 1 + corner];
 }
 
-double dbRSeg::getTotalCapacitance(int corner)
+double dbRSeg::getTotalCapacitance(int corner) const
 {
   return getCapacitance(corner, 1.0);
 }
 
-void dbRSeg::getGndCap(double* gndcap, double* totalcap)
+void dbRSeg::getGndCap(double* gndcap, double* totalcap) const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
   double gcap;
@@ -427,7 +427,7 @@ void dbRSeg::addGndCap(double* gndcap, double* totalcap)
   }
 }
 
-dbCapNode* dbRSeg::getTargetCapNode()
+dbCapNode* dbRSeg::getTargetCapNode() const
 {
   _dbBlock* block = (_dbBlock*) getImpl()->getOwner();
   uint32_t target = getTargetNode();
@@ -440,7 +440,7 @@ dbCapNode* dbRSeg::getTargetCapNode()
   return (dbCapNode*) n;
 }
 
-dbCapNode* dbRSeg::getSourceCapNode()
+dbCapNode* dbRSeg::getSourceCapNode() const
 {
   _dbBlock* block = (_dbBlock*) getImpl()->getOwner();
   uint32_t source = getSourceNode();
@@ -453,7 +453,7 @@ dbCapNode* dbRSeg::getSourceCapNode()
   return (dbCapNode*) n;
 }
 
-double dbRSeg::getCapacitance(const int corner, const double miller_mult)
+double dbRSeg::getCapacitance(const int corner, const double miller_mult) const
 {
   const double cap = getGroundCapacitance(corner);
 
@@ -473,7 +473,7 @@ double dbRSeg::getCapacitance(const int corner, const double miller_mult)
 
 void dbRSeg::getGndTotalCap(double* gndcap,
                             double* totalcap,
-                            double miller_mult)
+                            double miller_mult) const
 {
   getGndCap(gndcap, totalcap);
   getTargetCapNode()->accAllCcCap(totalcap, miller_mult);
@@ -487,7 +487,7 @@ void dbRSeg::addGndTotalCap(double* gndcap,
   getTargetCapNode()->accAllCcCap(totalcap, miller_mult);
 }
 
-void dbRSeg::getCcSegs(std::vector<dbCCSeg*>& ccsegs)
+void dbRSeg::getCcSegs(std::vector<dbCCSeg*>& ccsegs) const
 {
   ccsegs.clear();
 
@@ -504,7 +504,7 @@ void dbRSeg::getCcSegs(std::vector<dbCCSeg*>& ccsegs)
   }
 }
 
-void dbRSeg::printCcSegs()
+void dbRSeg::printCcSegs() const
 {
   std::vector<dbCCSeg*> ccsegs;
   getCcSegs(ccsegs);
@@ -512,20 +512,20 @@ void dbRSeg::printCcSegs()
       utl::ODB, 54, "CC segs of RSeg {}-{}", getSourceNode(), getTargetNode());
 }
 
-void dbRSeg::printCC()
+void dbRSeg::printCC() const
 {
   getImpl()->getLogger()->info(utl::ODB, 56, "rseg {}", getId());
   getTargetCapNode()->printCC();
 }
 
-bool dbRSeg::checkCC()
+bool dbRSeg::checkCC() const
 {
   return getTargetCapNode()->checkCC();
 }
 
-void dbRSeg::getCapTable(double* cap)
+void dbRSeg::getCapTable(double* cap) const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   uint32_t cornerCnt = block->corners_per_block_;
 
@@ -541,9 +541,9 @@ void dbRSeg::getCapTable(double* cap)
   }
 }
 
-uint32_t dbRSeg::getSourceNode()
+uint32_t dbRSeg::getSourceNode() const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   return seg->source_;
 }
 
@@ -595,15 +595,15 @@ void dbRSeg::setTargetNode(uint32_t target_node)
   seg->target_ = target_node;
 }
 
-uint32_t dbRSeg::getTargetNode()
+uint32_t dbRSeg::getTargetNode() const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   return seg->target_;
 }
 
-uint32_t dbRSeg::getShapeId()
+uint32_t dbRSeg::getShapeId() const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   dbBlock* block = (dbBlock*) seg->getOwner();
   dbCapNode* node = dbCapNode::getCapNode(block, seg->target_);
   return node->getShapeId();
@@ -639,9 +639,9 @@ void dbRSeg::setCoords(int x, int y)
   }
 }
 
-void dbRSeg::getCoords(int& x, int& y)
+void dbRSeg::getCoords(int& x, int& y) const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   // dbBlock * block = (dbBlock *) getOwner();
   //    dbCapNode *node= dbCapNode::getCapNode(block, seg->_target);
   //    if (node->getTermCoords(x, y))
@@ -651,7 +651,7 @@ void dbRSeg::getCoords(int& x, int& y)
   // node->getCoordY(y);
 }
 
-uint32_t dbRSeg::getLengthWidth(uint32_t& w)
+uint32_t dbRSeg::getLengthWidth(uint32_t& w) const
 {
   dbShape s;
   dbWire* wire = getNet()->getWire();
@@ -662,9 +662,9 @@ uint32_t dbRSeg::getLengthWidth(uint32_t& w)
   return std::max(s.getDX(), s.getDY());
 }
 
-dbNet* dbRSeg::getNet()
+dbNet* dbRSeg::getNet() const
 {
-  _dbRSeg* seg = (_dbRSeg*) this;
+  const _dbRSeg* seg = (const _dbRSeg*) this;
   _dbBlock* block = (_dbBlock*) seg->getOwner();
   dbCapNode* node = dbCapNode::getCapNode((dbBlock*) block, seg->target_);
   return node->getNet();
@@ -984,7 +984,7 @@ void dbRSeg::mergeRCs(std::vector<dbRSeg*>& mrsegs)
   }
 }
 
-void _dbRSeg::collectMemInfo(MemInfo& info)
+void _dbRSeg::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

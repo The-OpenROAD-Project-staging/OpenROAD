@@ -19,13 +19,13 @@ namespace odb {
 template class dbTable<_dbTechLayerSpacingRule>;
 template class dbTable<_dbTechV55InfluenceEntry>;
 
-void _dbTechLayerSpacingRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerSpacingRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
 }
 
-void _dbTechV55InfluenceEntry::collectMemInfo(MemInfo& info)
+void _dbTechV55InfluenceEntry::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -608,9 +608,9 @@ void dbTechLayerSpacingRule::setSameNetPgOnly(bool pgonly)
   _lsp->flags_.except_same_pgnet = pgonly;
 }
 
-bool dbTechLayerSpacingRule::getSameNetPgOnly()
+bool dbTechLayerSpacingRule::getSameNetPgOnly() const
 {
-  _dbTechLayerSpacingRule* _lsp = (_dbTechLayerSpacingRule*) this;
+  const _dbTechLayerSpacingRule* _lsp = (const _dbTechLayerSpacingRule*) this;
   return _lsp->flags_.except_same_pgnet;
 }
 

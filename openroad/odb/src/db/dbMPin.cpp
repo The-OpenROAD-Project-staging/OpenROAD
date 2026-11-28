@@ -93,21 +93,21 @@ void _dbMPin::addAccessPoint(uint32_t idx, _dbAccessPoint* ap)
 //
 ////////////////////////////////////////////////////////////////////
 
-dbMTerm* dbMPin::getMTerm()
+dbMTerm* dbMPin::getMTerm() const
 {
-  _dbMPin* pin = (_dbMPin*) this;
+  const _dbMPin* pin = (const _dbMPin*) this;
   _dbMaster* master = (_dbMaster*) pin->getOwner();
   return (dbMTerm*) master->mterm_tbl_->getPtr(pin->mterm_);
 }
 
-dbMaster* dbMPin::getMaster()
+dbMaster* dbMPin::getMaster() const
 {
   return (dbMaster*) getImpl()->getOwner();
 }
 
-dbSet<dbBox> dbMPin::getGeometry(bool include_decomposed_polygons)
+dbSet<dbBox> dbMPin::getGeometry(bool include_decomposed_polygons) const
 {
-  _dbMPin* pin = (_dbMPin*) this;
+  const _dbMPin* pin = (const _dbMPin*) this;
   _dbMaster* master = (_dbMaster*) pin->getOwner();
   if (include_decomposed_polygons) {
     return dbSet<dbBox>(pin, master->box_itr_);
@@ -115,14 +115,14 @@ dbSet<dbBox> dbMPin::getGeometry(bool include_decomposed_polygons)
   return dbSet<dbBox>(pin, master->pbox_box_itr_);
 }
 
-dbSet<dbPolygon> dbMPin::getPolygonGeometry()
+dbSet<dbPolygon> dbMPin::getPolygonGeometry() const
 {
-  _dbMPin* pin = (_dbMPin*) this;
+  const _dbMPin* pin = (const _dbMPin*) this;
   _dbMaster* master = (_dbMaster*) pin->getOwner();
   return dbSet<dbPolygon>(pin, master->pbox_itr_);
 }
 
-Rect dbMPin::getBBox()
+Rect dbMPin::getBBox() const
 {
   Rect bbox;
   bbox.mergeInit();
@@ -181,7 +181,7 @@ dbMPin* dbMPin::getMPin(dbMaster* master_, uint32_t dbid_)
   return (dbMPin*) master->mpin_tbl_->getPtr(dbid_);
 }
 
-void _dbMPin::collectMemInfo(MemInfo& info)
+void _dbMPin::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

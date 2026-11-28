@@ -99,9 +99,9 @@ dbIStream& operator>>(dbIStream& stream, _dbTechViaRule& v)
 //
 ////////////////////////////////////////////////////////////////////
 
-std::string dbTechViaRule::getName()
+std::string dbTechViaRule::getName() const
 {
-  _dbTechViaRule* via = (_dbTechViaRule*) this;
+  const _dbTechViaRule* via = (const _dbTechViaRule*) this;
   return via->name_;
 }
 
@@ -111,15 +111,15 @@ void dbTechViaRule::addVia(dbTechVia* via)
   rule->vias_.push_back(via->getImpl()->getOID());
 }
 
-uint32_t dbTechViaRule::getViaCount()
+uint32_t dbTechViaRule::getViaCount() const
 {
-  _dbTechViaRule* rule = (_dbTechViaRule*) this;
+  const _dbTechViaRule* rule = (const _dbTechViaRule*) this;
   return rule->vias_.size();
 }
 
-dbTechVia* dbTechViaRule::getVia(uint32_t idx)
+dbTechVia* dbTechViaRule::getVia(uint32_t idx) const
 {
-  _dbTechViaRule* rule = (_dbTechViaRule*) this;
+  const _dbTechViaRule* rule = (const _dbTechViaRule*) this;
   dbTech* tech = (dbTech*) rule->getOwner();
 
   if (idx >= rule->vias_.size()) {
@@ -130,15 +130,15 @@ dbTechVia* dbTechViaRule::getVia(uint32_t idx)
   return dbTechVia::getTechVia(tech, id);
 }
 
-uint32_t dbTechViaRule::getViaLayerRuleCount()
+uint32_t dbTechViaRule::getViaLayerRuleCount() const
 {
-  _dbTechViaRule* rule = (_dbTechViaRule*) this;
+  const _dbTechViaRule* rule = (const _dbTechViaRule*) this;
   return rule->layer_rules_.size();
 }
 
-dbTechViaLayerRule* dbTechViaRule::getViaLayerRule(uint32_t idx)
+dbTechViaLayerRule* dbTechViaRule::getViaLayerRule(uint32_t idx) const
 {
-  _dbTechViaRule* rule = (_dbTechViaRule*) this;
+  const _dbTechViaRule* rule = (const _dbTechViaRule*) this;
   dbTech* tech = (dbTech*) rule->getOwner();
 
   if (idx >= rule->layer_rules_.size()) {
@@ -167,7 +167,7 @@ dbTechViaRule* dbTechViaRule::getTechViaRule(dbTech* tech_, uint32_t dbid_)
   return (dbTechViaRule*) tech->via_rule_tbl_->getPtr(dbid_);
 }
 
-void _dbTechViaRule::collectMemInfo(MemInfo& info)
+void _dbTechViaRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

@@ -124,6 +124,14 @@ class SnapshotTest(unittest.TestCase):
             "dbTechLayer", "impl.cpp.jinja", "if (flags_.type != rhs.flags_.type) {"
         )
 
+    # --- mutable flag -> member and packed bitfield declared mutable ---
+    def test_mutable_field(self):
+        rendered = " ".join(self.render("dbGCellGrid", "impl.h.jinja").split())
+        self.assertIn("mutable dbVector<int> x_grid_;", rendered)
+        self.assertIn("mutable bool x_grid_valid : 1 ;", rendered)
+        self.assertIn("dbVector<int> x_origin_;", rendered)
+        self.assertNotIn("mutable dbVector<int> x_origin_;", rendered)
+
 
 if __name__ == "__main__":
     unittest.main()

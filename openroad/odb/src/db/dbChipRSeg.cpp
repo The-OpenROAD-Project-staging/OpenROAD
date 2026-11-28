@@ -68,7 +68,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbChipRSeg& obj)
   return stream;
 }
 
-void _dbChipRSeg::collectMemInfo(MemInfo& info)
+void _dbChipRSeg::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

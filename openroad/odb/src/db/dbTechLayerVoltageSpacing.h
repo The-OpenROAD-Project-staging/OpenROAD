@@ -32,7 +32,7 @@ class _dbTechLayerVoltageSpacing : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbTechLayerVoltageSpacing& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbTechLayerVoltageSpacingFlags flags_;
   std::map<float, int> table_;

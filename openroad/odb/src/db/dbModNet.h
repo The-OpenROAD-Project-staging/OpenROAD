@@ -30,7 +30,7 @@ class _dbModNet : public _dbObject
   bool operator==(const _dbModNet& rhs) const;
   bool operator!=(const _dbModNet& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbModNet& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   dbId<_dbModule> parent_;

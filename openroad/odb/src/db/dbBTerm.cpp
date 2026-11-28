@@ -344,9 +344,9 @@ void dbBTerm::setSpefMark(uint32_t v)
   _dbBTerm* bterm = (_dbBTerm*) this;
   bterm->flags_.spef = v;
 }
-bool dbBTerm::isSetSpefMark()
+bool dbBTerm::isSetSpefMark() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   return bterm->flags_.spef > 0;
 }
 bool dbBTerm::isSpecial() const
@@ -364,9 +364,9 @@ void dbBTerm::setMark(uint32_t v)
   _dbBTerm* bterm = (_dbBTerm*) this;
   bterm->flags_.mark = v;
 }
-bool dbBTerm::isSetMark()
+bool dbBTerm::isSetMark() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   return bterm->flags_.mark > 0;
 }
 void dbBTerm::setExtId(uint32_t v)
@@ -374,9 +374,9 @@ void dbBTerm::setExtId(uint32_t v)
   _dbBTerm* bterm = (_dbBTerm*) this;
   bterm->ext_id_ = v;
 }
-uint32_t dbBTerm::getExtId()
+uint32_t dbBTerm::getExtId() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   return bterm->ext_id_;
 }
 
@@ -507,9 +507,9 @@ dbSet<dbBPin> dbBTerm::getBPins() const
   return dbSet<dbBPin>(const_cast<dbBTerm*>(this), block->bpin_itr_);
 }
 
-dbITerm* dbBTerm::getITerm()
+dbITerm* dbBTerm::getITerm() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   _dbBlock* block = (_dbBlock*) getBlock();
 
   if (bterm->parent_block_ == 0) {
@@ -538,7 +538,7 @@ dbChipBump* dbBTerm::getChipBump() const
   return (dbChipBump*) region->chip_bump_tbl_->getPtr(obj->chip_bump_);
 }
 
-Rect dbBTerm::getBBox()
+Rect dbBTerm::getBBox() const
 {
   Rect bbox;
   bbox.mergeInit();
@@ -548,7 +548,7 @@ Rect dbBTerm::getBBox()
   return bbox;
 }
 
-bool dbBTerm::getFirstPin(dbShape& shape)
+bool dbBTerm::getFirstPin(dbShape& shape) const
 {
   for (dbBPin* bpin : getBPins()) {
     for (dbBox* box : bpin->getBoxes()) {
@@ -571,7 +571,7 @@ bool dbBTerm::getFirstPin(dbShape& shape)
   return false;
 }
 
-dbPlacementStatus dbBTerm::getFirstPinPlacementStatus()
+dbPlacementStatus dbBTerm::getFirstPinPlacementStatus() const
 {
   dbSet<dbBPin> bpins = getBPins();
   if (bpins.empty()) {
@@ -606,9 +606,9 @@ bool dbBTerm::getFirstPinLocation(int& x, int& y) const
   return false;
 }
 
-dbBTerm* dbBTerm::getGroundPin()
+dbBTerm* dbBTerm::getGroundPin() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   _dbBlock* block = (_dbBlock*) getBlock();
 
   if (bterm->ground_pin_ == 0) {
@@ -625,9 +625,9 @@ void dbBTerm::setGroundPin(dbBTerm* pin)
   bterm->ground_pin_ = pin->getImpl()->getOID();
 }
 
-dbBTerm* dbBTerm::getSupplyPin()
+dbBTerm* dbBTerm::getSupplyPin() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   _dbBlock* block = (_dbBlock*) getBlock();
 
   if (bterm->supply_pin_ == 0) {
@@ -965,7 +965,7 @@ void _dbBTerm::setMirroredConstraintRegion(const Rect& region, _dbBlock* block)
   bterm->constraint_region_ = mirrored_region;
 }
 
-void _dbBTerm::collectMemInfo(MemInfo& info)
+void _dbBTerm::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -987,9 +987,9 @@ dbBTerm* dbBTerm::getBTerm(dbBlock* block_, uint32_t oid)
   return (dbBTerm*) block->bterm_tbl_->getPtr(oid);
 }
 
-uint32_t dbBTerm::staVertexId()
+uint32_t dbBTerm::staVertexId() const
 {
-  _dbBTerm* iterm = (_dbBTerm*) this;
+  const _dbBTerm* iterm = (const _dbBTerm*) this;
   return iterm->sta_vertex_id_;
 }
 
@@ -1013,9 +1013,9 @@ void dbBTerm::setConstraintRegion(const Rect& constraint_region)
   }
 }
 
-std::optional<Rect> dbBTerm::getConstraintRegion()
+std::optional<Rect> dbBTerm::getConstraintRegion() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   const auto& constraint_region = bterm->constraint_region_;
   if (constraint_region.isInverted()) {
     return std::nullopt;
@@ -1052,9 +1052,9 @@ void dbBTerm::setMirroredBTerm(dbBTerm* mirrored_bterm)
   }
 }
 
-dbBTerm* dbBTerm::getMirroredBTerm()
+dbBTerm* dbBTerm::getMirroredBTerm() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   _dbBlock* block = (_dbBlock*) getBlock();
 
   if (bterm->mirrored_bterm_ == 0) {
@@ -1065,15 +1065,15 @@ dbBTerm* dbBTerm::getMirroredBTerm()
   return (dbBTerm*) mirrored_bterm;
 }
 
-bool dbBTerm::hasMirroredBTerm()
+bool dbBTerm::hasMirroredBTerm() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   return bterm->mirrored_bterm_ != 0 && !bterm->is_mirrored_;
 }
 
-bool dbBTerm::isMirrored()
+bool dbBTerm::isMirrored() const
 {
-  _dbBTerm* bterm = (_dbBTerm*) this;
+  const _dbBTerm* bterm = (const _dbBTerm*) this;
   return bterm->is_mirrored_;
 }
 

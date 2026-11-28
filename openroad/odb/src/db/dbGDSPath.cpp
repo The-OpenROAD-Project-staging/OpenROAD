@@ -76,7 +76,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbGDSPath& obj)
   return stream;
 }
 
-void _dbGDSPath::collectMemInfo(MemInfo& info)
+void _dbGDSPath::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -176,9 +176,9 @@ void dbGDSPath::addPropattr(std::int16_t type, const std::string& value)
   obj->propattr_.emplace_back(type, value);
 }
 
-const std::vector<Point>& dbGDSPath::getXY()
+const std::vector<Point>& dbGDSPath::getXY() const
 {
-  auto obj = (_dbGDSPath*) this;
+  const auto* obj = (const _dbGDSPath*) this;
   return obj->xy_;
 }
 

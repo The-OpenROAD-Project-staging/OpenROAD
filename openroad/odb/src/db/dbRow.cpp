@@ -148,62 +148,62 @@ bool _dbRow::operator<(const _dbRow& rhs) const
 //
 ////////////////////////////////////////////////////////////////////
 
-std::string dbRow::getName()
+std::string dbRow::getName() const
 {
-  _dbRow* row = (_dbRow*) this;
+  const _dbRow* row = (const _dbRow*) this;
   return row->name_;
 }
 
-const char* dbRow::getConstName()
+const char* dbRow::getConstName() const
 {
-  _dbRow* row = (_dbRow*) this;
+  const _dbRow* row = (const _dbRow*) this;
   return row->name_;
 }
 
-dbSite* dbRow::getSite()
+dbSite* dbRow::getSite() const
 {
-  _dbRow* row = (_dbRow*) this;
+  const _dbRow* row = (const _dbRow*) this;
   _dbDatabase* db = row->getDatabase();
   _dbLib* lib = db->lib_tbl_->getPtr(row->lib_);
   _dbSite* site = lib->site_tbl_->getPtr(row->site_);
   return (dbSite*) site;
 }
 
-Point dbRow::getOrigin()
+Point dbRow::getOrigin() const
 {
-  _dbRow* row = (_dbRow*) this;
+  const _dbRow* row = (const _dbRow*) this;
   return {row->x_, row->y_};
 }
 
-dbOrientType dbRow::getOrient()
+dbOrientType dbRow::getOrient() const
 {
-  _dbRow* row = (_dbRow*) this;
+  const _dbRow* row = (const _dbRow*) this;
   dbOrientType t(row->flags_.orient);
   return t;
 }
 
-dbRowDir dbRow::getDirection()
+dbRowDir dbRow::getDirection() const
 {
-  _dbRow* row = (_dbRow*) this;
+  const _dbRow* row = (const _dbRow*) this;
   dbRowDir d(row->flags_.dir);
   return d;
 }
 
-int dbRow::getSiteCount()
+int dbRow::getSiteCount() const
 {
-  _dbRow* row = (_dbRow*) this;
+  const _dbRow* row = (const _dbRow*) this;
   return row->site_cnt_;
 }
 
-int dbRow::getSpacing()
+int dbRow::getSpacing() const
 {
-  _dbRow* row = (_dbRow*) this;
+  const _dbRow* row = (const _dbRow*) this;
   return row->spacing_;
 }
 
-Rect dbRow::getBBox()
+Rect dbRow::getBBox() const
 {
-  _dbRow* row = (_dbRow*) this;
+  const _dbRow* row = (const _dbRow*) this;
 
   if (row->site_cnt_ == 0) {
     return Rect(0, 0, 0, 0);
@@ -229,7 +229,7 @@ Rect dbRow::getBBox()
   return Rect(origin.x(), origin.y(), xMax, yMax);
 }
 
-dbBlock* dbRow::getBlock()
+dbBlock* dbRow::getBlock() const
 {
   return (dbBlock*) getImpl()->getOwner();
 }
@@ -308,7 +308,7 @@ dbRow* dbRow::getRow(dbBlock* block_, uint32_t dbid_)
   return (dbRow*) block->row_tbl_->getPtr(dbid_);
 }
 
-void _dbRow::collectMemInfo(MemInfo& info)
+void _dbRow::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

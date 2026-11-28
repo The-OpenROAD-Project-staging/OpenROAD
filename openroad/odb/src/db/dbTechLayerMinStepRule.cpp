@@ -120,7 +120,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbTechLayerMinStepRule& obj)
   return stream;
 }
 
-void _dbTechLayerMinStepRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerMinStepRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

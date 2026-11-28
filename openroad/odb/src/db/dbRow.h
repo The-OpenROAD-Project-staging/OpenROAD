@@ -37,7 +37,7 @@ class _dbRow : public _dbObject
   bool operator==(const _dbRow& rhs) const;
   bool operator!=(const _dbRow& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbRow& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   dbRowFlags flags_;

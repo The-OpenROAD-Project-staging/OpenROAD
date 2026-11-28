@@ -27,7 +27,7 @@ class _dbUnfoldedChipConn : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbUnfoldedChipConn& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbId<_dbChipConn> chip_conn_;
   dbId<_dbUnfoldedChipRegionInst> top_region_;

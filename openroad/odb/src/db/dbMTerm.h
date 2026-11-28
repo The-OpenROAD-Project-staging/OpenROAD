@@ -38,7 +38,7 @@ class _dbMTerm : public _dbObject
 
   bool operator==(const _dbMTerm& rhs) const;
   bool operator!=(const _dbMTerm& rhs) const { return !operator==(rhs); }
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   friend dbOStream& operator<<(dbOStream& stream, const _dbMTerm& mterm);
   friend dbIStream& operator>>(dbIStream& stream, _dbMTerm& mterm);

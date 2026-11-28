@@ -39,7 +39,7 @@ class _dbAccessPoint : public _dbObject
   bool operator==(const _dbAccessPoint& rhs) const;
   bool operator!=(const _dbAccessPoint& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbAccessPoint& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   void setMPin(_dbMPin* mpin);
   // User Code End Methods

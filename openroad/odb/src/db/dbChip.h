@@ -51,7 +51,7 @@ class _dbChip : public _dbObject
   bool operator!=(const _dbChip& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbChip& rhs) const;
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   char* name_;
   uint32_t type_;

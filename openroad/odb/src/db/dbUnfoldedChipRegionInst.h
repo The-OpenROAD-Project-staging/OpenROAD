@@ -34,7 +34,7 @@ class _dbUnfoldedChipRegionInst : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbUnfoldedChipRegionInst& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   dbUnfoldedChipRegionInstFlags flags_;
   dbId<_dbChipRegionInst> chip_region_inst_;

@@ -141,7 +141,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerCutEnclosureTableDefRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerCutEnclosureTableDefRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

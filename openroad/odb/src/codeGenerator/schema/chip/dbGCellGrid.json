@@ -47,27 +47,31 @@
       "name": "x_grid_",
       "type": "dbVector<int>",
       "flags": [
-        "private"
+        "private",
+        "mutable"
       ]
     },
     {
       "name": "y_grid_",
       "type": "dbVector<int>",
       "flags": [
-        "private"
+        "private",
+        "mutable"
       ]
     },
     {
       "name": "x_grid_valid",
       "flags": [
-        "private"
+        "private",
+        "mutable"
       ],
       "type": "bit"
     },
     {
       "name": "y_grid_valid",
       "flags": [
-        "private"
+        "private",
+        "mutable"
       ],
       "type": "bit"
     },

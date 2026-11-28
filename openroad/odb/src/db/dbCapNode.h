@@ -56,7 +56,7 @@ class _dbCapNode : public _dbObject
     return o1->getOID() < o2->getOID();
   }
 
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   // PERSISTANT-MEMBERS
   _dbCapNodeFlags flags_;

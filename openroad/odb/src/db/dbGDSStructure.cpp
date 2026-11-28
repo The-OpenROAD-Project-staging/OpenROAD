@@ -145,7 +145,7 @@ dbObjectTable* _dbGDSStructure::getObjectTable(dbObjectType type)
   }
   return getTable()->getObjectTable(type);
 }
-void _dbGDSStructure::collectMemInfo(MemInfo& info)
+void _dbGDSStructure::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -255,7 +255,7 @@ void dbGDSStructure::destroy(dbGDSStructure* structure)
   lib->gdsstructure_tbl_->destroy(str_impl);
 }
 
-dbGDSLib* dbGDSStructure::getGDSLib()
+dbGDSLib* dbGDSStructure::getGDSLib() const
 {
   return (dbGDSLib*) getImpl()->getOwner();
 }

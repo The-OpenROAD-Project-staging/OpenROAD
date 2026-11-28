@@ -31,7 +31,7 @@ class _dbChipInst : public _dbObject
   bool operator==(const _dbChipInst& rhs) const;
   bool operator!=(const _dbChipInst& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbChipInst& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   std::string name_;
   Point3D origin_;

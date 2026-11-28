@@ -63,7 +63,7 @@ class _dbMarker : public _dbObject
   bool operator==(const _dbMarker& rhs) const;
   bool operator!=(const _dbMarker& rhs) const { return !operator==(rhs); }
   bool operator<(const _dbMarker& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   // User Code Begin Methods
   _dbBlock* getBlock() const;
   _dbChip* getChip() const;

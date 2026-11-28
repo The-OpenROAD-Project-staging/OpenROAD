@@ -101,7 +101,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbGuide& obj)
   return stream;
 }
 
-void _dbGuide::collectMemInfo(MemInfo& info)
+void _dbGuide::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

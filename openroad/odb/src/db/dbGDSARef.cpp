@@ -84,7 +84,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbGDSARef& obj)
   return stream;
 }
 
-void _dbGDSARef::collectMemInfo(MemInfo& info)
+void _dbGDSARef::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

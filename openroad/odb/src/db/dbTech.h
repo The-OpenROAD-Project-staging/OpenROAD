@@ -65,7 +65,7 @@ class _dbTech : public _dbObject
   bool operator==(const _dbTech& rhs) const;
   bool operator!=(const _dbTech& rhs) const { return !operator==(rhs); }
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
  private:
   double version_;

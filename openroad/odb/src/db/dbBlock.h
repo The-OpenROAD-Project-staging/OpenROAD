@@ -119,7 +119,7 @@ class _dbDft;
 
 struct _dbBlockFlags
 {
-  uint32_t valid_bbox : 1;
+  mutable uint32_t valid_bbox : 1;
   uint32_t spare_bits : 31;
 };
 
@@ -166,13 +166,15 @@ class _dbBlock : public _dbObject
   int globalConnect(const std::vector<dbGlobalConnect*>& connects,
                     bool force,
                     bool verbose);
-  _dbTech* getTech();
+  _dbTech* getTech() const;
 
   dbObjectTable* getObjectTable(dbObjectType type);
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
   void clearSystemBlockagesAndObstructions();
-  void ensureConstraintRegion(const Direction2D& edge, int& begin, int& end);
-  void ComputeBBox();
+  void ensureConstraintRegion(const Direction2D& edge,
+                              int& begin,
+                              int& end) const;
+  void ComputeBBox() const;
   std::string makeNewName(dbModInst* parent,
                           const char* base_name,
                           const dbNameUniquifyType& uniquify,

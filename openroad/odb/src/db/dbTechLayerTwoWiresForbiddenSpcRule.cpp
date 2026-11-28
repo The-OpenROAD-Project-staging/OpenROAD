@@ -92,7 +92,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerTwoWiresForbiddenSpcRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerTwoWiresForbiddenSpcRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

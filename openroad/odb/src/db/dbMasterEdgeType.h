@@ -25,7 +25,7 @@ class _dbMasterEdgeType : public _dbObject
     return !operator==(rhs);
   }
   bool operator<(const _dbMasterEdgeType& rhs) const;
-  void collectMemInfo(MemInfo& info);
+  void collectMemInfo(MemInfo& info) const;
 
   uint32_t edge_dir_;
   std::string edge_type_;

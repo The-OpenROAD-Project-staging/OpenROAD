@@ -677,7 +677,7 @@ bool dbTable<T, page_size>::operator==(const dbTable<T, page_size>& rhs) const
 }
 
 template <class T, uint32_t page_size>
-void dbTable<T, page_size>::collectMemInfo(MemInfo& info)
+void dbTable<T, page_size>::collectMemInfo(MemInfo& info) const
 {
   for (int i = bottom_idx_; i <= top_idx_; ++i) {
     if (validId(i)) {

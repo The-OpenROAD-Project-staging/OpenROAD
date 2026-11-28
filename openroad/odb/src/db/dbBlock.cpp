@@ -1527,21 +1527,21 @@ bool _dbBlock::operator==(const _dbBlock& rhs) const
 //
 ////////////////////////////////////////////////////////////////////
 
-std::string dbBlock::getName()
+std::string dbBlock::getName() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->name_;
 }
 
-const char* dbBlock::getConstName()
+const char* dbBlock::getConstName() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->name_;
 }
 
-dbBox* dbBlock::getBBox()
+dbBox* dbBlock::getBBox() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
 
   if (block->flags_.valid_bbox == 0) {
     block->ComputeBBox();
@@ -1551,7 +1551,7 @@ dbBox* dbBlock::getBBox()
   return (dbBox*) bbox;
 }
 
-void _dbBlock::ComputeBBox()
+void _dbBlock::ComputeBBox() const
 {
   _dbBox* bbox = box_tbl_->getPtr(bbox_);
   bbox->shape_.rect.reset(INT_MAX, INT_MAX, INT_MIN, INT_MIN);
@@ -1598,23 +1598,23 @@ void _dbBlock::ComputeBBox()
   flags_.valid_bbox = 1;
 }
 
-dbDatabase* dbBlock::getDataBase()
+dbDatabase* dbBlock::getDataBase() const
 {
   dbDatabase* db = (dbDatabase*) getImpl()->getDatabase();
   return db;
 }
 
-dbChip* dbBlock::getChip()
+dbChip* dbBlock::getChip() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   _dbDatabase* db = block->getDatabase();
   _dbChip* chip = db->chip_tbl_->getPtr(block->chip_);
   return (dbChip*) chip;
 }
 
-dbBlock* dbBlock::getParent()
+dbBlock* dbBlock::getParent() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   _dbDatabase* db = block->getDatabase();
   _dbChip* chip = db->chip_tbl_->getPtr(block->chip_);
   if (!block->parent_.isValid()) {
@@ -1624,9 +1624,9 @@ dbBlock* dbBlock::getParent()
   return (dbBlock*) parent;
 }
 
-dbInst* dbBlock::getParentInst()
+dbInst* dbBlock::getParentInst() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
 
   if (block->parent_block_ == 0) {
     return nullptr;
@@ -1644,15 +1644,15 @@ dbModule* dbBlock::getTopModule() const
   return (dbModule*) block->module_tbl_->getPtr(block->top_module_);
 }
 
-dbSet<dbBlock> dbBlock::getChildren()
+dbSet<dbBlock> dbBlock::getChildren() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   _dbDatabase* db = getImpl()->getDatabase();
   _dbChip* chip = db->chip_tbl_->getPtr(block->chip_);
   return dbSet<dbBlock>(block, chip->block_itr_);
 }
 
-dbBlock* dbBlock::findChild(const char* name)
+dbBlock* dbBlock::findChild(const char* name) const
 {
   for (dbBlock* child : getChildren()) {
     if (strcmp(child->getConstName(), name) == 0) {
@@ -1663,21 +1663,21 @@ dbBlock* dbBlock::findChild(const char* name)
   return nullptr;
 }
 
-dbSet<dbBTerm> dbBlock::getBTerms()
+dbSet<dbBTerm> dbBlock::getBTerms() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbBTerm>(block, block->bterm_tbl_);
 }
 
-dbBTerm* dbBlock::findBTerm(const char* name)
+dbBTerm* dbBlock::findBTerm(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (dbBTerm*) block->bterm_hash_.find(name);
 }
 
-std::vector<dbBlock::dbBTermGroup> dbBlock::getBTermGroups()
+std::vector<dbBlock::dbBTermGroup> dbBlock::getBTermGroups() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   std::vector<dbBlock::dbBTermGroup> groups;
   for (const _dbBTermGroup& group : block->bterm_groups_) {
     dbBlock::dbBTermGroup bterm_group;
@@ -1758,8 +1758,9 @@ void dbBlock::setBTermTopLayerGrid(
 }
 
 std::optional<dbBlock::dbBTermTopLayerGrid> dbBlock::getBTermTopLayerGrid()
+    const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
 
   dbBlock::dbBTermTopLayerGrid top_layer_grid;
 
@@ -1780,9 +1781,9 @@ std::optional<dbBlock::dbBTermTopLayerGrid> dbBlock::getBTermTopLayerGrid()
   return top_layer_grid;
 }
 
-Polygon dbBlock::getBTermTopLayerGridRegion()
+Polygon dbBlock::getBTermTopLayerGridRegion() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
 
   const Polygon& region = block->bterm_top_layer_grid_.region;
   if (region.getPoints().empty()) {
@@ -1796,9 +1797,11 @@ Polygon dbBlock::getBTermTopLayerGridRegion()
   return region;
 }
 
-Rect dbBlock::findConstraintRegion(const Direction2D& edge, int begin, int end)
+Rect dbBlock::findConstraintRegion(const Direction2D& edge,
+                                   int begin,
+                                   int end) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   block->ensureConstraintRegion(edge, begin, end);
   Rect constraint_region;
   const Rect& die_bounds = getDieArea();
@@ -1842,99 +1845,99 @@ void dbBlock::addBTermsToConstraint(const std::vector<dbBTerm*>& bterms,
   }
 }
 
-dbSet<dbITerm> dbBlock::getITerms()
+dbSet<dbITerm> dbBlock::getITerms() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbITerm>(block, block->iterm_tbl_);
 }
 
-dbSet<dbInst> dbBlock::getInsts()
+dbSet<dbInst> dbBlock::getInsts() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbInst>(block, block->inst_tbl_);
 }
 
-dbSet<dbModule> dbBlock::getModules()
+dbSet<dbModule> dbBlock::getModules() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbModule>(block, block->module_tbl_);
 }
 
-dbSet<dbModInst> dbBlock::getModInsts()
+dbSet<dbModInst> dbBlock::getModInsts() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbModInst>(block, block->modinst_tbl_);
 }
 
-dbSet<dbModBTerm> dbBlock::getModBTerms()
+dbSet<dbModBTerm> dbBlock::getModBTerms() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbModBTerm>(block, block->modbterm_tbl_);
 }
 
-dbSet<dbModITerm> dbBlock::getModITerms()
+dbSet<dbModITerm> dbBlock::getModITerms() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbModITerm>(block, block->moditerm_tbl_);
 }
 
-dbSet<dbModNet> dbBlock::getModNets()
+dbSet<dbModNet> dbBlock::getModNets() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbModNet>(block, block->modnet_tbl_);
 }
 
-dbSet<dbPowerDomain> dbBlock::getPowerDomains()
+dbSet<dbPowerDomain> dbBlock::getPowerDomains() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbPowerDomain>(block, block->powerdomain_tbl_);
 }
 
-dbSet<dbLogicPort> dbBlock::getLogicPorts()
+dbSet<dbLogicPort> dbBlock::getLogicPorts() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbLogicPort>(block, block->logicport_tbl_);
 }
 
-dbSet<dbPowerSwitch> dbBlock::getPowerSwitches()
+dbSet<dbPowerSwitch> dbBlock::getPowerSwitches() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbPowerSwitch>(block, block->powerswitch_tbl_);
 }
 
-dbSet<dbIsolation> dbBlock::getIsolations()
+dbSet<dbIsolation> dbBlock::getIsolations() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbIsolation>(block, block->isolation_tbl_);
 }
 
-dbSet<dbLevelShifter> dbBlock::getLevelShifters()
+dbSet<dbLevelShifter> dbBlock::getLevelShifters() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbLevelShifter>(block, block->levelshifter_tbl_);
 }
 
-dbSet<dbGroup> dbBlock::getGroups()
+dbSet<dbGroup> dbBlock::getGroups() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbGroup>(block, block->group_tbl_);
 }
 
-dbSet<dbAccessPoint> dbBlock::getAccessPoints()
+dbSet<dbAccessPoint> dbBlock::getAccessPoints() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbAccessPoint>(block, block->ap_tbl_);
 }
 
-dbSet<dbGlobalConnect> dbBlock::getGlobalConnects()
+dbSet<dbGlobalConnect> dbBlock::getGlobalConnects() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbGlobalConnect>(block, block->global_connect_tbl_);
 }
 
-std::vector<dbTechLayer*> dbBlock::getComponentMaskShift()
+std::vector<dbTechLayer*> dbBlock::getComponentMaskShift() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   _dbTech* tech = block->getTech();
   std::vector<dbTechLayer*> layers;
   for (const auto& layer_id : block->component_mask_shift_) {
@@ -1951,15 +1954,15 @@ void dbBlock::setComponentMaskShift(const std::vector<dbTechLayer*>& layers)
   }
 }
 
-dbInst* dbBlock::findInst(const char* name)
+dbInst* dbBlock::findInst(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (dbInst*) block->inst_hash_.find(name);
 }
 
-dbModule* dbBlock::findModule(const char* name)
+dbModule* dbBlock::findModule(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   dbModule* module = (dbModule*) block->module_hash_.find(name);
   if (module != nullptr) {
     return module;
@@ -1975,37 +1978,37 @@ dbModule* dbBlock::findModule(const char* name)
   return nullptr;
 }
 
-dbPowerDomain* dbBlock::findPowerDomain(const char* name)
+dbPowerDomain* dbBlock::findPowerDomain(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (dbPowerDomain*) block->powerdomain_hash_.find(name);
 }
 
-dbLogicPort* dbBlock::findLogicPort(const char* name)
+dbLogicPort* dbBlock::findLogicPort(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (dbLogicPort*) block->logicport_hash_.find(name);
 }
 
-dbPowerSwitch* dbBlock::findPowerSwitch(const char* name)
+dbPowerSwitch* dbBlock::findPowerSwitch(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (dbPowerSwitch*) block->powerswitch_hash_.find(name);
 }
 
-dbIsolation* dbBlock::findIsolation(const char* name)
+dbIsolation* dbBlock::findIsolation(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (dbIsolation*) block->isolation_hash_.find(name);
 }
 
-dbLevelShifter* dbBlock::findLevelShifter(const char* name)
+dbLevelShifter* dbBlock::findLevelShifter(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (dbLevelShifter*) block->levelshifter_hash_.find(name);
 }
 
-dbModInst* dbBlock::findModInst(const char* path)
+dbModInst* dbBlock::findModInst(const char* path) const
 {
   char hier_delimiter[2] = {getHierarchyDelimiter(), '\0'};
   char* _path = strdup(path);
@@ -2024,15 +2027,15 @@ dbModInst* dbBlock::findModInst(const char* path)
   return cur_inst;
 }
 
-dbGroup* dbBlock::findGroup(const char* name)
+dbGroup* dbBlock::findGroup(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (dbGroup*) block->group_hash_.find(name);
 }
 
-dbITerm* dbBlock::findITerm(const char* name)
+dbITerm* dbBlock::findITerm(const char* name) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
 
   std::string s(name);
 
@@ -2054,27 +2057,27 @@ dbITerm* dbBlock::findITerm(const char* name)
   return inst->findITerm(termName.c_str());
 }
 
-dbSet<dbObstruction> dbBlock::getObstructions()
+dbSet<dbObstruction> dbBlock::getObstructions() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbObstruction>(block, block->obstruction_tbl_);
 }
 
-dbSet<dbBlockage> dbBlock::getBlockages()
+dbSet<dbBlockage> dbBlock::getBlockages() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbBlockage>(block, block->blockage_tbl_);
 }
 
-dbSet<dbNet> dbBlock::getNets()
+dbSet<dbNet> dbBlock::getNets() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbNet>(block, block->net_tbl_);
 }
 
-dbSet<dbCapNode> dbBlock::getCapNodes()
+dbSet<dbCapNode> dbBlock::getCapNodes() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbCapNode>(block, block->cap_node_tbl_);
 }
 
@@ -2125,7 +2128,7 @@ dbModNet* dbBlock::findModNet(const char* hierarchical_name) const
   return current_module->getModNet(tokens.back().c_str());
 }
 
-dbVia* dbBlock::findVia(const char* name)
+dbVia* dbBlock::findVia(const char* name) const
 {
   for (dbVia* via : getVias()) {
     if (strcmp(via->getConstName(), name) == 0) {
@@ -2136,27 +2139,27 @@ dbVia* dbBlock::findVia(const char* name)
   return nullptr;
 }
 
-dbSet<dbVia> dbBlock::getVias()
+dbSet<dbVia> dbBlock::getVias() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbVia>(block, block->via_tbl_);
 }
 
-dbSet<dbRow> dbBlock::getRows()
+dbSet<dbRow> dbBlock::getRows() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbRow>(block, block->row_tbl_);
 }
 
-dbSet<dbFill> dbBlock::getFills()
+dbSet<dbFill> dbBlock::getFills() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbFill>(block, block->fill_tbl_);
 }
 
-dbGCellGrid* dbBlock::getGCellGrid()
+dbGCellGrid* dbBlock::getGCellGrid() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
 
   if (block->gcell_grid_ == 0) {
     return nullptr;
@@ -2165,13 +2168,13 @@ dbGCellGrid* dbBlock::getGCellGrid()
   return (dbGCellGrid*) block->gcell_grid_tbl_->getPtr(block->gcell_grid_);
 }
 
-dbSet<dbRegion> dbBlock::getRegions()
+dbSet<dbRegion> dbBlock::getRegions() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbRegion>(block, block->region_tbl_);
 }
 
-dbRegion* dbBlock::findRegion(const char* name)
+dbRegion* dbBlock::findRegion(const char* name) const
 {
   for (dbRegion* r : getRegions()) {
     if (r->getName() == name) {
@@ -2182,9 +2185,9 @@ dbRegion* dbBlock::findRegion(const char* name)
   return nullptr;
 }
 
-int dbBlock::getDefUnits()
+int dbBlock::getDefUnits() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->def_units_;
 }
 
@@ -2194,50 +2197,50 @@ void dbBlock::setDefUnits(int units)
   block->def_units_ = units;
 }
 
-int dbBlock::getDbUnitsPerMicron()
+int dbBlock::getDbUnitsPerMicron() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->dbu_per_micron_;
 }
 
-double dbBlock::dbuToMicrons(int dbu)
+double dbBlock::dbuToMicrons(int dbu) const
 {
   const double dbu_micron = getTech()->getDbUnitsPerMicron();
   return dbu / dbu_micron;
 }
 
-double dbBlock::dbuToMicrons(unsigned int dbu)
+double dbBlock::dbuToMicrons(unsigned int dbu) const
 {
   const double dbu_micron = getTech()->getDbUnitsPerMicron();
   return dbu / dbu_micron;
 }
 
-double dbBlock::dbuToMicrons(int64_t dbu)
+double dbBlock::dbuToMicrons(int64_t dbu) const
 {
   const double dbu_micron = getTech()->getDbUnitsPerMicron();
   return dbu / dbu_micron;
 }
 
-double dbBlock::dbuToMicrons(double dbu)
+double dbBlock::dbuToMicrons(double dbu) const
 {
   const double dbu_micron = getTech()->getDbUnitsPerMicron();
   return dbu / dbu_micron;
 }
 
-double dbBlock::dbuAreaToMicrons(const int64_t dbu_area)
+double dbBlock::dbuAreaToMicrons(const int64_t dbu_area) const
 {
   const double dbu_micron = getTech()->getDbUnitsPerMicron();
   return dbu_area / (dbu_micron * dbu_micron);
 }
 
-int dbBlock::micronsToDbu(const double microns)
+int dbBlock::micronsToDbu(const double microns) const
 {
   const int dbu_per_micron = getTech()->getDbUnitsPerMicron();
   double dbu = microns * dbu_per_micron;
   return static_cast<int>(std::round(dbu));
 }
 
-int64_t dbBlock::micronsAreaToDbu(const double micronsArea)
+int64_t dbBlock::micronsAreaToDbu(const double micronsArea) const
 {
   const int dbu_per_micron = getTech()->getDbUnitsPerMicron();
   const int64_t dbu_per_square_micron
@@ -2259,21 +2262,21 @@ void dbBlock::setBusDelimiters(char left, char right)
   block->right_bus_delimiter_ = right;
 }
 
-void dbBlock::getBusDelimiters(char& left, char& right)
+void dbBlock::getBusDelimiters(char& left, char& right) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   left = block->left_bus_delimiter_;
   right = block->right_bus_delimiter_;
 }
 
-dbSet<dbTrackGrid> dbBlock::getTrackGrids()
+dbSet<dbTrackGrid> dbBlock::getTrackGrids() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   dbSet<dbTrackGrid> tracks(block, block->track_grid_tbl_);
   return tracks;
 }
 
-dbTrackGrid* dbBlock::findTrackGrid(dbTechLayer* layer)
+dbTrackGrid* dbBlock::findTrackGrid(dbTechLayer* layer) const
 {
   for (dbTrackGrid* g : getTrackGrids()) {
     if (g->getTechLayer() == layer) {
@@ -2284,9 +2287,9 @@ dbTrackGrid* dbBlock::findTrackGrid(dbTechLayer* layer)
   return nullptr;
 }
 
-void dbBlock::getMasters(std::vector<dbMaster*>& masters)
+void dbBlock::getMasters(std::vector<dbMaster*>& masters) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   for (dbInstHdr* hdr : dbSet<dbInstHdr>(block, block->inst_hdr_tbl_)) {
     masters.push_back(hdr->getMaster());
   }
@@ -2378,27 +2381,27 @@ void dbBlock::setDieArea(const Polygon& new_area)
   }
 }
 
-Rect dbBlock::getDieArea()
+Rect dbBlock::getDieArea() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->die_area_.getEnclosingRect();
 }
 
-Polygon dbBlock::getDieAreaPolygon()
+Polygon dbBlock::getDieAreaPolygon() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->die_area_;
 }
 
-Rect dbBlock::getCoreArea()
+Rect dbBlock::getCoreArea() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->core_area_.getEnclosingRect();
 }
 
-Polygon dbBlock::getCoreAreaPolygon()
+Polygon dbBlock::getCoreAreaPolygon() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->core_area_;
 }
 
@@ -2408,13 +2411,13 @@ void dbBlock::addBlockedRegionForPins(const Rect& region)
   block->blocked_regions_for_pins_.push_back(region);
 }
 
-const std::vector<Rect>& dbBlock::getBlockedRegionsForPins()
+const std::vector<Rect>& dbBlock::getBlockedRegionsForPins() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->blocked_regions_for_pins_;
 }
 
-Polygon dbBlock::computeCoreArea()
+Polygon dbBlock::computeCoreArea() const
 {
   std::vector<odb::Rect> rows;
   rows.reserve(getRows().size());
@@ -2449,15 +2452,15 @@ void dbBlock::setExtmi(void* ext)
   block->extmi_ = ext;
 }
 
-void* dbBlock::getExtmi()
+void* dbBlock::getExtmi() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (block->extmi_);
 }
 
-dbExtControl* dbBlock::getExtControl()
+dbExtControl* dbBlock::getExtControl() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return (block->ext_control_);
 }
 
@@ -2515,9 +2518,9 @@ void dbBlock::setMaxLayerForClock(const int max_layer_for_clock)
   block->max_layer_for_clock_ = max_layer_for_clock;
 }
 
-int dbBlock::getGCellTileSize()
+int dbBlock::getGCellTileSize() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
 
   // lambda function to get the average track spacing of a given layer
   auto getAverageTrackSpacing = [this](int layer_idx) -> int {
@@ -2602,9 +2605,9 @@ int dbBlock::getGCellTileSize()
   return track_spacings[1] * pitches_in_tile;
 }
 
-void dbBlock::getExtCornerNames(std::list<std::string>& ecl)
+void dbBlock::getExtCornerNames(std::list<std::string>& ecl) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   if (block->corner_name_list_) {
     ecl.emplace_back(block->corner_name_list_);
   } else {
@@ -2612,19 +2615,19 @@ void dbBlock::getExtCornerNames(std::list<std::string>& ecl)
   }
 }
 
-dbSet<dbCCSeg> dbBlock::getCCSegs()
+dbSet<dbCCSeg> dbBlock::getCCSegs() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbCCSeg>(block, block->cc_seg_tbl_);
 }
 
-dbSet<dbRSeg> dbBlock::getRSegs()
+dbSet<dbRSeg> dbBlock::getRSegs() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbRSeg>(block, block->r_seg_tbl_);
 }
 
-dbTechNonDefaultRule* dbBlock::findNonDefaultRule(const char* name)
+dbTechNonDefaultRule* dbBlock::findNonDefaultRule(const char* name) const
 {
   for (dbTechNonDefaultRule* r : getNonDefaultRules()) {
     if (strcmp(r->getConstName(), name) == 0) {
@@ -2635,9 +2638,9 @@ dbTechNonDefaultRule* dbBlock::findNonDefaultRule(const char* name)
   return nullptr;
 }
 
-dbSet<dbTechNonDefaultRule> dbBlock::getNonDefaultRules()
+dbSet<dbTechNonDefaultRule> dbBlock::getNonDefaultRules() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return dbSet<dbTechNonDefaultRule>(block, block->non_default_rule_tbl_);
 }
 
@@ -2752,9 +2755,9 @@ void dbBlock::adjustRC(double resFactor, double ccFactor, double gndcFactor)
 void dbBlock::getExtCount(int& numOfNet,
                           int& numOfRSeg,
                           int& numOfCapNode,
-                          int& numOfCCSeg)
+                          int& numOfCCSeg) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   numOfNet = block->net_tbl_->size();
   numOfRSeg = block->r_seg_tbl_->size();
   numOfCapNode = block->cap_node_tbl_->size();
@@ -2782,21 +2785,21 @@ int dbBlock::getMinExtMOdel()
     return block->_min_ext_model;
 }
 */
-int dbBlock::getCornerCount()
+int dbBlock::getCornerCount() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->num_ext_corners_;
 }
 
-int dbBlock::getCornersPerBlock()
+int dbBlock::getCornersPerBlock() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->corners_per_block_;
 }
 
-int dbBlock::getExtDbCount()
+int dbBlock::getExtDbCount() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->num_ext_dbs_;
 }
 
@@ -2909,9 +2912,9 @@ void dbBlock::setCornerCount(int cornersStoredCnt,
   }
 }
 
-char* dbBlock::getCornerNameList()
+char* dbBlock::getCornerNameList() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
 
   return block->corner_name_list_;
 }
@@ -2925,9 +2928,9 @@ void dbBlock::setCornerNameList(const char* name_list)
 
   block->corner_name_list_ = strdup(name_list);
 }
-std::string dbBlock::getExtCornerName(const int corner)
+std::string dbBlock::getExtCornerName(const int corner) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   if (block->num_ext_corners_ == 0) {
     return "";
   }
@@ -2950,9 +2953,9 @@ std::string dbBlock::getExtCornerName(const int corner)
   return "";
 }
 
-int dbBlock::getExtCornerIndex(const char* cornerName)
+int dbBlock::getExtCornerIndex(const char* cornerName) const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
 
   if (block->corner_name_list_ == nullptr) {
     return -1;
@@ -3062,9 +3065,9 @@ dbSet<dbBlock>::iterator dbBlock::destroy(dbSet<dbBlock>::iterator& itr)
   return next;
 }
 
-dbBlockSearch* dbBlock::getSearchDb()
+dbBlockSearch* dbBlock::getSearchDb() const
 {
-  _dbBlock* block = (_dbBlock*) this;
+  const _dbBlock* block = (const _dbBlock*) this;
   return block->search_db_;
 }
 
@@ -3108,7 +3111,7 @@ void dbBlock::destroyParasitics(std::vector<dbNet*>& nets)
 }
 
 void dbBlock::getCcHaloNets(std::vector<dbNet*>& changedNets,
-                            std::vector<dbNet*>& ccHaloNets)
+                            std::vector<dbNet*>& ccHaloNets) const
 {
   uint32_t jj;
   dbNet* ccNet;
@@ -3227,7 +3230,7 @@ void dbBlock::clearUserInstFlags()
   }
 }
 
-odb::PtrMap<dbTechLayer, odb::dbTechVia*> dbBlock::getDefaultVias()
+odb::PtrMap<dbTechLayer, odb::dbTechVia*> dbBlock::getDefaultVias() const
 {
   odb::dbTech* tech = getTech();
   odb::dbSet<odb::dbTechVia> vias = tech->getVias();
@@ -3306,7 +3309,7 @@ void dbBlock::setDrivingItermsforNets()
   }
 }
 
-void dbBlock::preExttreeMergeRC(double max_cap, uint32_t corner)
+void dbBlock::preExttreeMergeRC(double max_cap, uint32_t corner) const
 {
   if (!getExtControl()->_exttreePreMerg) {
     return;
@@ -3323,7 +3326,7 @@ void dbBlock::preExttreeMergeRC(double max_cap, uint32_t corner)
   }
 }
 
-bool dbBlock::designIsRouted(bool verbose)
+bool dbBlock::designIsRouted(bool verbose) const
 {
   bool design_is_routed = true;
   for (dbNet* net : getNets()) {
@@ -3383,9 +3386,9 @@ void dbBlock::clearGlobalConnect()
   }
 }
 
-void dbBlock::reportGlobalConnect()
+void dbBlock::reportGlobalConnect() const
 {
-  _dbBlock* dbblock = (_dbBlock*) this;
+  const _dbBlock* dbblock = (const _dbBlock*) this;
   utl::Logger* logger = dbblock->getImpl()->getLogger();
 
   dbSet<dbGlobalConnect> gcs = getGlobalConnects();
@@ -3527,23 +3530,23 @@ int _dbBlock::globalConnect(const std::vector<dbGlobalConnect*>& connects,
   return connected_iterms.size();
 }
 
-_dbTech* _dbBlock::getTech()
+_dbTech* _dbBlock::getTech() const
 {
-  dbBlock* block = (dbBlock*) this;
+  const dbBlock* block = (const dbBlock*) this;
   return (_dbTech*) block->getTech();
 }
 
-dbTech* dbBlock::getTech()
+dbTech* dbBlock::getTech() const
 {
   return getChip()->getTech();
 }
 
-dbSet<dbMarkerCategory> dbBlock::getMarkerCategories()
+dbSet<dbMarkerCategory> dbBlock::getMarkerCategories() const
 {
   return getChip()->getMarkerCategories();
 }
 
-dbMarkerCategory* dbBlock::findMarkerCategory(const char* name)
+dbMarkerCategory* dbBlock::findMarkerCategory(const char* name) const
 {
   return getChip()->findMarkerCategory(name);
 }
@@ -3574,7 +3577,7 @@ void dbBlock::writeMarkerCategories(std::ofstream& report)
   _dbMarkerCategory::writeJSON(report, groups);
 }
 
-void dbBlock::debugPrintContent(std::ostream& str_db)
+void dbBlock::debugPrintContent(std::ostream& str_db) const
 {
   str_db << fmt::format("Debug: Data base tables for block at {}:\n",
                         getName());
@@ -3716,7 +3719,7 @@ void dbBlock::debugPrintContent(std::ostream& str_db)
   }
 }
 
-void _dbBlock::collectMemInfo(MemInfo& info)
+void _dbBlock::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
@@ -3794,11 +3797,11 @@ void _dbBlock::collectMemInfo(MemInfo& info)
 
 void _dbBlock::ensureConstraintRegion(const Direction2D& edge,
                                       int& begin,
-                                      int& end)
+                                      int& end) const
 {
   /// Ensure that the constraint region defined in the given edge is completely
   /// inside the die area.
-  dbBlock* block = (dbBlock*) this;
+  const dbBlock* block = (const dbBlock*) this;
   const int input_begin = begin;
   const int input_end = end;
   const Rect& die_bounds = block->getDieArea();
@@ -4025,7 +4028,7 @@ void dbBlock::getPathSegments(const char* full_name,
   segments.emplace_back(segment_begin, cursor - segment_begin);
 }
 
-dbModITerm* dbBlock::findModITerm(const char* hierarchical_name)
+dbModITerm* dbBlock::findModITerm(const char* hierarchical_name) const
 {
   if (hierarchical_name == nullptr) {
     return nullptr;
@@ -4046,7 +4049,7 @@ dbModITerm* dbBlock::findModITerm(const char* hierarchical_name)
   return nullptr;
 }
 
-dbModBTerm* dbBlock::findModBTerm(const char* hierarchical_name)
+dbModBTerm* dbBlock::findModBTerm(const char* hierarchical_name) const
 {
   if (hierarchical_name == nullptr) {
     return nullptr;

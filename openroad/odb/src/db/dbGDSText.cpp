@@ -76,7 +76,7 @@ dbOStream& operator<<(dbOStream& stream, const _dbGDSText& obj)
   return stream;
 }
 
-void _dbGDSText::collectMemInfo(MemInfo& info)
+void _dbGDSText::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);

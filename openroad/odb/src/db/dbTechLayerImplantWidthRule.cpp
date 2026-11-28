@@ -109,7 +109,7 @@ dbOStream& operator<<(dbOStream& stream,
   return stream;
 }
 
-void _dbTechLayerImplantWidthRule::collectMemInfo(MemInfo& info)
+void _dbTechLayerImplantWidthRule::collectMemInfo(MemInfo& info) const
 {
   info.cnt++;
   info.size += sizeof(*this);
