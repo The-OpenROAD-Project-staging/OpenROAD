@@ -300,11 +300,11 @@ bool dbTechViaLayerRule::hasSpacing() const
   return rule->flags_.has_spacing == 1;
 }
 
-void dbTechViaLayerRule::getSpacing(int& spacing_x, int& spacing_y) const
+void dbTechViaLayerRule::getSpacing(int& x_spacing, int& y_spacing) const
 {
   const _dbTechViaLayerRule* rule = (const _dbTechViaLayerRule*) this;
-  spacing_x = rule->spacing_x_;
-  spacing_y = rule->spacing_y_;
+  x_spacing = rule->spacing_x_;
+  y_spacing = rule->spacing_y_;
 }
 
 void dbTechViaLayerRule::setSpacing(int spacing_x, int spacing_y)

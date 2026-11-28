@@ -3761,12 +3761,12 @@ class dbWire : public dbObject
   ///
   /// Set one data entry
   ///
-  int getData(int n) const;
+  int getData(int idx) const;
 
   ///
   /// Set one opcode entry
   ///
-  unsigned char getOpcode(int n) const;
+  unsigned char getOpcode(int idx) const;
 
   ///
   /// Attach this wire to a net.
@@ -6303,7 +6303,7 @@ class dbTechViaRule : public dbObject
   ///
   /// Return the via of this index. The index ranges from [0 ... (viaCount-1)]
   ///
-  dbTechVia* getVia(uint32_t indx) const;
+  dbTechVia* getVia(uint32_t idx) const;
 
   ///
   /// Get the number of layer-rules assigned to this rule
@@ -6314,7 +6314,7 @@ class dbTechViaRule : public dbObject
   /// Return the layer-rule of this index. The index ranges from [0 ...
   /// (viaCount-1)]
   ///
-  dbTechViaLayerRule* getViaLayerRule(uint32_t indx) const;
+  dbTechViaLayerRule* getViaLayerRule(uint32_t idx) const;
 
   ///
   /// Create a new via.
@@ -6503,7 +6503,7 @@ class dbTechViaGenerateRule : public dbObject
   /// Return the layer-rule of this index. The index ranges from [0 ...
   /// (viaCount-1)]
   ///
-  dbTechViaLayerRule* getViaLayerRule(uint32_t indx) const;
+  dbTechViaLayerRule* getViaLayerRule(uint32_t idx) const;
 
   ///
   /// Create a new via.

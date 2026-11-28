@@ -289,25 +289,25 @@ Point dbWire::getCoord(int jid) const
   return {pnt.x, pnt.y};
 }
 
-bool dbWire::getProperty(int jid, int& prpty) const
+bool dbWire::getProperty(int jid, int& property) const
 {
   const _dbWire* wire = (const _dbWire*) this;
   [[maybe_unused]] const int wlen = (int) wire->length();
   assert(0 <= jid && jid < wlen);
   unsigned char op = wire->opcodes_[jid] & WOP_OPCODE_MASK;
   if (op == kColinear || op == kRect) {
-    prpty = 0;
+    property = 0;
     return true;
   }
   assert(op == kX || op == kY);
   assert(jid + 1 < wlen);
   if ((wire->opcodes_[jid + 1] & WOP_OPCODE_MASK) == kProperty) {
-    prpty = wire->data_[jid + 1];
+    property = wire->data_[jid + 1];
     return true;
   }
   assert(jid + 2 < wlen);
   if ((wire->opcodes_[jid + 2] & WOP_OPCODE_MASK) == kProperty) {
-    prpty = wire->data_[jid + 2];
+    property = wire->data_[jid + 2];
     return true;
   }
   return false;
@@ -448,7 +448,7 @@ static const Coord prevCoord[13][3] = {/*            X        Y        C */
                                        /*  11 */ {XCoord, None, None},
                                        /*  12 */ {XCoord, YCoord, None}};
 
-void dbWire::getSegment(int shape_id, dbShape& shape) const
+void dbWire::getSegment(int segment_id, dbShape& shape) const
 {
   const _dbWire* wire = (const _dbWire*) this;
   dbTechLayer* layer = nullptr;
@@ -457,7 +457,7 @@ void dbWire::getSegment(int shape_id, dbShape& shape) const
   bool found_width = false;
   bool default_width = false;
 
-  int idx = shape_id;
+  int idx = segment_id;
   int state = 0;
   unsigned char opcode;
   int input;
@@ -703,7 +703,9 @@ decode_loop:
 // This version is optimized for the extraction code, where the layer is already
 // known
 //
-void dbWire::getSegment(int shape_id, dbTechLayer* layer, dbShape& shape) const
+void dbWire::getSegment(int segment_id,
+                        dbTechLayer* layer,
+                        dbShape& shape) const
 {
   const _dbWire* wire = (const _dbWire*) this;
   assert(layer);
@@ -712,7 +714,7 @@ void dbWire::getSegment(int shape_id, dbTechLayer* layer, dbShape& shape) const
   bool found_width = false;
   bool default_width = false;
 
-  int idx = shape_id;
+  int idx = segment_id;
   int state = 0;
   unsigned char opcode;
   int input;
@@ -977,8 +979,9 @@ static bool createTechVia(const _dbWire* wire, int idx, dbShape& shape)
 
 // This function gets the previous via of this shape_id,
 // if one exists.
-bool dbWire::getPrevVia(int idx, dbShape& shape) const
+bool dbWire::getPrevVia(int shape_id, dbShape& shape) const
 {
+  int idx = shape_id;
   const _dbWire* wire = (const _dbWire*) this;
   assert((0 < idx) && (idx < (int) wire->length()));
 
@@ -1024,8 +1027,9 @@ bool dbWire::getPrevVia(int idx, dbShape& shape) const
 //
 // This function gets the next via of this shape_id,
 // if one exists.
-bool dbWire::getNextVia(int idx, dbShape& shape) const
+bool dbWire::getNextVia(int shape_id, dbShape& shape) const
 {
+  int idx = shape_id;
   const _dbWire* wire = (const _dbWire*) this;
   assert((0 < idx) && (idx < (int) wire->length()));
   ++idx;
