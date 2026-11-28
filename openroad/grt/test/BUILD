@@ -71,6 +71,10 @@ TESTS = [
     "obs_out_of_die",
     "obstruction",
     "overlapping_edges",
+    "pad_pin_edge",
+    "pad_pin_edge_cugr",
+    "pad_pin_edge_odb_roundtrip",
+    "pad_pin_edge_restore_cugr",
     "pd1",
     "pd2",
     "pd3",
@@ -271,6 +275,34 @@ regression_test(
     data = [":test_resources"],
 )
 
+regression_test(
+    name = "congestion_only",
+    check_log = False,
+    check_passfail = True,
+    data = [":test_resources"],
+)
+
+regression_test(
+    name = "congestion_only_guides",
+    check_log = False,
+    check_passfail = True,
+    data = [":test_resources"],
+)
+
+regression_test(
+    name = "congestion_only_reset",
+    check_log = False,
+    check_passfail = True,
+    data = [":test_resources"],
+)
+
+regression_test(
+    name = "congestion_only_ndr",
+    check_log = False,
+    check_passfail = True,
+    data = [":test_resources"],
+)
+
 cc_test(
     name = "TestOverflow",
     size = "small",
@@ -350,8 +382,9 @@ cc_test(
         "//openroad/grt:fastroute",
         "//openroad/grt:groute",
         "//openroad/odb/src/db",
+        "//openroad/sta:opensta_lib",
         "//openroad/stt",
-        "//openroad/tst:db_fixture",
+        "//openroad/tst",
         "//openroad/utl",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
